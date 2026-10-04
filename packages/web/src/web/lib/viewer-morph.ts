@@ -80,21 +80,59 @@ export const MORPH_OPEN_MS = 560;
 /** 閉じるとき: 開くときより少し短く。見終えた人を待たせない。 */
 export const MORPH_CLOSE_MS = 440;
 export const MORPH_EASE = "cubic-bezier(0.22, 0.8, 0.16, 1)";
+/**
+ * 次の写真へ送るとき、前の写真が薄れて消えるまでの時間とカーブ。
+ * 次の写真は下で先に濃くなり、前の写真は遅れて薄れる（終わりは同時）。
+ * 2枚とも半分ずつの濃さになる瞬間を作らない（作ると壁の白が透けて光る）。
+ *
+ * 時間は次の写真が濃くなる時間（--dur-base = 220ms）と揃える。長くすると
+ *（300ms で実測）、次の写真が濃くなり終えたところで画面の更新が約0.2秒止まり、
+ * 溶ける途中の絵で固まってから切り替わって見えた。
+ */
+export const SWAP_LEAVE_MS = 220;
+export const SWAP_LEAVE_EASE = "cubic-bezier(0.6, 0, 0.9, 0.5)";
 
 export type Ghost = {
   el: HTMLDivElement;
   /** 運ぶ。終わったら（または取り消されたら）解決する。 */
   fly: (to: Rect, ms: number) => Promise<void>;
   /** 薄れて消える。 */
-  fadeOut: (ms: number) => Promise<void>;
+  fadeOut: (ms: number, easing?: string) => Promise<void>;
   remove: () => void;
 };
 
 const px = (n: number) => `${Math.round(n * 100) / 100}px`;
 
+/**
+ * いま画面に出ている画像を、その場で1枚の絵に写し取る。
+ *
+ * 同じ URL で新しい <img> を作ると、ブラウザの手元に残っていれば即座に出るが、
+ * 残っていなければ取り寄せ直しになり、その間は影が空のまま（＝壁の色）になる。
+ * ビューアの中の写真は、影を作った直後に隠すか外すので、空の間がそのまま
+ * 画面に見える。写し取った絵なら、取り寄せも読み込みも要らない。
+ */
+function snapshotOf(img: HTMLImageElement, size: Rect): HTMLCanvasElement | null {
+  if (!img.complete || img.naturalWidth === 0) return null;
+  try {
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const w = Math.max(1, Math.min(img.naturalWidth, Math.round(size.w * dpr)));
+    const h = Math.max(1, Math.round((w * img.naturalHeight) / img.naturalWidth));
+    const canvas = document.createElement("canvas");
+    canvas.width = w;
+    canvas.height = h;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return null;
+    ctx.drawImage(img, 0, 0, w, h);
+    return canvas;
+  } catch {
+    return null;
+  }
+}
+
 export function createGhost(
   parent: Element,
-  src: string,
+  /** 画像の URL。画面に出ている画像そのものを渡すと、それを写し取って使う。 */
+  source: string | HTMLImageElement,
   from: Rect,
   /** 一覧で写真の「見せる中心」に寄せて切り抜いていれば、その位置。 */
   objectPosition = "50% 50%",
@@ -113,19 +151,26 @@ export function createGhost(
     zIndex: "5",
     willChange: "left, top, width, height",
   } satisfies Partial<CSSStyleDeclaration>);
-  const img = document.createElement("img");
-  img.src = src;
-  img.alt = "";
-  img.decoding = "sync";
-  img.draggable = false;
-  Object.assign(img.style, {
+  const snapshot = typeof source === "string" ? null : snapshotOf(source, from);
+  let picture: HTMLImageElement | HTMLCanvasElement;
+  if (snapshot) {
+    picture = snapshot;
+  } else {
+    const img = document.createElement("img");
+    img.src = typeof source === "string" ? source : source.currentSrc || source.src;
+    img.alt = "";
+    img.decoding = "sync";
+    img.draggable = false;
+    picture = img;
+  }
+  Object.assign(picture.style, {
     display: "block",
     width: "100%",
     height: "100%",
     objectFit: "cover",
     objectPosition,
   } satisfies Partial<CSSStyleDeclaration>);
-  el.appendChild(img);
+  el.appendChild(picture);
   parent.appendChild(el);
 
   let current = from;
@@ -148,10 +193,10 @@ export function createGhost(
       current = to;
       return settle(a);
     },
-    fadeOut(ms) {
+    fadeOut(ms, easing = "ease-out") {
       const a = el.animate([{ opacity: 1 }, { opacity: 0 }], {
         duration: ms,
-        easing: "ease-out",
+        easing,
         fill: "forwards",
       });
       return settle(a);

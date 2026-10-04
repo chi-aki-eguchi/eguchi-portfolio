@@ -1538,6 +1538,87 @@ test.describe("public-site — Galleryライトボックス", () => {
     expect(apiMocks.unexpectedRequests).toEqual([]);
     expect(runtimeProblems).toEqual([]);
   });
+
+  // ───────────────────────────────────────────────────────────────────────────
+  // 2026-10-04: 写真を押して開くと一瞬チカッとする、を直したぶんの回帰。
+  // 本番をコマ送りで測ると、原因は3つあった。
+  //   1. ブラウザ既定の薄い黒の幕（::backdrop）が、開く瞬間に頁へ一気に掛かる
+  //   2. 押した写真が着いた直後、下に何も描けておらず、写真が白く抜ける
+  //   3. 次の写真へ送ると、前の写真をその場で消すので画面が壁の色だけになる
+  // ───────────────────────────────────────────────────────────────────────────
+  test("/gallery — 開くとき裏に幕を敷かず、押した写真を下敷きにし、送るとき前の写真を残す", async ({
+    page,
+  }) => {
+    const runtimeProblems = collectPageRuntimeProblems(page);
+    const apiMocks = await installPublicApiMocks(page);
+    const galleryPage = PUBLIC_PAGES.find(
+      (publicPage) => publicPage.path === "/gallery",
+    )!;
+    await gotoPublicPage(page, galleryPage);
+
+    const photoButton = page
+      .locator("main button")
+      .filter({ has: page.locator(".photo-card") })
+      .nth(1);
+    await photoButton.scrollIntoViewIfNeeded();
+    const tileImage = photoButton.locator("img").first();
+    await expect
+      .poll(() =>
+        tileImage.evaluate(
+          (img: HTMLImageElement) => img.complete && img.naturalWidth > 0,
+        ),
+      )
+      .toBe(true);
+    const tileSrc = await tileImage.evaluate(
+      (img: HTMLImageElement) => img.currentSrc || img.src,
+    );
+    await photoButton.click();
+
+    const lightbox = page.locator('dialog[aria-label="写真ビューア"]');
+    await expect(lightbox).toBeVisible();
+    const opened = await lightbox.evaluate((dlg) => {
+      const under = [
+        ...dlg.querySelectorAll<HTMLImageElement>(".lb-content button > img"),
+      ].find((img) => !img.style.filter);
+      return {
+        backdrop: getComputedStyle(dlg, "::backdrop").backgroundColor,
+        under: under ? under.currentSrc || under.src : null,
+      };
+    });
+    expect(opened.backdrop, "裏の幕は透明").toMatch(
+      /^(transparent|rgba\(0, 0, 0, 0\))$/,
+    );
+    expect(opened.under, "下敷きは頁に出ていた画像そのもの").toBe(tileSrc);
+
+    // 開く動きが終わり、大きい写真が読めてから送る。
+    await expect(lightbox.locator(".lb-ghost")).toHaveCount(0);
+    await expect
+      .poll(() =>
+        lightbox.evaluate((dlg) =>
+          [...dlg.querySelectorAll<HTMLImageElement>(".lb-content img[alt]")].some(
+            (img) => img.alt !== "" && img.complete && img.naturalWidth > 0,
+          ),
+        ),
+      )
+      .toBe(true);
+    const counter = lightbox.locator(".lb-counter");
+    const before = await counter.textContent();
+    // 送った同じ瞬間に、前の写真の影が残っていること。
+    const ghostsRightAfter = await page.evaluate(() => {
+      window.dispatchEvent(
+        new KeyboardEvent("keydown", { key: "ArrowRight", bubbles: true }),
+      );
+      return document.querySelectorAll("dialog .lb-ghost").length;
+    });
+    expect(ghostsRightAfter, "送った瞬間に前の写真が残っている").toBe(1);
+    await expect(counter).not.toHaveText(before ?? "");
+    await expect(lightbox.locator(".lb-ghost")).toHaveCount(0);
+
+    await page.keyboard.press("Escape");
+    await expect(lightbox).toBeHidden();
+    expect(apiMocks.unexpectedRequests).toEqual([]);
+    expect(runtimeProblems).toEqual([]);
+  });
 });
 
 // ─────────────────────────────────────────────────────────────────────────────

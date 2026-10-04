@@ -4,6 +4,7 @@ import {
   useLayoutEffect,
   useRef,
   useCallback,
+  useMemo,
 } from "react";
 import { createPortal } from "react-dom";
 import { Link } from "wouter";
@@ -20,6 +21,8 @@ import { historyBridge } from "../lib/scroll-memory";
 import {
   MORPH_CLOSE_MS,
   MORPH_OPEN_MS,
+  SWAP_LEAVE_EASE,
+  SWAP_LEAVE_MS,
   containRect,
   createGhost,
   isMostlyInView,
@@ -75,6 +78,8 @@ export const fitSrcSet = (photo: PhotoImage) =>
 // Match the typical grid sizes so the browser picks the same cached entry.
 const GRID_THUMB_SIZES =
   "(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw";
+/** 頁の画像を下敷きに使う下限。これ未満は読み込み途中の仮画像とみなす。 */
+const PAGE_IMAGE_MIN_W = 240;
 
 export type LightboxPhoto = {
   /** 頁の写真（`data-photo-tile`）から開閉を運ぶときの目印。 */
@@ -251,7 +256,9 @@ export function Lightbox({
   // 高さは文の長さで変わるので、決め打ちにせず測る。
   const captionRef = useRef<HTMLDivElement>(null);
   const [captionH, setCaptionH] = useState(0);
-  useEffect(() => {
+  // 描く前に測る（useLayoutEffect）。描いたあとに測ると、札の高さが違う写真へ
+  // 送ったとき、前の写真の札の高さのまま1コマ描いてから大きさが変わる。
+  useLayoutEffect(() => {
     const el = captionRef.current;
     if (!el) {
       setCaptionH(0);
@@ -269,12 +276,16 @@ export function Lightbox({
   }, [index, photos]);
   const [closing, setClosing] = useState(false);
   const closingRef = useRef(false);
+  // 次・前へ送るとき、前の写真を残しておく影（下の leaveBehindRef）。
+  const leaveGhostRef = useRef<Ghost | null>(null);
   // Photo-swap crossfade: 'out'=instant hide, 'in'=transition to visible, null=idle
   const [swapPhase, setSwapPhase] = useState<"out" | "in" | null>(null);
   const hasNavigatedRef = useRef(false);
   const doClose = useCallback(() => {
     if (closingRef.current) return;
     closingRef.current = true;
+    leaveGhostRef.current?.remove();
+    leaveGhostRef.current = null;
     const noMotion = window.matchMedia?.(
       "(prefers-reduced-motion: reduce)",
     ).matches;
@@ -450,11 +461,11 @@ export function Lightbox({
       if (photos.length > 1) {
         const rel = (e.clientX - r.x) / r.w;
         if (rel < 0.28) {
-          onPrev();
+          goPrev();
           return;
         }
         if (rel > 0.72) {
-          onNext();
+          goNext();
           return;
         }
       }
@@ -521,20 +532,22 @@ export function Lightbox({
         { duration: MORPH_OPEN_MS * 0.9, easing: "ease-out", fill: "forwards" },
       );
       await ghost.fly(to, MORPH_OPEN_MS);
-      // 着いたら、ビューアの高精細の写真が読めるまで少しだけ待つ。待ちきれ
-      // なければ段階読み込み（ぼかし → 中 → 大）にそのまま任せる。
-      const waitUntil = performance.now() + 700;
-      while (
-        !cancelled &&
-        ghostRef.current === ghost &&
-        performance.now() < waitUntil &&
-        !(fitImgRef.current?.complete && fitImgRef.current.naturalWidth > 0)
-      ) {
-        await new Promise((r) => requestAnimationFrame(r));
-      }
+      if (cancelled || ghostRef.current !== ghost) return;
+      // 着いた影の真下には、同じ画像（頁に出ていた1枚）が下敷きとして置いて
+      // ある。それが描ける状態になってから影を外す。
+      //
+      // 以前は高精細の写真が「読めた」ことだけを待っていた（2026-10-04 実測）。
+      // 読めた写真は 1.1 秒かけて濃くなる途中で、下敷きは別の大きさの画像を
+      // 後回しで頼んでいてまだ届いていない。そこで影が 0.26 秒で消えるので、
+      // 着いた直後に写真が白く抜けていた（暗い写真の真ん中の明るさ 54 → 106 → 53）。
+      const under = placeImgRef.current;
+      if (under?.decode) await under.decode().catch(() => {});
       if (cancelled || ghostRef.current !== ghost) return;
       setMorphFlying(false);
-      requestAnimationFrame(() => wallIn?.cancel());
+      // 本物が画面に出てから影を薄める。壁の色もここでインラインへ返す。
+      await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+      if (cancelled || ghostRef.current !== ghost) return;
+      wallIn?.cancel();
       await ghost.fadeOut(260);
       if (ghostRef.current === ghost) done();
     };
@@ -562,6 +575,46 @@ export function Lightbox({
     setMorphFlying(false);
     dialogRef.current?.getAnimations().forEach((a) => a.cancel());
   }, [index]);
+
+  // 次・前の写真へ送るとき、いま見えている写真を影にして残し、新しい写真の
+  // 上で薄れさせる。以前は前の写真をその場で消してから新しい写真を浮かべて
+  // いたので、送るたびに画面がいったん壁の色（白）だけになっていた
+  //（2026-10-04 実測: 送った次のコマで画面全体の明るさが 255）。
+  const dropLeaveGhost = () => {
+    leaveGhostRef.current?.remove();
+    leaveGhostRef.current = null;
+  };
+  const leaveBehindRef = useRef(() => {});
+  leaveBehindRef.current = () => {
+    const dlg = dialogRef.current;
+    dropLeaveGhost();
+    if (!dlg || closingRef.current || scaleRef.current > 1) return;
+    if (prefersReducedMotion()) return;
+    // 運んでいる途中の影があれば、それが「いま見えている写真」。
+    if (ghostRef.current) return;
+    const loaded = (img: HTMLImageElement | null) =>
+      img?.complete && img.naturalWidth > 0 ? img : null;
+    const shown = loaded(fitImgRef.current) ?? loaded(placeImgRef.current);
+    const from = visibleImageRect();
+    if (!shown || !from) return;
+    const ghost = createGhost(dlg, shown, from);
+    leaveGhostRef.current = ghost;
+    void ghost.fadeOut(SWAP_LEAVE_MS, SWAP_LEAVE_EASE).then(() => {
+      ghost.remove();
+      if (leaveGhostRef.current === ghost) leaveGhostRef.current = null;
+    });
+  };
+  const navRef = useRef({ onPrev, onNext });
+  navRef.current = { onPrev, onNext };
+  const goPrev = useCallback(() => {
+    leaveBehindRef.current();
+    navRef.current.onPrev();
+  }, []);
+  const goNext = useCallback(() => {
+    leaveBehindRef.current();
+    navRef.current.onNext();
+  }, []);
+  useEffect(() => () => leaveGhostRef.current?.remove(), []);
 
   // 閉じるとき、いま見ている写真が頁の外にあれば、先にその頁を送って
   // おく（写真集の頁は頁の頭、一覧は真ん中へ）。ビューアの中で先へ送って
@@ -601,7 +654,7 @@ export function Lightbox({
     ghostRef.current?.remove();
     const ghost = createGhost(
       dlg,
-      shown.currentSrc || shown.src,
+      shown,
       { x: from.x, y: from.y, w: from.w, h: from.h },
       getComputedStyle(src).objectPosition || "50% 50%",
     );
@@ -784,8 +837,8 @@ export function Lightbox({
         // その場に戻る)。等倍のスワイプは onPointerUp の抑止に掛からないので
         // ここで抑止する。次の pointerdown が抑止を解除する。
         suppressClickRef.current = true;
-        if (dx < 0) onNext();
-        else onPrev();
+        if (dx < 0) goNext();
+        else goPrev();
       } else if (dy > 90 && dy > Math.abs(dx) * 1.5) {
         suppressClickRef.current = true;
         // Swipe down to dismiss — the expected mobile photo-viewer gesture. Safe
@@ -814,7 +867,7 @@ export function Lightbox({
       dlg.removeEventListener("dblclick", onDblClick);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [doClose, onNext, onPrev]);
+  }, [doClose, goNext, goPrev]);
 
   // Reset before paint so the counter and the visible image stage move together.
   const lbOpenTimeRef = useRef(performance.now());
@@ -831,7 +884,9 @@ export function Lightbox({
     lbOpenTimeRef.current = performance.now();
     if (onRequestMore && photos.length - index <= 5) onRequestMore();
     // Crossfade on navigation only — skip the initial open (hasNavigatedRef is false).
-    if (hasNavigatedRef.current) setSwapPhase("out");
+    // 動きを減らす設定では入れ替えるだけ。ここで一度消すと、濃くなる動きが
+    // 0.01ms に縮むので、1コマだけ壁の色になって光る。
+    if (hasNavigatedRef.current && !prefersReducedMotion()) setSwapPhase("out");
     hasNavigatedRef.current = true;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [index]);
@@ -991,8 +1046,8 @@ export function Lightbox({
   // wheel & pinch). Escape is handled by the dialog's onCancel.
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      if (e.key === "ArrowLeft") onPrev();
-      else if (e.key === "ArrowRight") onNext();
+      if (e.key === "ArrowLeft") goPrev();
+      else if (e.key === "ArrowRight") goNext();
       else if (e.key === "+" || e.key === "=")
         setScaleAt(
           scaleRef.current * 1.5,
@@ -1012,7 +1067,7 @@ export function Lightbox({
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [onPrev, onNext]);
+  }, [goPrev, goNext]);
 
   // Idle auto-hide: chrome retreats after a still moment so the photo stands
   // alone, and any movement (pointer, key, touch) brings it back. Tap-toggle
@@ -1061,6 +1116,23 @@ export function Lightbox({
   }, []);
 
   const photo = photos[index];
+  // 頁にもう出ている写真なら、その画像をそのまま下敷き（Stage 1）に使う。
+  // 押した1枚は必ずこれに当たり、送った先も頁に出ていれば当たる。
+  //
+  // 下敷きは「一覧で読み込み済みだから即座に出る」前提で置かれていたが、
+  // 一覧と違う大きさの候補を選ぶので、実際は新しく取りに行っていた
+  //（2026-10-04 実測: 開いてから約1.1秒後に届き、そこで写真が一段濃くなる）。
+  // 頁の画像そのものなら、もうブラウザの手元にある。
+  const pageSrc = useMemo(() => {
+    // 頁から運んで開いた1枚は、影と同じ画像にする（影が消えても何も変わらない）。
+    if (morphUsed && index === morphIndex && morphFromRef.current)
+      return morphFromRef.current.src;
+    const img = sourceImageFor(photo.id);
+    // 仮のごく小さい画像（ぼかし用）しか出ていない頁の写真は使わない。
+    if (!img || img.naturalWidth < PAGE_IMAGE_MIN_W) return null;
+    return img.currentSrc || img.src || null;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [photo.id, photo.url, index]);
   const alt = photoAltText(photo, {
     photographerName,
     seriesName:
@@ -1082,6 +1154,12 @@ export function Lightbox({
     transition: "opacity var(--dur-base) var(--ease-out)",
   };
   const chromeTab = chromeOn ? 0 : -1;
+  const placeStyle: React.CSSProperties = {
+    display: "block",
+    width: mat.w,
+    height: captionH ? `calc(${mat.h} - ${captionH + 28}px)` : mat.h,
+    objectFit: "contain",
+  };
 
   return createPortal(
     <dialog
@@ -1259,7 +1337,7 @@ export function Lightbox({
             data-lb-chrome
             onClick={(e) => {
               e.stopPropagation();
-              onPrev();
+              goPrev();
             }}
             aria-label="前の写真"
             tabIndex={chromeTab}
@@ -1289,7 +1367,7 @@ export function Lightbox({
             data-lb-chrome
             onClick={(e) => {
               e.stopPropagation();
-              onNext();
+              goNext();
             }}
             aria-label="次の写真"
             tabIndex={chromeTab}
@@ -1458,43 +1536,48 @@ export function Lightbox({
                     }}
                   />
                 )}
-                {/* Stage 1: grid thumbnail — already in browser cache, appears instantly */}
-                <picture>
-                  <source
-                    type="image/avif"
-                    srcSet={photoSrcSetFor(photo, "grid", "avif")}
-                    sizes={GRID_THUMB_SIZES}
-                  />
-                  <source
-                    type="image/webp"
-                    srcSet={photoSrcSetFor(photo, "grid", "webp")}
-                    sizes={GRID_THUMB_SIZES}
-                  />
+                {/* Stage 1: 下敷き。**この1枚が舞台の大きさを決めている。**ほかの
+                  層はこの箱の中に absolute で重なるだけ。だから札のぶんを引くのは
+                  ここ。親に padding を足しても、高さが `94dvh` と画面から直に
+                  決まっているので効かない（2026-08-29: 実測で写真が箱を20px
+                  はみ出していた）。 */}
+                {pageSrc ? (
                   <img
                     ref={placeImgRef}
-                    srcSet={photoSrcSetFor(photo, "grid")}
-                    sizes={GRID_THUMB_SIZES}
-                    src={photoSrcFor(photo, 600, 84)}
+                    src={pageSrc}
                     alt=""
                     aria-hidden="true"
                     draggable={false}
-                    fetchPriority="low"
-                    decoding="async"
-                    style={{
-                      display: "block",
-                      width: mat.w,
-                      // **この1枚が舞台の大きさを決めている。**ほかの層は
-                      // この箱の中に absolute で重なるだけ。だから札のぶんを
-                      // 引くのはここ。親に padding を足しても、高さが
-                      // `94dvh` と画面から直に決まっているので効かない
-                      // （2026-08-29: 実測で写真が箱を20px はみ出していた）。
-                      height: captionH
-                        ? `calc(${mat.h} - ${captionH + 28}px)`
-                        : mat.h,
-                      objectFit: "contain",
-                    }}
+                    // 頁でもう描いた画像。同じコマで出す（遅らせると壁が1コマ見える）。
+                    decoding="sync"
+                    style={placeStyle}
                   />
-                </picture>
+                ) : (
+                  <picture>
+                    <source
+                      type="image/avif"
+                      srcSet={photoSrcSetFor(photo, "grid", "avif")}
+                      sizes={GRID_THUMB_SIZES}
+                    />
+                    <source
+                      type="image/webp"
+                      srcSet={photoSrcSetFor(photo, "grid", "webp")}
+                      sizes={GRID_THUMB_SIZES}
+                    />
+                    <img
+                      ref={placeImgRef}
+                      srcSet={photoSrcSetFor(photo, "grid")}
+                      sizes={GRID_THUMB_SIZES}
+                      src={photoSrcFor(photo, 600, 84)}
+                      alt=""
+                      aria-hidden="true"
+                      draggable={false}
+                      fetchPriority="low"
+                      decoding="async"
+                      style={placeStyle}
+                    />
+                  </picture>
+                )}
                 {/* Stage 2: medium (w=800) — skipped when pre-gen mediumUrl exists
                   (the CDN-served 1920px WebP is faster than a server-processed 800px) */}
                 {!photo.mediumUrl && (

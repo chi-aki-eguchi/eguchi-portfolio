@@ -4946,6 +4946,16 @@ img {
 }
 
 /* ─── Lightbox entrance/exit ─── */
+/* ビューアの裏に、ブラウザが既定で敷く薄い黒（::backdrop、黒の10%）を出さない。
+   壁の色はビューア自身が透明から濃くしていくのに、その裏でこの幕だけが
+   開いた瞬間に一気に掛かり、閉じ終わる瞬間に一気に外れていた（2026-10-04
+   実測: 頁全体の明るさが 134 → 121 と1コマで1割落ち、閉じる最後に 121 → 134 と
+   跳ねて戻る）。 */
+dialog.lightbox-enter::backdrop,
+dialog.lightbox-morph::backdrop,
+dialog.lightbox-exit::backdrop {
+  background: transparent;
+}
 dialog.lightbox-enter {
   animation: lb-in 0.85s var(--ease-reveal) both;
 }
@@ -5097,6 +5107,17 @@ dialog.lightbox-morph[data-morph-closing] > :not(.lb-content):not(.lb-ghost) {
   }
   /* 中の写真の寄り引きは移動なので止める（親の濃淡だけが残る）。 */
   .hero-photo-reveal img {
+    animation: none !important;
+  }
+
+  /* 写真ビューア: 壁と写真を一緒に、濃淡だけで出す（2026-10-04）。
+     上の一括指定が縮めるのは長さだけで、写真の側に付いている 0.12 秒の
+     「遅れ」は残る。その間、壁（白）だけが先に出て写真が無く、開くたびに
+     画面が一瞬まっ白になっていた。写真は自分では動かさず、壁と一緒に濃くする。 */
+  dialog.lightbox-enter {
+    animation-duration: var(--dur-slow) !important;
+  }
+  dialog.lightbox-enter .lb-content {
     animation: none !important;
   }
 }

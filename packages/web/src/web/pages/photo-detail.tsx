@@ -92,7 +92,13 @@ export default function PhotoDetailPage() {
 
   if (isLoading || isError || !data) {
     return (
-      <section className="max-w-5xl mx-auto site-page pt-[calc(4rem*var(--spacing-page-top,1))] md:pt-[calc(7rem*var(--spacing-page-top,1))] pb-16 md:pb-28 min-h-[60vh]">
+      // 読み込み中は1画面ぶん場所を取る（`.site-page-hold`）。60vh だと下の案内の
+      // 1行とフッターが画面の中に先に出て、写真が届いた瞬間に画面の外へ押し出される
+      // （2026-10-05 実測: 頁のずれ PC 0.136・スマホ 0.087）。
+      <section
+        key={isLoading ? "photo-hold" : "photo-status"}
+        className={`max-w-5xl mx-auto site-page pt-[calc(4rem*var(--spacing-page-top,1))] md:pt-[calc(7rem*var(--spacing-page-top,1))] pb-16 md:pb-28 ${isLoading ? "site-page-hold" : "min-h-[60vh]"}`}
+      >
         {isLoading ? (
           <ContentStatus state="loading" />
         ) : isError ? (

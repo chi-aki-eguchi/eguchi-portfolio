@@ -4421,6 +4421,25 @@ body[data-texture="mist"]::before {
 .hero-motion-stage:has(.hero-photo-reveal.absolute):not(:has(> .hero-single)):not(:has(> .hero-carousel)) {
   background: #0b0b0b;
 }
+/* 暗い下地そのものも、濃くなって出す（2026-10-05）。下地は写真より先に、
+   1コマで出ていた。明るい紙の頁を開いた直後に、画面の8割が1コマで黒へ切り替わる
+   （実測: 画面全体の明るさ 246 → 39）。写真が起きてくるまで約1秒あるので、
+   最初に目に入るのは「急に出た黒い箱」だった。箱ごと短く濃くする。中の写真と
+   名前はこの間まだ透明なので、現れ方（長さ・遅れ）は変わらない。
+
+   **背景色そのものを動かさない。** `background-color` を動かす形を先に試したら、
+   Chromium で最初のコマに下半分だけ濃い帯が出て消えた（色の変化を別の仕組みで
+   描くため）。濃さ（opacity）なら起きない。 */
+.hero-single,
+.hero-carousel-contain,
+.hero-motion-stage:has(.hero-photo-reveal.absolute):not(:has(> .hero-single)):not(:has(> .hero-carousel)) {
+  animation: hero-ground-in var(--dur-lift) var(--ease-out) backwards;
+}
+@keyframes hero-ground-in {
+  from {
+    opacity: 0;
+  }
+}
 .hero-text-reveal {
   opacity: 0;
   transform: translate3d(0, 12px, 0);

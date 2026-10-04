@@ -1012,6 +1012,47 @@ async function measureHeroName(page: Page) {
     });
 }
 
+// 2026-10-05: 1枚絵の表紙は、写真が届くまでスライド用の読み込み枠を出し、届いたら
+// 別の部品へ差し替えていた。枠も名前も作り直されるので、現れ始めた動きが最初から
+// やり直しになっていた（本番で枠の下地が濃くなり始めて 0.16 秒後にもう一度透明から）。
+test.describe("public-site — 1枚絵の表紙は作り直されない", () => {
+  test("写真が届く前から同じ枠のまま、写真だけあとから入る", async ({ page }) => {
+    await installPublicApiMocks(page, {
+      ...SYNTHETIC_SETTINGS,
+      heroMode: "single",
+    });
+    let release = () => {};
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    // 後から登録した route が先に見られる。表紙の写真だけ遅らせる。
+    await page.route("**/api/hero-photos**", async (route) => {
+      await gate;
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ heroPhotos: SYNTHETIC_PHOTOS.slice(0, 3) }),
+      });
+    });
+    await page.goto("/", { waitUntil: "domcontentloaded" });
+
+    const box = page.locator("main .hero-single");
+    await expect(box).toHaveCount(1);
+    await expect(page.locator("main .hero-carousel")).toHaveCount(0);
+    await expect(box.locator("img")).toHaveCount(0);
+    await box.evaluate((el) => {
+      (el as HTMLElement).dataset.sameBox = "yes";
+    });
+
+    release();
+    await expect(box.locator("img")).toHaveCount(1);
+    await expect(box, "写真が届いたときに枠が作り直された").toHaveAttribute(
+      "data-same-box",
+      "yes",
+    );
+  });
+});
+
 test.describe("public-site — HERO名の位置・下地・明暗", () => {
   test("全5種類をPC/スマホとライト/ダークで測る", async ({
     page,

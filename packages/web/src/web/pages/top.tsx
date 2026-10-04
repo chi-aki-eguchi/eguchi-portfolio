@@ -531,7 +531,16 @@ function HeroSingle({
   fxRef,
   photographerName,
 }: {
-  photo: HomeHeroPhoto;
+  /**
+   * まだ届いていない間は undefined。**枠だけ先に置く。**
+   *
+   * 以前は、写真が届くまでスライド用の読み込み枠（HeroCarousel）を出し、届いたら
+   * この部品へ差し替えていた。差し替えで枠も名前も作り直されるので、現れ始めた
+   * 動きが最初からやり直しになる（2026-10-05 実測: 枠の下地が濃くなり始めて
+   * 0.16 秒後にもう一度透明から始まる）。枠の大きさも、全画面でない設定では
+   * 2つの部品で違う。同じ枠のまま、写真だけあとから入れる。
+   */
+  photo?: HomeHeroPhoto;
   children?: React.ReactNode;
   titlePosition?: string;
   fxRef?: React.Ref<HTMLDivElement>;
@@ -542,9 +551,9 @@ function HeroSingle({
   // 決める（styles.css の body[data-photo-crop="whole"] が読む）。寸法は
   // 最初の描画から手元にあるので、読み込み後に測り直して版をずらさない。
   const dims = orientedDimensions(
-    photo.width,
-    photo.height,
-    photo.rotationDeg ?? 0,
+    photo?.width,
+    photo?.height,
+    photo?.rotationDeg ?? 0,
   );
   const stageStyle =
     dims.width && dims.height
@@ -553,6 +562,7 @@ function HeroSingle({
   return (
     <div className="hero-single" style={stageStyle}>
       <div ref={fxRef} className="hero-fx-layer absolute inset-0">
+        {photo && (
         <div className="hero-photo-reveal absolute inset-0">
           <HeroPicture
             url={photo.url}
@@ -575,6 +585,7 @@ function HeroSingle({
           />
           <div className={`hero-single-overlay ${overlayTop}`} />
         </div>
+        )}
       </div>
       <div className={`hero-single-caption ${posClass}`}>{children}</div>
     </div>
@@ -1425,7 +1436,11 @@ export default function TopPage() {
   const fadeRef = useScrollFadeIn([featured, settings?.topWorksLayout]);
   const heroMode = settings?.heroMode ?? "carousel";
 
-  const isSingle = heroMode === "single" && heroPhotos.length > 0;
+  // 1枚絵の設定なら、写真が届く前から1枚絵の枠で描く（HeroSingle の説明を参照）。
+  // 届いて0枚だったときだけ、下のスライド側（0枚なら何も置かない）へ回る。
+  const isSingle =
+    heroMode === "single" &&
+    (heroPhotos.length > 0 || heroLoading || photosLoading);
   const heroFullscreen =
     (settings?.heroDisplayMode || "normal") === "fullscreen";
   const heroTitlePosition = settings?.heroTitlePosition || "center";

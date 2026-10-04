@@ -9,7 +9,22 @@ function getSystemTheme(): "light" | "dark" {
 }
 
 function applyTheme(resolved: "light" | "dark") {
-  document.documentElement.dataset.theme = resolved;
+  const root = document.documentElement;
+  // 切り替えは1コマで全部そろえて替える（2026-10-05）。色を時間をかけて変える
+  // 指定を持つ部品（上の帯は背景色 0.3 秒）だけが、ほかより遅れて替わっていた。
+  // そのうえ Chromium では、その変化の終わりに帯が1コマだけ元の色へ戻る
+  //（スマホでメニューを開いたまま暗い表示へ: 帯だけ1コマ白。本番で6回中2回）。
+  // 替える瞬間だけ「時間をかけて変える」を止め、2コマ後に戻す。
+  const changing = (root.dataset.theme ?? "light") !== resolved;
+  if (changing && typeof requestAnimationFrame === "function") {
+    root.dataset.themeSwitching = "";
+    requestAnimationFrame(() =>
+      requestAnimationFrame(() => {
+        delete root.dataset.themeSwitching;
+      }),
+    );
+  }
+  root.dataset.theme = resolved;
   const meta = document.querySelector('meta[name="theme-color"]');
   if (meta && !meta.getAttribute("data-custom")) {
     meta.setAttribute("content", resolved === "dark" ? "#121212" : "#f7f7f7");

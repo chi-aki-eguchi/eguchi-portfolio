@@ -4945,6 +4945,15 @@ img {
   }
 }
 
+/* 明るい表示⇄暗い表示を替える瞬間は、色を時間をかけて変えない
+   （hooks/useDarkMode.ts が替える2コマの間だけ付ける）。 */
+html[data-theme-switching],
+html[data-theme-switching] *,
+html[data-theme-switching] *::before,
+html[data-theme-switching] *::after {
+  transition: none !important;
+}
+
 /* ─── Lightbox entrance/exit ─── */
 /* ビューアの裏に、ブラウザが既定で敷く薄い黒（::backdrop、黒の10%）を出さない。
    壁の色はビューア自身が透明から濃くしていくのに、その裏でこの幕だけが

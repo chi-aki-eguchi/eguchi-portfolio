@@ -7,7 +7,12 @@ import { usePageEntrance } from "../hooks/usePageEntrance";
 import { usePageLanguage } from "../hooks/usePageLanguage";
 import { InquiryCta } from "../components/InquiryCta";
 import { safeHref } from "../lib/utils";
-import { imageUrlWithParams } from "../../shared/image-url";
+import {
+  profilePhotoLayout,
+  profilePhotoSizes,
+  profilePhotoSrc,
+  profilePhotoSrcSet,
+} from "../../shared/profile-photo";
 import { JaPhrases } from "../components/JaPhrases";
 
 const CJK_TEXT = /[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}]/u;
@@ -123,11 +128,7 @@ export default function ProfilePage({
   // 従来は空の灰色の四角を場所取りしていたが、それは「作りかけに見える」
   // （admin-renewal-goal 到達点(6)）だけで、誰の役にも立っていなかった。
   const hasPhoto = !!data?.profilePhotoUrl && data.profilePhotoUrl !== brokenPhotoUrl;
-  const requestedLayout = ["side", "stack", "quiet"].includes(
-    data?.profileLayout ?? "",
-  )
-    ? data!.profileLayout!
-    : "side";
+  const requestedLayout = profilePhotoLayout(data?.profileLayout);
   const layout = hasPhoto ? requestedLayout : "quiet";
 
   // **写真が文の上にあるときは、写真が届くまで文を見せない**（2026-10-02）。写真の
@@ -149,11 +150,10 @@ export default function ProfilePage({
 
   const photoImg = data?.profilePhotoUrl ? (
     <img
-      src={imageUrlWithParams(data.profilePhotoUrl, { w: 900, q: 90 })}
-      srcSet={[600, 900, 1200].map((w) => `${imageUrlWithParams(data.profilePhotoUrl, { w, q: 90 })} ${w}w`).join(", ")}
-      sizes={
-        layout === "stack" ? "(min-width: 768px) 768px, 90vw" : "(min-width: 768px) 300px, 90vw"
-      }
+      // 幅の候補と sizes は HTML の先頭の先読み（api/ogp.ts）と同じ物を使う。
+      src={profilePhotoSrc(data.profilePhotoUrl)}
+      srcSet={profilePhotoSrcSet(data.profilePhotoUrl)}
+      sizes={profilePhotoSizes(layout === "stack" ? "stack" : "side")}
       alt={displayName}
       decoding="async"
       fetchPriority="high"

@@ -327,6 +327,53 @@ describe("injectOgp robots policy", () => {
   });
 });
 
+describe("injectOgp About photo preload", () => {
+  const photo = "/api/images/profile/1-シ_ョフ.jpg";
+  const base = { siteUrl: "https://akieguchi.com", siteName: "江口秋", profilePhotoUrl: photo };
+  const preloads = (out: string) => out.match(/<link rel="preload" as="image"[^>]*>/g) ?? [];
+  const page = `<html><head><title>t</title>
+    <meta name="description" content="d" />
+    <meta name="robots" content="index, follow" />
+    <link rel="canonical" href="x" />
+    <meta property="og:url" content="x" />
+    <meta property="og:title" content="x" />
+    <meta property="og:description" content="x" />
+    </head><body></body></html>`;
+
+  test("/about と /en/about に、画面と同じ候補・sizes の先読みを1つだけ入れる", async () => {
+    const { injectOgp } = await import("./ogp");
+    const { profilePhotoSizes, profilePhotoSrc, profilePhotoSrcSet } = await import(
+      "../shared/profile-photo"
+    );
+    for (const path of ["/about", "/en/about", "/profile"]) {
+      const tags = preloads(injectOgp(page, { ...base, profileLayout: "stack" }, path));
+      expect(tags).toHaveLength(1);
+      expect(tags[0]).toContain(`href="${escapeHtml(profilePhotoSrc(photo))}"`);
+      expect(tags[0]).toContain(`imagesrcset="${escapeHtml(profilePhotoSrcSet(photo))}"`);
+      expect(tags[0]).toContain(`imagesizes="${profilePhotoSizes("stack")}"`);
+    }
+  });
+
+  test("並べ方が未設定なら「写真左・文右」の sizes を使う（画面の既定と同じ）", async () => {
+    const { injectOgp } = await import("./ogp");
+    const { profilePhotoSizes } = await import("../shared/profile-photo");
+    const tags = preloads(injectOgp(page, base, "/about"));
+    expect(tags).toHaveLength(1);
+    expect(tags[0]).toContain(`imagesizes="${profilePhotoSizes("side")}"`);
+  });
+
+  test("写真を出さない並べ方・写真なし・外の URL・ほかのページには入れない", async () => {
+    const { injectOgp } = await import("./ogp");
+    expect(preloads(injectOgp(page, { ...base, profileLayout: "quiet" }, "/about"))).toHaveLength(0);
+    expect(preloads(injectOgp(page, { ...base, profilePhotoUrl: "" }, "/about"))).toHaveLength(0);
+    expect(
+      preloads(injectOgp(page, { ...base, profilePhotoUrl: "https://example.com/x.jpg" }, "/about")),
+    ).toHaveLength(0);
+    expect(preloads(injectOgp(page, base, "/contact"))).toHaveLength(0);
+    expect(preloads(injectOgp(page, base, "/gallery"))).toHaveLength(0);
+  });
+});
+
 describe("injectOgp hero preload", () => {
   const { injectOgp } = require("./ogp") as typeof import("./ogp");
   const page = `<html><head><title>t</title>

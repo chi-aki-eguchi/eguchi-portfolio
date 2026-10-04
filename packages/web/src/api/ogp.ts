@@ -10,6 +10,12 @@ import {
 import { imageUrlWithParams } from "../shared/image-url";
 import { heroImageSizes } from "../shared/hero-responsive";
 import {
+  profilePhotoLayout,
+  profilePhotoSizes,
+  profilePhotoSrc,
+  profilePhotoSrcSet,
+} from "../shared/profile-photo";
+import {
   analyticsPagePath,
   isAnalyticsDynamicPath,
 } from "../shared/analytics-path";
@@ -826,6 +832,21 @@ export function injectOgp(
         .join(", ");
       headInjection += `\n  <link rel="preload" as="image" fetchpriority="high" href="${escapeHtml(heroHref)}" imagesrcset="${escapeHtml(heroSrcset)}" imagesizes="${escapeHtml(heroSizes)}">`;
     }
+  }
+  // About の写真も HTML から読み始める。写真の URL は設定と JS が届いてからしか
+  // 分からず、しかも画面は写真が届くまで名前と文章を見せない（先に出すと写真の
+  // 高さぶん押し下げられる）。本番のスマホ・4G 相当で試算（2026-10-04、7回の中央値）:
+  // 写真が見える 2858→2113ms、名前と文章が見える 3339→2207ms、取り寄せは1回のまま。
+  // 待つのをやめる 2.5 秒を越えにくくなり、遅い回線で文章が動くのも減る。
+  // URL・幅の候補・sizes は画面と同じ物（shared/profile-photo.ts）。
+  const profilePhoto = settings.profilePhotoUrl?.trim() ?? "";
+  const profileLayout = profilePhotoLayout(settings.profileLayout);
+  if (
+    (canonPath === "/about" || canonPath === "/en/about") &&
+    profilePhoto.startsWith("/api/images/") &&
+    profileLayout !== "quiet"
+  ) {
+    headInjection += `\n  <link rel="preload" as="image" fetchpriority="high" href="${escapeHtml(profilePhotoSrc(profilePhoto))}" imagesrcset="${escapeHtml(profilePhotoSrcSet(profilePhoto))}" imagesizes="${escapeHtml(profilePhotoSizes(profileLayout))}">`;
   }
   // GA4 — real public pages only (don't track the admin app or soft-404s).
   // インライン <script> の JS 文字列リテラルに埋め込むため、escapeHtml では

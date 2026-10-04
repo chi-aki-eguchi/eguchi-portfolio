@@ -264,11 +264,15 @@ export function SeriesGrid({ kind = "series" }: { kind?: ShelfKind }) {
                 下辺に暗い幕を敷いてから載せる（幕なしだと明るい写真で沈む）。 */}
             {cardStyle === "overlay" && s.coverUrl && (
               <div className="absolute inset-x-0 bottom-0 p-3 bg-gradient-to-t from-[rgba(0,0,0,0.62)] via-[rgba(0,0,0,0.28)] to-transparent pt-10">
-                <p className="font-ja text-[0.8rem] tracking-[0.05em] leading-snug break-words text-white drop-shadow-[0_1px_6px_rgba(0,0,0,0.5)]">
+                {/* 長い題名が表紙を覆わないよう行数を止める（題名3行・添え書き2行）。
+                    スマホの2列（札 172px）に長い題名と添え書きを入れると7行になり、
+                    暗い幕と文字が表紙のほとんどを隠していた（2026-10-04、題名を
+                    差し替えて実測）。全文は写真の代替文と押した先にある。 */}
+                <p className="line-clamp-3 font-ja text-[0.8rem] tracking-[0.05em] leading-snug break-words text-white drop-shadow-[0_1px_6px_rgba(0,0,0,0.5)]">
                   {s.title}
                 </p>
                 {s.subtitle && (
-                  <p className="mt-0.5 font-en text-[length:var(--text-small)] tracking-[0.10em] uppercase break-words text-white/80 drop-shadow-[0_1px_6px_rgba(0,0,0,0.5)]">
+                  <p className="line-clamp-2 mt-0.5 font-en text-[length:var(--text-small)] tracking-[0.10em] uppercase break-words text-white/80 drop-shadow-[0_1px_6px_rgba(0,0,0,0.5)]">
                     {s.subtitle}
                   </p>
                 )}

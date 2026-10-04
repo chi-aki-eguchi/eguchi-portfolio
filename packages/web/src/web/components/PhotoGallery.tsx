@@ -320,12 +320,23 @@ const LqipImage = memo(function LqipImage({
       // old no-thumbnail LQIP/proxy path untouched, including its error path.
       if (keepCurrentSharp) upgradeInFlightRef.current = true;
       const full = new Image();
-      full.onload = () => {
+      const apply = () => {
+        if (!el.isConnected) return;
         if (keepCurrentSharp) upgradeInFlightRef.current = false;
         swappedRef.current = true;
+        // 差し替えたコマでそのまま描かせる。`decoding="async"` のままだと、
+        // 取り寄せ済みでも「描ける形」にするのは次のコマ以降になり、その間は
+        // 枠が空（地の色）になる。写真が1枚ずつ、読み込みの途中で1コマだけ
+        // 消えて見えていた（2026-10-04 実測: /series/sicf の先頭2枚とも）。
+        el.decoding = "sync";
         el.srcset = realSrcset || "";
         el.src = realSrc;
         setLoaded(true);
+      };
+      // 先に「描ける形」まで済ませてから差し替える。
+      full.onload = () => {
+        if (typeof full.decode === "function") full.decode().then(apply, apply);
+        else apply();
       };
       // A generated thumbnail that already loaded is a valid final fallback.
       // Never turn a failed optional medium request into a broken photo card.

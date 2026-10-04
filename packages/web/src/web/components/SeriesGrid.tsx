@@ -183,7 +183,10 @@ export function SeriesGrid({ kind = "series" }: { kind?: ShelfKind }) {
   const sizes = isMobile ? `${Math.round(100 / columns)}vw` : `${Math.round(tileW)}px`;
 
   if (series.length === 0) {
-    if (isLoading) return <div className="py-24" aria-hidden="true" />;
+    // 届くまで1画面ぶん場所を取る（`.site-page-hold`）。以前は親の 60vh だけで、
+    // 下の案内の1行とフッターが画面の中（y=596）に先に出て、一覧が届いた瞬間に
+    // 押し下げられていた（2026-10-04 実測: Series・Work とも頁のずれ 0.03、Work は2回）。
+    if (isLoading) return <div className="site-page-hold" aria-hidden="true" />;
     // **取得に失敗したことを「シリーズが無い」と言わない。** 落ちたときに
     // 「まだシリーズがありません」と出すと、訪問者にはこの写真家に作品が
     // 無いようにしか見えない（実測: /api/series を500にすると実際にそう出た）。

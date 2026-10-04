@@ -17,6 +17,7 @@ import { PhotoServiceNote } from "./photo-site/PhotoServiceNote";
 import { waitForWebFonts } from "../lib/web-fonts";
 import { useNavFit } from "../hooks/useNavFit";
 import { lockPageScroll } from "../lib/scroll-lock";
+import { PAGE_EXIT_MS } from "./PageTransition";
 import { useDarkModeContext, useServiceVisibility } from "./provider";
 import { hasPublicEnglishContent } from "../../shared/public-english";
 import {
@@ -396,8 +397,24 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     return () => window.removeEventListener("scroll", handler);
   }, []);
 
+  // 別のページへ移るときは、前のページが消え終わるまでメニューを開いたままに
+  // する（2026-10-04）。項目を押した瞬間に閉じると、メニューの下から前のページが
+  // 出てきて、0.4 秒かけて消えてから次のページになる（スマホで実測: メニューの白
+  // → 前の写真 → 白 → 次のページ）。開いたままなら、メニューから次のページへ
+  // そのまま替わる。動きを減らす設定ではページがすぐ入れ替わるので、すぐ閉じる。
+  const mobileOpenRef = useRef(mobileOpen);
+  mobileOpenRef.current = mobileOpen;
   useEffect(() => {
-    setMobileOpen(false);
+    if (!mobileOpenRef.current) return;
+    const reduced =
+      typeof window.matchMedia === "function" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (reduced) {
+      setMobileOpen(false);
+      return;
+    }
+    const timer = window.setTimeout(() => setMobileOpen(false), PAGE_EXIT_MS);
+    return () => window.clearTimeout(timer);
   }, [location]);
 
   // Keep the menu and its close button in one keyboard surface. Query the
@@ -918,7 +935,18 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               style={
                 { letterSpacing: "var(--nav-tracking, 0.04em)" } as React.CSSProperties
               }
-              onClick={() => setMobileOpen(false)}
+              // 今いるページの項目は、押したらすぐ閉じる。別のページへ移るときは
+              // 上の effect が、前のページが消え終わってから閉じる。
+              onClick={(event) => {
+                if (
+                  href === location ||
+                  event.metaKey ||
+                  event.ctrlKey ||
+                  event.shiftKey ||
+                  event.altKey
+                )
+                  setMobileOpen(false);
+              }}
             >
               {label}
             </Link>

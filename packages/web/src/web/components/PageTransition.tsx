@@ -1,4 +1,11 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import { useLocation, useSearch } from "wouter";
 import { historyBridge, routeKeyOf, scrollMemory } from "../lib/scroll-memory";
 
@@ -21,7 +28,23 @@ function prefersReducedMotion(): boolean {
  * **入れ替える時刻（setTimeout）と必ず同じ値を使う。**ずれると、消えきる前に
  * 中身が入れ替わるか、消えたあとに何も無い間が空く。
  */
-const PAGE_EXIT_MS = 420;
+export const PAGE_EXIT_MS = 420;
+
+/**
+ * 「いま画面に出ているのは、出ていく途中の前のページか」（2026-10-04）。
+ *
+ * 行き先が決まった瞬間に URL は変わるが、画面には前のページが消え終わるまで
+ * 残る。その間も前のページの部品は**新しい URL**を読んでしまう。作品のページは
+ * URL の作品名（slug）で中身を決めているので、出ていく瞬間に「作品名なし」に
+ * なり、写真が1コマで消えて空の枠になっていた（実測: 作品から一覧へ戻ると、
+ * 画面全体の明るさが 164 → 245 と1コマで白くなり、頁も先頭へ跳ねる）。
+ *
+ * URL から中身を決めるページは、これが true の間は前の値を持ち続ける。
+ */
+const PageExitingContext = createContext(false);
+export function usePageExiting(): boolean {
+  return useContext(PageExitingContext);
+}
 
 export default function PageTransition({
   children,
@@ -35,6 +58,8 @@ export default function PageTransition({
   // 250msのフェードが入ると、同じ画面の中の操作が遅く感じられる。
   const routeKey = routeKeyOf(location, search);
   const [display, setDisplay] = useState(children);
+  // 画面に出している中身が、どのパスのものか。URL と違う間は「出ていく途中」。
+  const [shownPath, setShownPath] = useState(location);
   const [opacity, setOpacity] = useState(1);
   const prevLocation = useRef(routeKey);
   const prevPath = useRef(location);
@@ -46,6 +71,18 @@ export default function PageTransition({
   // they left — on a gallery that is thousands of pixels tall, scrolling to 0
   // meant one tap on About threw away all their browsing.
   const poppedTo = useRef<string | null>(null);
+
+  // 戻る・進むのとき、ブラウザに位置を動かさせない（2026-10-04）。
+  // 位置は下の restoreScroll が、頁を入れ替えたあとに自分で戻す。ブラウザ任せ
+  // （auto）だと、押した瞬間に行き先の位置へ動くので、**まだ画面に出ている前の
+  // 頁が跳ねてから消える**（実測: Gallery を 1500px 送って Series へ進むと、
+  // 濃さ1のまま y=1500 → 0。作品の 2000px から戻るときも同じ）。
+  // タブを閉じるまで manual のまま。再読み込みは先頭から始まる（scroll-memory の
+  // 「a reload should start clean」と同じ方針）。
+  useEffect(() => {
+    if (typeof window === "undefined" || !("scrollRestoration" in window.history)) return;
+    window.history.scrollRestoration = "manual";
+  }, []);
 
   useEffect(() => {
     const remember = () => {
@@ -117,6 +154,7 @@ export default function PageTransition({
       else scrollMemory.clearRestoring();
 
       setDisplay(newChildren);
+      setShownPath(prevPath.current);
       if (popped) restoreScroll(popped);
       else window.scrollTo(0, 0);
 
@@ -171,6 +209,7 @@ export default function PageTransition({
 
     if (prefersReducedMotion()) {
       setDisplay(latestChildren.current);
+      setShownPath(location);
       setOpacity(1);
       settleScroll();
       return;
@@ -179,6 +218,13 @@ export default function PageTransition({
     // Keep page switches in this controlled fade. Chrome's native page snapshots
     // can briefly flash the next page label before the route has settled.
     transitioning.current = true;
+    // 出ていく濃淡の長さを、ここで付け直す。入ってくるとき（swapAndFadeIn）に
+    // 要素へ直に 1.1 秒の指定を書き込むので、2回目以降の移動ではそれが残り、
+    // 出ていく側まで 1.1 秒のカーブで薄れていた。入れ替えは 0.42 秒後なので、
+    // **前のページは3割ほど残ったところで1コマで消えていた**（2026-10-04 実測:
+    // 濃さ 0.4 → 0、画面全体の明るさ 206 → 246）。最初の1回だけは正しく消える。
+    const el = containerRef.current;
+    if (el) el.style.transition = `opacity ${PAGE_EXIT_MS}ms var(--ease-reveal)`;
     setOpacity(0);
 
     const t = setTimeout(() => {
@@ -202,7 +248,9 @@ export default function PageTransition({
           : `opacity ${PAGE_EXIT_MS}ms var(--ease-reveal)`,
       }}
     >
-      {display}
+      <PageExitingContext.Provider value={shownPath !== location}>
+        {display}
+      </PageExitingContext.Provider>
     </div>
   );
 }

@@ -8,12 +8,13 @@
 // 書ける事実だけを使い、内容をでっち上げない。
 // 前後の導線は、人のためであると同時に**クローラの通り道**でもある。
 import { useQuery } from "@tanstack/react-query";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { Link, useParams } from "wouter";
 import { api, jsonOrThrow } from "../lib/api";
 import { ContentStatus } from "../components/ContentStatus";
 import { Picture } from "../components/Picture";
 import { usePageEntrance } from "../hooks/usePageEntrance";
+import { usePageExiting } from "../components/PageTransition";
 import { usePageTitle } from "../hooks/usePageTitle";
 import { photoAltText } from "../../shared/photo-alt";
 import {
@@ -42,7 +43,11 @@ type PhotoDetailResponse = {
 
 export default function PhotoDetailPage() {
   const params = useParams();
-  const id = params.id ?? "";
+  // 出ていく間は、見ていた写真のままにする（series-detail と同じ理由）。
+  const exiting = usePageExiting();
+  const shownIdRef = useRef(params.id ?? "");
+  if (!exiting && params.id !== undefined) shownIdRef.current = params.id;
+  const id = shownIdRef.current;
 
   const { data, isLoading, isError, error, refetch } = useQuery({
     queryKey: ["photo", id],

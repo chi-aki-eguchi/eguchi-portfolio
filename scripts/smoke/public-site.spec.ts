@@ -2367,6 +2367,124 @@ test.describe("公開サイト — 戻る/進むで中身が追従するか", ()
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
+// 2026-10-04: ページを移るときの「チカッ」「ガタッ」。本番をコマ送りで測って直した。
+//   1. メニューの項目を押すと、メニューだけ先に消えて前のページが 0.4 秒見えていた
+//   2. 戻る・進むで、ブラウザが先に位置を動かし、消える前のページが跳ねていた
+//   3. 2回目以降の移動では、前のページが3割残ったところで1コマで消えていた
+//   4. 作品のページから出るとき、URL が先に変わるので写真が1コマで消えていた
+// ─────────────────────────────────────────────────────────────────────────────
+test.describe("公開サイト — ページを移るときに前のページが跳ねない・切れない", () => {
+  test("メニューから別のページへ移る間、メニューは開いたまま", async ({ page }) => {
+    await installPublicApiMocks(page);
+    await page.goto("/gallery");
+    await page.waitForSelector("main .photo-card");
+    const burger = page.locator('button[aria-controls="mobile-menu"]');
+    test.skip(!(await burger.isVisible()), "メニューを畳む幅だけ");
+    await burger.click();
+    await expect(burger).toHaveAttribute("aria-expanded", "true");
+
+    // 押した直後（2コマあと）も、メニューが前のページを覆っていること。
+    const stillOpen = await page.evaluate(() => {
+      document
+        .querySelector<HTMLAnchorElement>('#mobile-menu a[href="/about"]')!
+        .click();
+      return new Promise<boolean>((resolve) =>
+        requestAnimationFrame(() =>
+          requestAnimationFrame(() =>
+            resolve(
+              document
+                .querySelector("header.site-header")
+                ?.getAttribute("data-mobile-menu-open") === "true",
+            ),
+          ),
+        ),
+      );
+    });
+    expect(stillOpen, "押した瞬間にメニューが消え、前のページが見えた").toBe(true);
+    await expect(page).toHaveURL(/\/about$/);
+    await expect(burger).toHaveAttribute("aria-expanded", "false");
+    await expect(page.locator("main")).toContainText(/PROFILE|About/i);
+  });
+
+  test("戻る・進むで、出ていくページの位置は動かず、最後まで薄れる", async ({
+    page,
+  }) => {
+    await installPublicApiMocks(page);
+    const size = page.viewportSize()!;
+    // 写真が18枚でも必ず送れるよう、低い画面にする。
+    await page.setViewportSize({ width: size.width, height: 420 });
+    await page.goto("/gallery");
+    await page.waitForSelector("main .photo-card");
+    expect(await page.evaluate(() => history.scrollRestoration)).toBe("manual");
+
+    await page.evaluate(() => window.scrollTo(0, 260));
+    const burger = page.locator('button[aria-controls="mobile-menu"]');
+    if (await burger.isVisible()) await burger.click();
+    await page.getByRole("link", { name: "About", exact: true }).first().click();
+    await expect(page.locator("main")).toContainText(/PROFILE|About/i);
+    await page.goBack();
+    await expect(page.locator("main .photo-card").first()).toBeVisible();
+    await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(200);
+    const before = await page.evaluate(() => window.scrollY);
+
+    // 進むを押した直後（2コマあと）。前のページ（Gallery）はまだ画面に出ている。
+    await page.evaluate(() => {
+      const w = window as unknown as { __leaving?: { y: number; duration: string } };
+      addEventListener(
+        "popstate",
+        () =>
+          requestAnimationFrame(() =>
+            requestAnimationFrame(() => {
+              const box = document.querySelector("#main-content > div")!;
+              w.__leaving = {
+                y: window.scrollY,
+                duration: getComputedStyle(box).transitionDuration,
+              };
+            }),
+          ),
+        { once: true },
+      );
+    });
+    await page.goForward();
+    await expect
+      .poll(() =>
+        page.evaluate(
+          () => (window as unknown as { __leaving?: unknown }).__leaving ?? null,
+        ),
+      )
+      .not.toBeNull();
+    const leaving = await page.evaluate(
+      () =>
+        (window as unknown as { __leaving: { y: number; duration: string } })
+          .__leaving,
+    );
+    expect(leaving.y, "消える前のページが別の位置へ跳ねた").toBe(before);
+    // 2回目以降の移動でも、出ていく長さは 0.42 秒（入ってくる 1.1 秒が残らない）。
+    expect(leaving.duration.split(",")[0].trim()).toBe("0.42s");
+    await expect(page.locator("main")).toContainText(/PROFILE|About/i);
+  });
+
+  test("作品のページから出る間、写真は出たまま薄れる", async ({ page }) => {
+    await installPublicApiMocks(page);
+    await page.goto("/series/synthetic-series-one");
+    await page.waitForSelector("main .photo-card");
+    const shown = await page.evaluate(() => {
+      history.pushState(null, "", "/gallery");
+      return new Promise<number>((resolve) =>
+        requestAnimationFrame(() =>
+          requestAnimationFrame(() =>
+            resolve(document.querySelectorAll("main .photo-card").length),
+          ),
+        ),
+      );
+    });
+    expect(shown, "出ていく瞬間に作品の写真が消えた").toBeGreaterThan(0);
+    await expect(page).toHaveURL(/\/gallery$/);
+    await expect(page.locator("main .photo-card").first()).toBeVisible();
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
 // 2026-08-05: 操作まわりの取りこぼし2件。
 // - モバイルメニューに Escape が無かった。開いたら、ハンバーガーを押し直すか
 //   行き先を選ぶまで閉じられない（他の閉じられる面はすべて Escape で閉じる）。

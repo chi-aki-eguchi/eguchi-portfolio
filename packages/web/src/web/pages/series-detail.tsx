@@ -1,9 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { ContentStatus } from "../components/ContentStatus";
 import { Link, useParams, useRoute } from "wouter";
 import { api, jsonOrThrow } from "../lib/api";
 import { usePageEntrance } from "../hooks/usePageEntrance";
+import { usePageExiting } from "../components/PageTransition";
 import { usePageTitle } from "../hooks/usePageTitle";
 import { useScrollFadeIn } from "../hooks/useScrollFadeIn";
 import { PhotoGallery } from "../components/PhotoGallery";
@@ -21,7 +22,13 @@ import { JaPhrases } from "../components/JaPhrases";
 
 export default function SeriesDetailPage() {
   const params = useParams();
-  const slug = params.slug ?? "";
+  // 出ていく間（前のページとして消えていく間）は、見ていた作品のままにする。
+  // URL は先に行き先へ変わるので、そのまま読むと作品名が空や次の作品になり、
+  // 写真が1コマで消えて空の枠に替わる（`usePageExiting` の説明を参照）。
+  const exiting = usePageExiting();
+  const shownSlugRef = useRef(params.slug ?? "");
+  if (!exiting && params.slug !== undefined) shownSlugRef.current = params.slug;
+  const slug = shownSlugRef.current;
   // 詳細が届く前・届かなかったときの棚は、実際に開いた経路で決める。
   // 同じ部品が `/series/:slug` と `/work/:slug` の両方を描くので、固定で
   // Series へ戻すと、Work の読み込み失敗や404からシリーズの棚へ飛ばしてしまう。

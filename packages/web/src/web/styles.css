@@ -6998,6 +6998,12 @@ body[data-photo-crop="whole"] img.series-stream-media {
   border-top: 1px solid rgba(var(--foreground-rgb), 0.16);
   text-align: left;
 }
+/* 帯がページの最後のとき、ページ自身の下の余白は足さない。足すと帯の下だけ
+   ページごとに違う幅で空く（2026-10-04 実測、文字の下から次の罫まで:
+   トップ 72px・Gallery 136px・About 152px。帯の上は 33px）。トップに揃える。 */
+.site-page:has(> .inquiry-note:last-child) {
+  padding-bottom: 0;
+}
 .inquiry-note > div { min-width: 0; flex: 1 1 20rem; }
 /* 太さは本文と同じ（inherit）。以前は 400 で、ページの中で 400 を使うのはこの6文字
    （撮影のご依頼）だけだったため、しっぽり明朝の 400 の文字の束を9本（149KB）余分に

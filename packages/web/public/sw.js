@@ -31,7 +31,12 @@ self.addEventListener("activate", (e) => {
       Promise.all(keys.filter((k) => k !== CACHE_STATIC && k !== CACHE_IMAGES).map((k) => caches.delete(k)))
     )
   );
-  self.clients.claim();
+  // clients.claim() は呼ばない（2026-10-04）。呼ぶと、初めて来た人のページを
+  // 読み込みの途中で引き取り、HTML が先読みした写真（トップの表紙 383KB、
+  // About の写真 83KB）を img が使えず、ここでもう一度取り寄せていた
+  // （通信の控えを持たない WebKit で実測: 同じ URL が2回、止めると1回）。
+  // 初回はブラウザに任せ、次に開いたページから受け持つ。更新は skipWaiting で
+  // 今までどおりすぐ切り替わる（既に受け持っているページは新しい版へ移る）。
 });
 
 self.addEventListener("fetch", (e) => {

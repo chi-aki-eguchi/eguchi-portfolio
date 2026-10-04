@@ -5137,6 +5137,14 @@ dialog.lightbox-morph[data-morph-closing] > :not(.lb-content):not(.lb-ghost) {
   .hero-photo-reveal img {
     animation: none !important;
   }
+  /* 表紙の暗い下地も、濃淡だけで出す（`hero-ground-in` は移動を含まない）。
+     止めたままだと、この設定の人にだけ黒い箱が1コマで出る
+     （2026-10-05 実測: 画面全体の明るさ 246 → 39）。 */
+  .hero-single,
+  .hero-carousel-contain,
+  .hero-motion-stage:has(.hero-photo-reveal.absolute):not(:has(> .hero-single)):not(:has(> .hero-carousel)) {
+    animation-duration: var(--dur-lift) !important;
+  }
 
   /* 写真ビューア: 壁と写真を一緒に、濃淡だけで出す（2026-10-04）。
      上の一括指定が縮めるのは長さだけで、写真の側に付いている 0.12 秒の

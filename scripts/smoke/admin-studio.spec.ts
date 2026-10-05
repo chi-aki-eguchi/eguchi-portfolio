@@ -208,6 +208,52 @@ test.describe("右の欄の並びのボタン（ドラッグの代わり）", ()
 
 // 2026-10-02: 右の欄を開いたまま隣の写真へ移れなかった（閉じて押し直す。スマホでは欄が
 // 画面の大半を覆う）。「‹ 前・次 ›」と、PC では ←→ で移る。
+// 2026-10-05: 大きさ・幅・絞り込みが変わって写真が別の段へ移ると、タイルごと作り直されて
+// いた（段ごとの入れ子の中でしか key が効かない）。作り直された画像は一度空になり、大きさを
+// 変えたときは新しい大きさの画像が届くまで空のままだった。右の欄の写真は高さが決まって
+// おらず、届いた瞬間に下の欄を押し下げていた。
+test.describe("一覧の写真は作り直されず、右の欄は場所を先に取る", () => {
+  test("大きさを変えても、写真は同じ要素のまま", async ({ page, api }, testInfo) => {
+    test.skip(testInfo.project.name !== "desktop", "PC幅で確かめる");
+    await openStudio(page, api);
+    const tiles = page.locator(".st-tile");
+    const count = await tiles.count();
+    await tiles.evaluateAll((els) =>
+      els.forEach((el) => {
+        (el as HTMLElement).dataset.sameTile = "yes";
+      }),
+    );
+    await page.getByRole("button", { name: "大", exact: true }).click();
+    await expect
+      .poll(() => tiles.first().evaluate((el) => el.getBoundingClientRect().height))
+      .toBeGreaterThan(200);
+    // 画面に残っている写真は、どれも作り直されていない（印が残っている）。
+    const kept = await tiles.evaluateAll(
+      (els) => els.filter((el) => (el as HTMLElement).dataset.sameTile === "yes").length,
+    );
+    expect(kept).toBe(Math.min(count, await tiles.count()));
+    expect(kept).toBeGreaterThan(3);
+  });
+
+  test("右の欄の写真は、届く前から高さを持つ", async ({ page, api }, testInfo) => {
+    test.skip(testInfo.project.name !== "desktop", "PC幅で確かめる");
+    await openStudio(page, api);
+    // 大きい画像は届かせない。それでも枠の高さが取れていること。
+    await page.route("**/*", (route) =>
+      /medium|w=1200/.test(route.request().url()) ? new Promise(() => {}) : route.fallback(),
+    );
+    await page.locator(".st-tile").nth(1).click();
+    const preview = page.locator(".st-preview__img");
+    await expect(preview).toBeVisible();
+    const box = await preview.evaluate((el) => {
+      const cs = getComputedStyle(el);
+      return { height: el.getBoundingClientRect().height, underlay: cs.backgroundImage };
+    });
+    expect(box.height, "届く前の枠に高さが無い").toBeGreaterThan(80);
+    expect(box.underlay, "下に敷く小さい画像が無い").toContain("url(");
+  });
+});
+
 test.describe("右の欄の「前・次」", () => {
   test("開いたまま隣の写真へ移り、端では押せない", async ({ page, api }) => {
     const writes = await openStudio(page, api);

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { adminPhotoSrc } from "../../pages/admin-shared";
+import { orientedDimensions } from "../../../shared/image-url";
 import {
   batch,
   createSeries,
@@ -691,10 +692,27 @@ function Single({
       void save();
     }
   };
+  const previewDims = orientedDimensions(photo.width, photo.height, photo.rotationDeg);
   return (
     <div className="st-inspector__body">
       <figure className="st-preview">
-        <img src={adminPhotoSrc(photo, 1200, 80)} alt="" className="st-preview__img" />
+        {/* 場所を先に取り、一覧でもう読んである小さい画像を下に敷く。以前は高さが
+            決まっておらず、大きい画像が届くまで枠が 0 で、届いた瞬間に下の欄が
+            丸ごと押し下げられていた（写真を選ぶたび）。key で写真ごとに作り直す
+            （前の写真の絵を、次の写真の欄の上に残さない）。 */}
+        <img
+          key={photo.id}
+          src={adminPhotoSrc(photo, 1200, 80)}
+          alt=""
+          className="st-preview__img"
+          style={{
+            aspectRatio:
+              previewDims.width && previewDims.height
+                ? `${previewDims.width} / ${previewDims.height}`
+                : undefined,
+            backgroundImage: `url("${adminPhotoSrc(photo, 480, 70)}")`,
+          }}
+        />
         <figcaption className="st-preview__cap">
           <span className="st-preview__file">{photo.filename}</span>
           {line && <span>{line}</span>}

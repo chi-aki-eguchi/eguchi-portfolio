@@ -410,7 +410,7 @@
   width: 100%;
   max-height: 34vh;
   object-fit: contain;
-  background: var(--st-soft);
+  background: var(--st-soft) center / contain no-repeat;
   border-radius: 2px;
 }
 .st-preview__cap {

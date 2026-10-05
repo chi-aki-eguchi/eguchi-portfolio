@@ -56,6 +56,10 @@ export function StudioGrid({
   useLayoutEffect(() => {
     const el = boxRef.current;
     if (!el) return;
+    // 幅が変わったら組み直す。**同じコマの中で組み直す形（flushSync）は使わない。**
+    // 試すと右の欄を開け閉めした最初の1コマの古い並びは消えるが、Safari では
+    // 組み直しでスクロールバーが出入りして送り枠の幅がもう一度変わり、
+    // 「ResizeObserver loop」のエラーになる（2026-10-05）。
     const measure = () => setWidth(el.clientWidth);
     measure();
     if (typeof ResizeObserver === "undefined") return;
@@ -187,7 +191,13 @@ export function StudioGrid({
       style={{ height: plan ? Math.max(plan.height, 1) : undefined }}
     >
       {photos.length === 0 && <div className="st-grid__empty">{empty}</div>}
-      {rows.map((row) =>
+      {/* 段ごとの入れ子にしない（flatMap）。入れ子だと key は段の中でしか効かず、
+          大きさ・幅・絞り込みが変わって写真が別の段へ移るたびに、タイルごと作り直される。
+          作り直された <img> は手元にある画像でも次のコマまで空で、大きさを変えたときは
+          新しい大きさの画像が届くまで空のままだった（2026-10-05 実測: 大きさ「大」で
+          画面の 16/96 マスが1コマ空。本番の回線ではその間ずっと）。1本の並びなら、
+          写真は同じ要素のまま位置だけ動き、前の画像を出したまま新しい画像に替わる。 */}
+      {rows.flatMap((row) =>
         row.items.map((item) => {
           const p = photos[item.index]!;
           const isSelected = selected.has(p.id);
@@ -221,8 +231,10 @@ export function StudioGrid({
               <img
                 src={adminPhotoSrc(p, size === "l" ? 900 : 480, 70)}
                 alt=""
-                loading="lazy"
-                decoding="async"
+                // 描くのは見えている段の前後だけ（上の `rows`）なので、すぐ読む。
+                // lazy・async だと、手元にある画像でも現れた最初のコマが空になる。
+                loading="eager"
+                decoding="sync"
                 draggable={false}
                 className="st-tile__img"
               />

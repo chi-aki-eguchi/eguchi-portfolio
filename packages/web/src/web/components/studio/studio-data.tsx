@@ -363,7 +363,7 @@ export async function patchSeries(id: number, body: Record<string, unknown>) {
   assertOk(res);
 }
 
-export async function createSeries(body: { title: string; slug: string; kind: string; isPublished?: boolean }) {
+export async function createSeries(body: { title: string; slug: string; kind: string; isPublished?: boolean; content?: string }) {
   const res = await adminApi.series.$post({ json: body });
   return jsonOrThrow<{ series: StudioSeries }>(res);
 }

@@ -1,0 +1,18 @@
+.intro-editor { margin: 1rem clamp(.75rem, 2.5vw, 2rem) 2rem; border-block: 1px solid var(--st-line, #d5d1ca); padding-block: 1.5rem; min-width: 0; }
+.intro-editor__heading h2 { font-size: 1rem; margin: 0 0 .5rem; }
+.intro-editor__controls { border: 0; padding: 0; margin: 1rem 0; min-width: 0; }
+.intro-editor__blocks { display: grid; gap: 1.25rem; margin-block: 1.5rem; }
+.intro-editor__block { padding: 1rem; border: 1px solid var(--st-line, #d5d1ca); border-radius: 4px; display: grid; gap: 1rem; min-width: 0; }
+.intro-editor__block > header { display: flex; align-items: center; flex-wrap: wrap; gap: .6rem; justify-content: space-between; }
+.intro-editor__block h3 { font-size: .85rem; font-weight: 500; margin: 0; }
+.intro-editor__actions, .intro-editor__add, .intro-editor__save { display: flex; gap: .5rem; flex-wrap: wrap; align-items: center; }
+.intro-editor .st-input { width: 100%; min-width: 0; font-size: 16px; }
+.intro-editor textarea { resize: vertical; line-height: 1.75; }
+.intro-editor__fact { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 2fr) auto; gap: .6rem; align-items: end; }
+.intro-editor__fact button, .intro-editor__actions button { min-width: 44px; min-height: 44px; }
+.intro-editor__save { margin-top: 1rem; }
+.intro-editor__error { color: #a52d2d; line-height: 1.75; }
+.intro-editor__preview { margin-top: 1.5rem; }
+.intro-editor__preview summary { cursor: pointer; padding-block: .75rem; font-size: .85rem; }
+.intro-editor__preview .project-content { padding: 2rem .5rem; }
+@media (max-width: 480px) { .intro-editor__fact { grid-template-columns: minmax(0, 1fr) auto; } .intro-editor__fact > label:first-child { grid-column: 1 / -1; } }

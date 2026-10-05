@@ -22,8 +22,9 @@ import {
 } from "../packages/web/vite/smoke-isolation.ts";
 
 const pdfMode = process.argv.includes("--pdf");
-const WEB_PORT = pdfMode ? 5499 : 5299;
-const STORAGE_PORT = pdfMode ? 5498 : 5298;
+const introMode = process.argv.includes("--intro");
+const WEB_PORT = introMode ? 5599 : pdfMode ? 5499 : 5299;
+const STORAGE_PORT = introMode ? 5598 : pdfMode ? 5498 : 5298;
 
 function portFree(port: number): Promise<boolean> {
   return new Promise((resolve) => {
@@ -72,6 +73,11 @@ child.stdout.on("data", async (chunk: Buffer) => {
     sql: "INSERT INTO site_settings (key, value) VALUES ('siteDesign', 'book') ON CONFLICT(key) DO UPDATE SET value = excluded.value",
     args: [],
   });
+  if (introMode) {
+    // Only this throwaway SQLite is changed. The demo examples live in the browser.
+    await db.execute("INSERT INTO site_settings (key, value) VALUES ('siteUrl', 'https://akieguchi.com'), ('servicePageMode', 'on') ON CONFLICT(key) DO UPDATE SET value = excluded.value");
+    console.log(`紹介ページを試す: http://localhost:${WEB_PORT}/admin/demo?intro=1`);
+  }
   db.close();
   console.log(`
 ────────────────────────────────────────

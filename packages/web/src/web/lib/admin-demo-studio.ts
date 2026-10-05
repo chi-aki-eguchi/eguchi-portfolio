@@ -1,3 +1,4 @@
+import { parseSeriesContent } from "../../shared/series-content";
 import type { AdminDemoSnapshot } from "./admin-demo-data";
 
 type Row = Record<string, unknown>;
@@ -71,7 +72,15 @@ export function writeDemoStudio(snapshot: AdminDemoSnapshot, path: string, metho
     }
     return { data: ok };
   }
-  if (!match[2] && method === "PATCH") { Object.assign(series, body); return { data: { series } }; }
+  if (!match[2] && method === "PATCH") {
+    if (body.content !== undefined) {
+      if ((series.content ?? null) !== body.expectedContent) return { data: { error: "Introduction changed" }, status: 409 };
+      try { const content = parseSeriesContent(body.content); body = { ...body, content: content ? JSON.stringify(content) : null }; }
+      catch { return { data: { error: "Invalid introduction" }, status: 400 }; }
+    }
+    const { expectedContent: _expected, ...patch } = body;
+    Object.assign(series, patch); return { data: { series } };
+  }
   if (!match[2] && method === "DELETE") {
     snapshot.series = snapshot.series.filter(s => s.id !== id);
     snapshot.photos.forEach(p => { p.seriesIds = idsOf(p).filter(sid => sid !== id); p.seriesId = (p.seriesIds as number[])[0] ?? null; });

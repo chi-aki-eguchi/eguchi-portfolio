@@ -1,0 +1,19 @@
+.project-content { display: grid; gap: clamp(2.5rem, 7vw, 5rem); width: 100%; color: rgba(var(--foreground-rgb), .84); overflow-wrap: anywhere; }
+.project-content__text, .project-content__link, .project-content__facts { width: min(100%, 42rem); margin-inline: auto; }
+.project-content__text h2 { margin: 0 0 1rem; font-size: clamp(1.15rem, 2.5vw, 1.5rem); line-height: 1.6; font-weight: 500; }
+.project-content p, .project-content dd { margin: 0; white-space: pre-wrap; font-size: max(.9375rem, var(--body-size, .9375rem)); line-height: 1.95; }
+.project-content__image { margin: 0; min-width: 0; }
+.project-content__image img { display: block; max-width: 100%; max-height: 85vh; width: auto; height: auto; margin-inline: auto; object-fit: contain; }
+.project-content__image figcaption { margin: .8rem auto 0; max-width: 42rem; font-size: .8rem; line-height: 1.8; white-space: pre-wrap; color: var(--text-quiet); }
+.project-content__link { padding-block: 1.25rem; border-block: 1px solid rgba(var(--foreground-rgb), .14); }
+.project-content__link a { display: inline-block; padding-block: .5rem; text-decoration: underline; text-underline-offset: .3em; font-size: 1.1rem; line-height: 1.6; }
+.project-content__link p { margin-top: .5rem; }
+.project-content__facts { display: grid; gap: 1rem; }
+.project-content__facts > div { display: grid; grid-template-columns: minmax(5rem, 1fr) minmax(0, 3fr); gap: 1.5rem; }
+.project-content__facts dt { font-size: .8rem; line-height: 2; color: var(--text-quiet); white-space: pre-wrap; }
+.project-intro-header { max-width: 42rem; margin: 0 auto clamp(3rem, 8vw, 6rem); }
+.project-intro-header h1 { font-size: clamp(1.8rem, 4vw, 3rem); line-height: 1.5; overflow-wrap: anywhere; }
+.project-intro-header p { margin-top: 1.25rem; line-height: 1.95; white-space: pre-wrap; overflow-wrap: anywhere; }
+.project-intro-nav { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 1.5rem; margin-top: 4rem; padding-top: 1.5rem; border-top: 1px solid rgba(var(--foreground-rgb), .14); font-size: .85rem; }
+.project-intro-nav a { padding-block: .5rem; }
+@media (prefers-reduced-motion: reduce) { .project-content * { scroll-behavior: auto; } }

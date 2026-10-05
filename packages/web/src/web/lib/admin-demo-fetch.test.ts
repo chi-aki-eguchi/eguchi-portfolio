@@ -1,8 +1,15 @@
 import { afterEach, expect, test } from "bun:test";
 import { ADMIN_DEMO_PHOTO_LIMIT, makeAdminDemoSettings, makeAdminDemoSnapshot } from "./admin-demo-data";
 import { installAdminDemoFetch } from "./admin-demo-fetch";
+import { addIntroductionExamples } from "./introduction-demo";
 
 const realFetch = globalThis.fetch;
+test("intro examples avoid photo memberships missing from the series index", () => {
+  const snapshot = makeAdminDemoSnapshot("ids", { photos: [{ id: 1, seriesId: 504, seriesIds: [504, 601] }], series: [], categories: [], heroPhotos: [] });
+  addIntroductionExamples(snapshot);
+  expect(snapshot.series.map(s => s.id)).toEqual([602, 603]);
+  expect(snapshot.photos[0]!.seriesIds).toEqual([504, 601, 602]);
+});
 
 afterEach(() => {
   globalThis.fetch = realFetch;
@@ -126,4 +133,24 @@ test("a separate preview tab reads only the snapshot for its demo seed", async (
     if (previous) Object.defineProperty(globalThis, "localStorage", previous);
     else Reflect.deleteProperty(globalThis, "localStorage");
   }
+});
+
+test("introduction demo saves locally, lists text-only work and hides inactive copy", async () => {
+  globalThis.fetch = (async (input: RequestInfo | URL) => {
+    const path = new URL(String(input), "https://akieguchi.com").pathname;
+    return Response.json(path === "/api/photos" ? { photos: [] } : {});
+  }) as typeof fetch;
+  const restore = installAdminDemoFetch("intro-contract-test");
+  try {
+    const work = await (await fetch("/api/series?kind=work")).json();
+    expect(work.series).toHaveLength(2);
+    expect(work.series.every((s: { content: unknown }) => s.content === null)).toBe(true);
+    const row = (await (await fetch("/api/admin/series")).json()).series[1];
+    const next = JSON.stringify({ ...JSON.parse(row.content), enabled: false });
+    const write = (expectedContent: string) => fetch(`/api/admin/series/${row.id}`, { method: "PATCH", body: JSON.stringify({ content: next, expectedContent }) });
+    expect((await write("stale")).status).toBe(409);
+    expect((await write(row.content)).ok).toBe(true);
+    expect((await (await fetch(`/api/series/${row.slug}`)).json()).series.content).toBeNull();
+    expect((await (await fetch("/api/admin/series")).json()).series[1].content).toBe(next);
+  } finally { restore(); }
 });

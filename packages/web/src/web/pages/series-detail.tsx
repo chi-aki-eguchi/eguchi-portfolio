@@ -1,3 +1,5 @@
+import { parseSeriesContent } from "../../shared/series-content";
+import { SeriesContent } from "../components/SeriesContent";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useRef } from "react";
 import { ContentStatus } from "../components/ContentStatus";
@@ -164,6 +166,24 @@ export default function SeriesDetailPage() {
       ? themeConfig.photoOrder
       : settings?.seriesSortOrder;
   const photos = sortPhotosBySetting(data.photos, photoOrder);
+
+  let introduction = null;
+  try { introduction = parseSeriesContent(series.content); } catch { /* Older / unknown content keeps the existing gallery. */ }
+  if (introduction?.enabled) return (
+    <article className="max-w-5xl mx-auto site-page site-page-top pb-16 min-h-[60vh] font-ja">
+      <header className="project-intro-header">
+        {series.subtitle && <p className="text-sm text-[color:var(--text-quiet)]">{series.subtitle}</p>}
+        <h1>{series.title}</h1>
+        {series.statement && <p>{series.statement}</p>}
+      </header>
+      <SeriesContent content={introduction} photos={photos} />
+      <nav className="project-intro-nav" aria-label="次に見る">
+        <Link to={shelfHref}>← {shelfLabel}</Link>
+        {nextSeries && nextSeries.slug !== series.slug && <Link to={`/${shelf}/${nextSeries.slug}`}>{nextSeries.title} →</Link>}
+        <Link to={contactHrefForWork(series.slug)}>{settings?.navLabelContact || "Contact"}</Link>
+      </nav>
+    </article>
+  );
 
   // 写真中心のサイト（siteDesign = "book"）。並び・棚・次のシリーズは上と同じ値を渡す。
   if (siteDesignFrom(settings?.siteDesign) === "book") {

@@ -1,3 +1,4 @@
+import { parseSeriesContent, publicSeriesContent, hasTextIntroduction } from "../shared/series-content";
 import { Hono } from "hono";
 import { portfolioPdfRoutes } from "./portfolio-pdf";
 import { cors } from "hono/cors";
@@ -2854,6 +2855,8 @@ const app = new Hono()
         const stat = statMap.get(s.id);
         return {
           ...s,
+          content: null, // The index never returns a project's saved draft/body.
+          hasIntroduction: hasTextIntroduction(s.content),
           coverUrl: cover?.url ?? null,
           coverRotationDeg: cover?.rotationDeg ?? 0,
           coverFocalX: cover?.focalX ?? 50,
@@ -2865,12 +2868,12 @@ const app = new Hono()
           shotAtLast: stat?.shotAtLast ?? null,
         };
       })
-      // 見せる写真が1枚も無い作品群は、公開の棚に並べない。並べると灰色の札
+      // 写真も紹介本文も無い作品群は、公開の棚に並べない。並べると灰色の札
       // になり、押しても「まだ写真がありません」で行き止まる。本番では
       // シリーズ3件のうち2件がそれで、唯一中身のある組の「Next」も空の組を
       // 指していた（2026-09-15）。公開状態・URL・管理画面の一覧は変えない。
       // 写真を公開すれば、そのまま棚・ナビ・TOPの帯・「Next」に戻る。
-      .filter((s) => s.photoCount > 0);
+      .filter((s) => s.photoCount > 0 || s.hasIntroduction);
     return c.json({ series: list }, 200);
   })
 
@@ -2932,7 +2935,7 @@ const app = new Hono()
     // 公開一覧・写真1枚と同じ公開用の形で返す（管理用の列は送らない）。
     return c.json(
       {
-        series: s,
+        series: { ...s, content: publicSeriesContent(s.content, new Set(photos.map(p => p.id))) },
         photos: await withSeriesIds(photos.map((p) => toPublicPhoto(photoWithThumbs(p)))),
       },
       200,
@@ -2950,6 +2953,11 @@ const app = new Hono()
 
   .post("/admin/series", requireAdmin, async (c) => {
     const body = await c.req.json();
+    let content: string | null = null;
+    try {
+      const parsed = parseSeriesContent(body.content);
+      if (parsed) content = JSON.stringify(parsed);
+    } catch (error) { return c.json({ error: error instanceof Error ? error.message : "Invalid introduction" }, 400); }
     const isPublished =
       body.isPublished === undefined
         ? true
@@ -2961,6 +2969,7 @@ const app = new Hono()
         .insert(schema.series)
         .values({
           slug: body.slug,
+          content,
           title: body.title ?? "",
           subtitle: body.subtitle ?? "",
           statement: body.statement ?? "",
@@ -2998,6 +3007,14 @@ const app = new Hono()
         return c.json({ error: "Invalid isPublished" }, 400);
       update.isPublished = isPublished;
     }
+    if (body.content !== undefined) {
+      if (!(body.expectedContent === null || typeof body.expectedContent === "string"))
+        return c.json({ error: "Reload the introduction before saving" }, 400);
+      try {
+        const parsed = parseSeriesContent(body.content);
+        update.content = parsed ? JSON.stringify(parsed) : null;
+      } catch (error) { return c.json({ error: error instanceof Error ? error.message : "Invalid introduction" }, 400); }
+    }
     // 機能9: themeConfig (JSON string | null)
     if (body.themeConfig !== undefined)
       update.themeConfig = body.themeConfig === "" ? null : body.themeConfig;
@@ -3012,10 +3029,12 @@ const app = new Hono()
       db
         .update(schema.series)
         .set(update)
-        .where(eq(schema.series.id, id))
+        .where(body.content === undefined ? eq(schema.series.id, id) : sql`${eq(schema.series.id, id)} AND ${body.expectedContent === null ? isNull(schema.series.content) : eq(schema.series.content, body.expectedContent)}`)
         .returning({ id: schema.series.id }),
     );
-    if (!row) return c.json({ error: "Not found" }, 404);
+    if (!row) return body.content !== undefined
+      ? c.json({ error: "紹介文が別の画面で変わりました。下書きを残して、最新の内容を読み直してください。" }, 409)
+      : c.json({ error: "Not found" }, 404);
     return c.json({ ok: true }, 200);
   })
 

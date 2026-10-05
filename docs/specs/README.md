@@ -42,6 +42,7 @@
 
 | 文書 | 役割 |
 |---|---|
+| `portfolio-introduction-v0.md` | 写真表示を保った、文章・画像・リンク・制作情報の紹介ページ |
 | `photo-metadata-extraction.md` | 元画像を捨てる前に何を抜くか（何を） |
 | `photo-metadata-extraction-plan.md` | 上の実装計画（どう） |
 | `design-spec.md` | 公開サイトのデザイン仕様 |

@@ -21,7 +21,7 @@ export default function AdminDemoPage() {
 
 function AdminDemoContent() {
   const queryClient = useQueryClient();
-  const { t } = useAdminI18n();
+  const { t, language } = useAdminI18n();
   const ownerSite = typeof window !== "undefined" && isServiceOwnerSite(undefined, window.location.hostname);
   // The read-only local preview can show the owner's demo as well. Production
   // customer hosts stay closed; local access still checks the fetched site URL.
@@ -32,7 +32,12 @@ function AdminDemoContent() {
   const [savedNotice, setSavedNotice] = useState(false);
   const [showGuide, setShowGuide] = useState(true);
   const guideDialogRef = useRef<HTMLDialogElement>(null);
-  const [demoSeed] = useState(() => `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`);
+  const [demoSeed] = useState(() => `${new URLSearchParams(window.location.search).get("intro") === "1" ? "intro-" : ""}${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`);
+  const introDemo = demoSeed.startsWith("intro-");
+  const guideSteps = introDemo ? language === "ja"
+    ? ["見本の紹介ページで、文章・画像・外部リンク・制作情報を編集できます。", "部品を並べ替えて「紹介ページを保存」。上の「サイトで見る」で仕上がりを見られます。", "「文章で伝える実績」の見本では、写真のない仕事の紹介も試せます。"]
+    : ["Edit text, images, links and details in the sample introductions.", "Reorder the blocks and save, then open the public page to see the result.", "Try the text-only sample to present work without photographs."]
+    : t.demo.guideSteps;
 
   useEffect(() => {
     if (!canCheckAvailability) return;
@@ -104,7 +109,7 @@ function AdminDemoContent() {
             </div>
             {/* 2026-09-29: 金色の番号・茶色のボタン・英字の肩書きをやめ、管理画面と同じ黒と灰の文字で。 */}
             <ol className="admin-demo-guide__steps mt-4 text-sm leading-relaxed">
-              {t.demo.guideSteps.map((step, index) => (
+              {guideSteps.map((step, index) => (
                 <li key={step}>
                   <span className="admin-demo-guide__num" aria-hidden="true">{index + 1}</span>
                   <span>{step}</span>

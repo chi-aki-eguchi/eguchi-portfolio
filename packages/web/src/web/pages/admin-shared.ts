@@ -276,6 +276,7 @@ export function adminPhotoObjectPosition(photo: {
 }
 
 export type AdminSeries = {
+  content?: string | null;
   id: number;
   slug: string;
   title: string;

@@ -10,6 +10,7 @@ export type SeriesDetail = {
     subtitle: string;
     statement: string;
     themeConfig?: string | null;
+    content?: string | null;
     kind?: string | null;
   };
   photos: GalleryPhoto[];

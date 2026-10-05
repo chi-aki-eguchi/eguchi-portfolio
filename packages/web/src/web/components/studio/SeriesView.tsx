@@ -1,3 +1,4 @@
+import { SeriesContentEditor } from "./SeriesContentEditor";
 import { buildPublicSiteHref } from "../../pages/admin-shared";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -40,13 +41,14 @@ export function SeriesView({
   /** シリーズごとの配色・並び順の上書きなど、詳しい設定（サイト → シリーズの詳しい設定）を開く */
   onOpenDetails?: () => void;
 }) {
-  const [storedId, setStoredId] = usePersistentState<number | null>("studio:series", null);
+  const { remember, fail, refresh, importFiles, upload, demoSeed } = useStudio();
+  const introDemo = demoSeed?.startsWith("intro-");
+  const [storedId, setStoredId] = usePersistentState<number | null>(introDemo ? `studio:series:${demoSeed}` : "studio:series", null);
   const activeId = initialId ?? storedId;
   useEffect(() => {
     if (initialId != null) setStoredId(initialId);
   }, [initialId, setStoredId]);
-  const active = (activeId != null ? data.seriesById.get(activeId) : undefined) ?? data.series[0];
-  const { remember, fail, refresh, importFiles, upload } = useStudio();
+  const active = (activeId != null ? data.seriesById.get(activeId) : undefined) ?? (introDemo ? data.series.find(s => s.slug === "introduction-example") : undefined) ?? data.series[0];
   const qc = useQueryClient();
 
   // ── シリーズどうしの並び ──
@@ -77,11 +79,12 @@ export function SeriesView({
   const [creating, setCreating] = useState(false);
   const [newTitle, setNewTitle] = useState("");
   const [newKind, setNewKind] = useState<"series" | "work">("series");
+  const [newIntroduction, setNewIntroduction] = useState(false);
   const create = async () => {
     const t = newTitle.trim();
     if (!t) return;
     try {
-      const { series } = await createSeries({ title: t, slug: slugFromTitle(t), kind: newKind, isPublished: true });
+      const { series } = await createSeries({ title: t, slug: slugFromTitle(t), kind: newKind, isPublished: !newIntroduction, ...(newIntroduction ? { content: JSON.stringify({ version: 1, enabled: true, blocks: [] }) } : {}) });
       setNewTitle("");
       setCreating(false);
       await refresh();
@@ -173,6 +176,7 @@ export function SeriesView({
                 {tx("単発の仕事", "Work")}
               </button>
             </fieldset>
+            <label className="st-check"><input type="checkbox" checked={newIntroduction} onChange={e => setNewIntroduction(e.target.checked)} />{tx("紹介ページとして作る（非公開で開始）", "Create an introduction (starts hidden)")}</label>
             <div className="st-side__create-actions">
               <button type="submit" className="st-ax-btn st-button st-button--primary" disabled={!newTitle.trim()}>
                 {tx("作る", "Create")}
@@ -533,6 +537,8 @@ function SeriesEditor({
             )}
           </div>
         </div>
+
+        <SeriesContentEditor series={series} photos={photos} />
 
         <div className="st-toolbar">
           <div className="st-toolbar__title">

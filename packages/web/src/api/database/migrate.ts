@@ -192,6 +192,7 @@ async function ensureTursoColumns(): Promise<void> {
   const { db } = await import("./libsql");
   await ensureColumnsExist(db);
   await ensureColumnsExist(db, TURSO_HERO_PRESENTATION_COLUMNS);
+  await ensureColumnsExist(db, [["series", "content", "text"]]);
   await ensureSeriesPhotos(db, { createTable: true });
 }
 

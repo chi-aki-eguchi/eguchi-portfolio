@@ -718,8 +718,8 @@ function AdminPageContent({
   // デモで開いた入口がオーナーの本番管理画面の開始位置を書き換えてしまう
   // (同一オリジンなので localStorage を共有する)。
   const [storedBookView, setBookView] = usePersistentState<BookAdminView>(
-    demoMode ? "admin:book:view:demo" : "admin:book:view",
-    "photos",
+    demoSeed?.startsWith("intro-") ? `admin:book:view:${demoSeed}` : demoMode ? "admin:book:view:demo" : "admin:book:view",
+    demoSeed?.startsWith("intro-") ? "series" : "photos",
     "local",
   );
   const bookView = normalizeBookView(storedBookView);

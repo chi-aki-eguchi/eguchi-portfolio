@@ -64,6 +64,13 @@
       "when": 1790399749260,
       "tag": "0008_series_photos",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "6",
+      "when": 1791181813490,
+      "tag": "0009_series_content",
+      "breakpoints": true
     }
   ]
 }

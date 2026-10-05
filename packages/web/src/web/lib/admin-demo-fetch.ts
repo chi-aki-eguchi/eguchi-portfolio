@@ -1,3 +1,5 @@
+import { addIntroductionExamples } from "./introduction-demo";
+import { publicSeriesContent, hasTextIntroduction } from "../../shared/series-content";
 import { makeAdminDemoSnapshot, type AdminDemoSnapshot } from "./admin-demo-data";
 
 import { demoMemberships, writeDemoStudio } from "./admin-demo-studio";
@@ -79,6 +81,7 @@ export function installAdminDemoFetch(seed = "demo"): () => void {
         series: series.series as Array<Record<string, unknown>> | undefined,
         heroPhotos: hero.heroPhotos as Array<Record<string, unknown>> | undefined,
       });
+      if (seed.startsWith("intro-")) addIntroductionExamples(snapshot);
       persist(snapshot);
       return snapshot;
     })();
@@ -130,12 +133,23 @@ export function installAdminDemoFetch(seed = "demo"): () => void {
       if (detail) {
         const snapshot = await getSnapshot();
         const series = snapshot.series.find(s => s.slug === decodeURIComponent(detail[1]));
-        if (!series) return jsonResponse({ error: "Series not found" }, 404);
+        if (!series || series.isPublished === false) return jsonResponse({ error: "Series not found" }, 404);
         const members = demoMemberships(snapshot).filter(m => m.seriesId === series.id).sort((a, b) => a.sortOrder - b.sortOrder);
-        return jsonResponse({ series, photos: members.map(m => snapshot.photos.find(p => p.id === m.photoId)).filter(p => p && !p.deletedAt && p.isPublished !== false) });
+        const photos = members.map(m => snapshot.photos.find(p => p.id === m.photoId)).filter(p => p && !p.deletedAt && p.isPublished !== false);
+        return jsonResponse({ series: { ...series, content: publicSeriesContent(series.content, new Set(photos.map(p => Number(p!.id)))) }, photos });
       }
       if (path === "/api/photos" && url.searchParams.get("all") !== "1") return jsonResponse({ photos: (await getSnapshot()).photos.filter(p => !p.deletedAt && p.isPublished !== false) });
-      if (path === "/api/series" && url.searchParams.has("kind")) return jsonResponse({ series: (await getSnapshot()).series.filter(s => s.kind === url.searchParams.get("kind")) });
+      if (path === "/api/series") {
+        const snapshot = await getSnapshot();
+        const kind = url.searchParams.get("kind") === "work" ? "work" : "series";
+        const memberships = demoMemberships(snapshot);
+        return jsonResponse({ series: snapshot.series.filter(s => s.isPublished !== false && (s.kind === "work" ? "work" : "series") === kind).map(s => {
+          const ids = new Set(memberships.filter(m => m.seriesId === s.id).map(m => m.photoId));
+          const photos = snapshot.photos.filter(p => ids.has(Number(p.id)) && !p.deletedAt && p.isPublished !== false);
+          const cover = photos.find(p => p.id === s.coverPhotoId) ?? photos[0];
+          return { ...s, content: null, hasIntroduction: hasTextIntroduction(s.content), photoCount: photos.length, coverUrl: cover?.url ?? null };
+        }).filter(s => s.photoCount > 0 || s.hasIntroduction) });
+      }
       if (path === "/api/photos" || path === "/api/settings" || path === "/api/categories" || path === "/api/series" || path === "/api/hero-photos")
         return jsonResponse(await loadPublic(path));
       return original(input, init);

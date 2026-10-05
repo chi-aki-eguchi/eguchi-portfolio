@@ -14,6 +14,7 @@
     "try:pdf": "bun --no-env-file scripts/try-admin.ts --pdf",
     "try": "cd packages/web && bunx vite --config vite.try.config.ts",
     "try:admin": "bun --no-env-file scripts/try-admin.ts",
+    "try:intro": "bun --no-env-file scripts/try-admin.ts --intro",
     "start": "node scripts/start-pm2.mjs",
     "deploy:runable:legacy": "bash docs/archive/deploy.sh",
     "build": "turbo build",

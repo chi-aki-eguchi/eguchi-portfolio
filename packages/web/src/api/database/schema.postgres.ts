@@ -91,6 +91,7 @@ export const series = pgTable("series", {
   sortOrder: integer("sort_order").notNull().default(0),
   isPublished: boolean("is_published").notNull().default(true),
   themeConfig: text("theme_config"),
+  content: text("content"), // Optional versioned introduction; null keeps the photo gallery.
   // 棚。`"series"` = 作品群 / `"work"` = もう一組の棚（2026-08-30 オーナー依頼
   // 「work はシリーズみたいな感じで自分で他に入れれる仕組み」）。
   // **別テーブルを作らず、同じ仕組みに棚の区別だけを足す。** 分けると API・

@@ -6,7 +6,9 @@
 - 対象外: 動画／音声の自前配信、自由配置、本番の実績・設定変更。
 - 2026-10-05 15:51 JST: check成功（単体1592成功・3対象外、型・lint・build・tools・smokeガード）。関連ブラウザ検証12成功。最新差分を含む全体smoke実行中。隔離SQLiteの実APIで保存・非公開404・競合409・不正URL400・写真0枚公開・無効時の本文非公開を確認。PC／390pxで表示を確認。
 - 最終ローカル検証: 型・lint・関連単体12・build成功。全体smoke 800成功・295対象外・1中断（検証中のHMRによるpage.evaluateの実行コンテキスト破棄）。コード固定後に該当の表示時間検査を再実行し1成功。新規紹介ページ12件は全体実行でも成功（PC／スマホ、Chromium／WebKit）。一時SQLiteの実APIで非公開・所属外画像の説明も公開されないことを確認。
-- 次: commit/push → healthと本番の既存写真ページ・体験版を確認。公開前baselineはbuild 365c0ced、写真353枚・シリーズ4件・Work1件。並行作業の独立したHTMLページ追加（365c0ce）は合流して保持する。
+- 公開確認: 製品 `b4368b2c` をmainへpushし、healthの同build・status=okを確認。公開体験版で本文編集→保存→別窓表示に成功。公開前365c0cedとの比較で設定・写真353枚・シリーズ4件・Work1件は一致。既存5詳細APIはcontent=nullで従来表示。トップ画像の読み込み・比率・はみ出しなしをブラウザ確認。並行作業の独立したHTMLページ追加（365c0ce）は合流して保持。
+- 公開後に見つかった体験版のNot Foundタブ名も補正（検索除外は維持）。関連OGP/経路の単体132・型・lint・build成功。証拠: `/Users/chiaki/Documents/Codex/2026-10-05/portfolio-introduction/`。
+- 初期版入口: https://akieguchi.com/admin/demo?intro=1 。次の判断は相手の掲載実績・必要な表現。動画／音声の直接配信・埋め込み、汎用素材管理は未実装。元mainに既存未コミット差分があるため、編集用worktreeは保持。
 
 ## Current State — 2026-10-02 JST / PDF作品集の仕上がり
 - 2026-10-02 / Codex 承認済みサイト点検修正: オーナー「いいよー続けて」（09:40:38 UTC）により月々点検の入口・Contactの件名と記入案内だけを公開反映中。最新 origin/main c2ff3b9 の隔離 worktreeで既存の計測・設定初期描画を保持。元checkoutの未コミット変更は取り込まない。単体23件、型/build/lint、smokeガード48件、人工データのChromium/WebKit関連smoke63成功・5対象外。月額の件名・案内・相談文作成・再入力、通常撮影と購入者除外を確認済み。製品 d4504deae0be06a66b541d935c0c7ad0e158aba4 をmainへpush、Railway成功・本番health d4504dea（2026-10-02 10:01 UTC）。本番Chromium/WebKit×390/1440で月額入口→端末内相談文→Contact、日英件名・案内・通常撮影・はみ出しの4条件48項目成功（10:02 UTC）。POST/購入なし。実メール受信と実機は未検証。証拠 /Users/chiaki/Documents/Codex/2026-10-02/task-3/publish/portfolio-evidence/。元checkoutは別担当のvite.config等と既存文書差分を保護したまま同期せず、公開commitは隔離branchに保持。

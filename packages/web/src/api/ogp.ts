@@ -121,6 +121,7 @@ const PAGE_TITLES: Record<string, string> = {
   "/admin": "Admin",
   "/admin/login": "Admin Login",
   "/admin/pdf": "PDF作品集",
+  "/admin/demo": "Portfolio Kit 体験版",
 };
 
 // Per-route settings key for a distinct meta description, mirroring PAGE_TITLES
@@ -575,6 +576,7 @@ export function injectOgp(
     "/admin",
     "/admin/login",
     "/admin/pdf",
+    "/admin/demo",
   ];
   // /series/:slug is indexable only when the slug resolved to a real published
   // series (override.title set by the caller). Unknown/unpublished slugs render

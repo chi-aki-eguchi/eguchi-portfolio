@@ -268,6 +268,11 @@ describe("injectOgp robots policy", () => {
     expect(pdf).not.toContain("Not Found");
     expect(robotsOf(pdf)).toBe("noindex, nofollow");
 
+    const demo = injectOgp(page, {}, "/admin/demo");
+    expect(demo).toContain("<title>Portfolio Kit 体験版 |");
+    expect(demo).not.toContain("Not Found");
+    expect(robotsOf(demo)).toBe("noindex, nofollow");
+
     const login = injectOgp(page, {}, "/admin/login");
     expect(login).toContain(
       "<title>Admin Login | Photographer Name | Photography</title>",

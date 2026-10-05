@@ -56,10 +56,10 @@ export function StudioGrid({
   useLayoutEffect(() => {
     const el = boxRef.current;
     if (!el) return;
-    // 幅が変わったら組み直す。**同じコマの中で組み直す形（flushSync）は使わない。**
-    // 試すと右の欄を開け閉めした最初の1コマの古い並びは消えるが、Safari では
-    // 組み直しでスクロールバーが出入りして送り枠の幅がもう一度変わり、
-    // 「ResizeObserver loop」のエラーになる（2026-10-05）。
+    // 窓の大きさなど、外から幅が変わったときに組み直す。**この見張りの中で
+    // すぐ組み直す形（flushSync）は使わない。** Safari では組み直しでスクロール
+    // バーが出入りして幅がもう一度変わり、「ResizeObserver loop」のエラーになる
+    // （2026-10-05）。画面の操作で変わる幅は、下の描くたびの測り直しが拾う。
     const measure = () => setWidth(el.clientWidth);
     measure();
     if (typeof ResizeObserver === "undefined") return;
@@ -67,6 +67,27 @@ export function StudioGrid({
     ro.observe(el);
     return () => ro.disconnect();
   }, []);
+  // 右の欄の開け閉めのように、**この画面の操作で幅が変わったとき**は、同じ描画の中で
+  // 測り直す（描くたびに幅を読み、違っていたら描く前に組み直す）。上の見張りだけだと
+  // 幅の変化を次のコマで受け取るので、最初の1コマだけ前の幅の並びが出ていた
+  // （開くと右端が欄の下に切れ、閉じると欄のあった所が空く。2026-10-05 実測）。
+  // 組み直しでスクロールバーが出入りして幅がまた変わる場合に回り続けないよう、
+  // 1コマに2回までにする（残りは上の見張りが次のコマで拾う）。
+  const fixesThisFrame = useRef(0);
+  // 毎回の描画のあとに測るのが目的（依存の一覧を付けると、幅が変わった描画を拾えない）。
+  // 回り続けないことは上の回数の上限で守っている。
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useLayoutEffect(() => {
+    const el = boxRef.current;
+    if (!el) return;
+    const next = el.clientWidth;
+    if (next === width || fixesThisFrame.current >= 2) return;
+    fixesThisFrame.current += 1;
+    requestAnimationFrame(() => {
+      fixesThisFrame.current = 0;
+    });
+    setWidth(next);
+  });
 
   const rowHeight = GRID_SIZES[size];
   const plan = useMemo(() => {

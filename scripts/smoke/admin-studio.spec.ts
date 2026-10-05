@@ -235,6 +235,25 @@ test.describe("一覧の写真は作り直されず、右の欄は場所を先�
     expect(kept).toBeGreaterThan(3);
   });
 
+  test("右の欄が開いた同じ描画で、一覧は新しい幅に組み直されている", async ({ page, api }, testInfo) => {
+    test.skip(testInfo.project.name !== "desktop", "右の欄が横に並ぶPC幅で確かめる");
+    await openStudio(page, api);
+    // 押した直後（次のコマを待たない）に、どのタイルも一覧の幅からはみ出していないこと。
+    // 以前は幅の変化を次のコマで受け取っていたので、最初の1コマは右端が欄の下に切れていた。
+    const overflow = await page.evaluate(() => {
+      document.querySelector<HTMLElement>(".st-tile")!.click();
+      const grid = document.querySelector<HTMLElement>(".st-grid")!;
+      const right = Math.max(
+        ...[...grid.querySelectorAll<HTMLElement>(".st-tile")].map(
+          (el) => el.offsetLeft + el.offsetWidth,
+        ),
+      );
+      return right - grid.clientWidth;
+    });
+    await expect(page.locator(".st-inspector .st-preview__img")).toBeVisible();
+    expect(overflow, "右の欄を開いた最初の描画で、一覧が前の幅のまま").toBeLessThanOrEqual(1);
+  });
+
   test("右の欄の写真は、届く前から高さを持つ", async ({ page, api }, testInfo) => {
     test.skip(testInfo.project.name !== "desktop", "PC幅で確かめる");
     await openStudio(page, api);

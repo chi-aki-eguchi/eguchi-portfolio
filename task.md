@@ -726,6 +726,15 @@
 - 正本: `docs/specs/visual-alignment-20261001.md`「書き込む操作・繰り返し撮影・見送った件の再挑戦」。道具は `scratch/flicker5/`（`admin-film3.mjs` が書き込む操作）。
 - **この方法で撮れる範囲は、公開サイト・管理画面とも終わり。**残りは実機（iPhone・Safari）と、本番の管理画面での見え方。オーナーが気づいた点を受けて続ける。
 
+### 追加更新 — 2026-10-07 / 引き算: 作品のページは写真と依頼だけ・Contact の質問を畳む（Claude Code、完了）
+
+- 経緯: オーナーと「このサイトの目的」を相談。「もっとシンプルでわかりやすく、綺麗なサイトにしたい」。本番を撮って数え（PC幅、build `da45cd43`: メニュー5つのうち写真への入口が3つ、トップから行ける先18か所、制作の案内の帯が5ページ、Contact が最長）、選択肢からオーナーが選んだ2件を直した。基点 `da45cd4`、編集は一時 worktree（`/Users/chiaki/wt-simple`、公開後に片づけ）。元 checkout の書きかけは保持。
+- 製品 `976f55c`: (1) 制作の案内（フッターの1行 `PhotoServiceNote`）は About だけに出す（`shared/service-visibility.ts` の `isAboutRoute`。`isContactRoute` は役目が重なるので置き換え）。作品のページの終わりは「撮影のご依頼」1つ。管理画面の切り替えにはしていない（持ち主のサイトだけの表示で、配布先の管理画面に使わない欄を増やさないため）。(2) Contact の質問3つを `<details>` で畳み、押した1つだけ開く。答えは DOM に残る。
+- コードで確認: `bun run check` 成功（単体1595）。全体 smoke 803成功・295対象外・失敗2。失敗はスマホ Safari の `page.goto` の時間切れで、単独の再実行は成功。**同じ時間切れは直す前の `da45cd4` でも出る**（`public-site.spec.ts` をスマホ Safari だけで通すと `/start — 320pxで横スクロールなし` が前後とも同じ位置で時間切れ。前 95成功・1失敗、後 96成功・1失敗）。今回の変更が原因ではないが、原因は未調査。
+- 公開環境で確認（2026-10-07、build `976f55cd`、WebKit・PC 1440／スマホ 390）: 制作の案内はトップ・Gallery・Series で0件、About で1件。Contact の質問は3つとも閉じていて、押すと1つ開く。ページの高さはトップ PC 3023→2906px、Contact PC 1438→1258px・スマホ 2168→1792px。横はみ出し無し。前後の画像は `scratch/simple-20261007/live-before-after.png`。
+- 見送った: About の本文とフッターで SNS が2回出る件（管理画面の設定確認 `admin-setting-probe.ts` がフッターの SNS を測っているので外さない）。小さい文字の大きさ8種類（差が1px以下で、揃えても見た目が変わらない）。メニューの Work をしまう案（オーナーが「Work はちゃんと枠を作りたい」と取り下げ）。
+- 次の判断（オーナー待ち、未着手）: 目的は撮影依頼へ寄せる方向で相談中。達成＝Contact の送信成功（`contact_submit_success`）、手前＝`contact_cta_click`。どちらも既に GA へ送っている。GA 側の目標指定と数字の確認はオーナーのログインが要る。表紙を数枚の切り替えにして人の写真を入れる（`heroMode`）、Work を撮影の種類で見せる、料金・地域・学生であることを Contact に載せる（料金プランの仕組みは既にある）は、料金の数字と Work に載せる撮影が決まってから。参考: GOOD PORTFOLIO のフォトグラファー15件の最初の画面を撮って数えた（`scratch/simple-20261007/reference-15-first-screens.png`。最初の画面はほぼ写真と名前だけ、問い合わせの呼び名は10件が Contact、料金の掲載は0件）。
+
 <!-- CURRENT_STATE_END -->
 
 統合前の詳細: [2026-09-05の統合前記録](docs/archive/task-before-2026-09-05-integration.md)。

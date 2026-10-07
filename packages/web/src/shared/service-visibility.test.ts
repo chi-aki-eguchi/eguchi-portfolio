@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import {
-  isContactRoute,
+  isAboutRoute,
   isServiceVisibilityGatedPath,
   resolveServiceContactEmail,
   resolveServiceNavVisibility,
@@ -109,14 +109,17 @@ describe("resolveServiceNavVisibility", () => {
   });
 });
 
-test("Contact のページを日英・クエリつきで見分ける", () => {
-  expect(isContactRoute("/contact")).toBe(true);
-  expect(isContactRoute("/contact/")).toBe(true);
-  expect(isContactRoute("/contact?work=rintaro")).toBe(true);
-  expect(isContactRoute("/en/contact")).toBe(true);
-  expect(isContactRoute("/en/contact?work=rintaro#form")).toBe(true);
-  expect(isContactRoute("/")).toBe(false);
-  expect(isContactRoute("/about")).toBe(false);
-  expect(isContactRoute("/portfolio-kit/consult")).toBe(false);
-  expect(isContactRoute(undefined)).toBe(false);
+test("About のページを日英・別名・クエリつきで見分ける（作品のページと Contact は含めない）", () => {
+  expect(isAboutRoute("/about")).toBe(true);
+  expect(isAboutRoute("/about/")).toBe(true);
+  expect(isAboutRoute("/profile")).toBe(true);
+  expect(isAboutRoute("/en/about")).toBe(true);
+  expect(isAboutRoute("/en/about?from=top#profile")).toBe(true);
+  for (const path of ["/", "/gallery", "/series", "/series/about", "/work", "/work/rintaro"]) {
+    expect(isAboutRoute(path)).toBe(false);
+  }
+  for (const path of ["/contact", "/en/contact", "/contact?work=rintaro", "/portfolio-kit", "/portfolio-kit/consult"]) {
+    expect(isAboutRoute(path)).toBe(false);
+  }
+  expect(isAboutRoute(undefined)).toBe(false);
 });

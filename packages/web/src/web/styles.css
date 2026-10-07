@@ -7069,6 +7069,17 @@ body[data-photo-crop="whole"] img.series-stream-media {
 /* text-wrap: pretty — スマホで「…ご相談くださ／い。」と最後の1文字だけが次の行へ落ちていた。 */
 .inquiry-note p { margin-top: 0.75rem; font-size: var(--body-size, 0.875rem); line-height: var(--body-leading, 1.9); color: var(--text-quiet); text-wrap: pretty; }
 .inquiry-note__link { flex-shrink: 0; max-width: 100%; min-height: 44px; display: inline-flex; align-items: center; font-size: var(--body-size, 0.875rem); text-decoration: underline; text-underline-offset: 5px; overflow-wrap: anywhere; }
+
+/* Contact の質問（2026-10-07）。畳んでおき、押した1つだけ答えを開く。
+   ブラウザの三角は使わず、右端の ＋／− で開閉を示す。行は押しやすい高さ（44px）。 */
+.contact-inquiry__item { border-bottom: 1px solid rgba(var(--foreground-rgb), 0.12); }
+.contact-inquiry__item:first-child { border-top: 1px solid rgba(var(--foreground-rgb), 0.12); }
+.contact-inquiry__q { display: flex; align-items: center; justify-content: space-between; gap: 1rem; min-height: 44px; padding: 0.625rem 0; cursor: pointer; list-style: none; }
+.contact-inquiry__q::-webkit-details-marker { display: none; }
+.contact-inquiry__q::after { content: "+"; flex-shrink: 0; width: 1rem; text-align: center; color: var(--text-quiet); font-family: var(--font-en, inherit); font-size: 1.125rem; line-height: 1; }
+.contact-inquiry__item[open] > .contact-inquiry__q::after { content: "\2212"; }
+.contact-inquiry__q:focus-visible { outline: 1px solid currentColor; outline-offset: 2px; }
+.contact-inquiry__a { margin: 0; padding: 0 2rem 1.125rem 0; }
 @media (max-width: 639px) { .inquiry-note { flex-direction: column; gap: 0.75rem; } .inquiry-note > div { flex: none; } }
 
 /* 文字の欄が未設定のときの「自動」の印（2026-09-30）。数字はプレビューの今の値。 */

@@ -11,6 +11,9 @@ import { JaPhrases } from "../JaPhrases";
  * 見終えた直後に出るので、作品の後ろで宣伝の節にならない大きさにする。
  * リンクの言葉「ポートフォリオサイト制作」は検索とサイト内の導線のため保持。
  *
+ * 2026-10-07: 出すのは About だけ（`isAboutRoute`）。作品のページの終わりを
+ * 「撮影のご依頼」1つにするため。出すページは呼ぶ側（Layout）が決める。
+ *
  * 配布先（購入者）のサイトには出さない（StudioBridge と同じ判定）。
  */
 export function PhotoServiceNote({ siteUrl, language = "ja" }: { siteUrl?: string; language?: "ja" | "en" }) {

@@ -3053,7 +3053,20 @@ describe("shared components", () => {
       ).toBeNull();
       hidden.cleanup();
 
+      // 2026-10-07: 制作の案内は About の1か所だけ。作品のページ（ここでは Top）は
+      // 写真と「撮影のご依頼」だけで終える。
       canned["/api/settings"] = { siteUrl: "https://akieguchi.com" };
+      const ownerTop = await mount(
+        createElement(
+          Provider,
+          null,
+          createElement(Layout, null, createElement("p", null, "child")),
+        ),
+      );
+      expect(ownerTop.host.querySelector('a[href="/portfolio-kit"]')).toBeNull();
+      ownerTop.cleanup();
+
+      dom.reconfigure({ url: "http://localhost/about" });
       const ownerDefault = await mount(
         createElement(
           Provider,
@@ -3065,6 +3078,7 @@ describe("shared components", () => {
         ownerDefault.host.querySelectorAll('a[href="/portfolio-kit"]').length,
       ).toBeGreaterThan(0);
       ownerDefault.cleanup();
+      dom.reconfigure({ url: "http://localhost/" });
 
       for (const settings of [
         { siteUrl: "https://akieguchi.com", servicePageMode: "off" },
@@ -3094,6 +3108,7 @@ describe("shared components", () => {
       expect(visible.host.textContent).toContain("Portfolio Kit");
       visible.cleanup();
     } finally {
+      dom.reconfigure({ url: "http://localhost/" });
       canned["/api/settings"] = prevSettings;
     }
   });

@@ -1017,14 +1017,17 @@ export default function ContactPage({
             <h2 id="photography-inquiry-heading" className="text-lg leading-8"><JaPhrases>{photographyInquiry.title}</JaPhrases></h2>
             <p className="mt-4 leading-[1.75] text-[color:var(--text-quiet)] text-pretty"><JaPhrases>{photographyInquiry.intro}</JaPhrases></p>
             <p className="mt-4 text-sm leading-7"><a href="/gallery" className="underline underline-offset-4">写真を見る</a> ／ <a href="/about" className="underline underline-offset-4">撮り手について</a></p>
-            <dl className="mt-6 space-y-6">
+            {/* 質問は畳んでおき、押した1つだけ答えを開く（2026-10-07、オーナー
+                「もっとシンプルに」）。3つとも開いていると、フォームより長い文が
+                その下に続いていた。答えは DOM に残るので、読み上げ・検索は今までどおり。 */}
+            <div className="contact-inquiry__questions mt-6">
               {photographyInquiry.questions.map(({ q, a }) => (
-                <div key={q}>
-                  <dt className="leading-7"><JaPhrases>{q}</JaPhrases></dt>
-                  <dd className="mt-2 leading-[1.75] text-[color:var(--text-quiet)] text-pretty"><JaPhrases>{a}</JaPhrases></dd>
-                </div>
+                <details key={q} className="contact-inquiry__item">
+                  <summary className="contact-inquiry__q leading-7"><JaPhrases>{q}</JaPhrases></summary>
+                  <p className="contact-inquiry__a leading-[1.75] text-[color:var(--text-quiet)] text-pretty"><JaPhrases>{a}</JaPhrases></p>
+                </details>
               ))}
-            </dl>
+            </div>
           </section>
         )}
       </section>

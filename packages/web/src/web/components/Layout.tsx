@@ -21,7 +21,7 @@ import { PAGE_EXIT_MS } from "./PageTransition";
 import { useDarkModeContext, useServiceVisibility } from "./provider";
 import { hasPublicEnglishContent } from "../../shared/public-english";
 import {
-  isContactRoute,
+  isAboutRoute,
   isServiceOwnerSite,
 } from "../../shared/service-visibility";
 
@@ -583,9 +583,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         languageSlot={showLanguageSwitch ? <LanguageSwitchSlot /> : undefined}
         footer={
           <>
-            {showService &&
-              !location.includes("portfolio-kit") &&
-              !isContactRoute(location) && (
+            {showService && isAboutRoute(location) && (
                 <PhotoServiceNote
                   siteUrl={data?.siteUrl}
                   language={location.startsWith("/en/") ? "en" : "ja"}
@@ -985,16 +983,12 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         {children}
       </main>
 
-      {/* Contact には出さない。**このページの仕事は1つだけ**で、そこへ別の
-          事業の案内を重ねると、頼もうとしている人の次の行動と競合する。
-          2026-09-19 実測（390px の本番 /contact）: 送信ボタンが y=1013、
-          「FOR PHOTOGRAPHERS／ポートフォリオ制作・料金を見る」が y=1097 と
-          48px 下。撮影の料金と制作の料金が同じ画面に並ぶ紛らわしさもある。
-          販売の導線そのものは残す——Top・Gallery・Series・Work・About と
-          /portfolio-kit では今までどおり出る。 */}
-      {showService &&
-        !location.includes("portfolio-kit") &&
-        !isContactRoute(location) && (
+      {/* 制作の案内は About の1か所だけ（`isAboutRoute`、2026-10-07）。
+          作品のページは写真と「撮影のご依頼」だけで終える。Contact に出さない
+          理由は変わらない——**このページの仕事は1つだけ**で、別の事業の案内を
+          重ねると、頼もうとしている人の次の行動と競合する（2026-09-19 実測:
+          390px の本番 /contact で送信ボタンの 48px 下に制作の案内が出ていた）。 */}
+      {showService && isAboutRoute(location) && (
           // 以前は「FOR PHOTOGRAPHERS」の見出しと2本のリンクの節（StudioBridge）で、
           // 作品を見終えた直後に毎ページ宣伝の箱が出ていた。写真中心の器と同じ1行へ。
           // 外側の行は main・footer と同じく左のメニューの幅を空ける。以前は

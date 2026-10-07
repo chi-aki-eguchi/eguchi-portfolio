@@ -1069,7 +1069,7 @@ html[data-ps-cover] .ps-header__bar[data-ready] > .ps-name {
 .ps-site .profile-bio__text,
 .ps-site .contact-page dd,
 .ps-site .contact-inquiry > p,
-.ps-site .contact-inquiry dd {
+.ps-site .contact-inquiry__a {
   color: var(--ps-read);
 }
 .ps-site .profile-bio__text {
@@ -1077,11 +1077,11 @@ html[data-ps-cover] .ps-header__bar[data-ready] > .ps-name {
   line-height: 1.9 !important;
 }
 .ps-site .contact-inquiry > p,
-.ps-site .contact-inquiry dd,
-.ps-site .contact-inquiry dt {
+.ps-site .contact-inquiry__a,
+.ps-site .contact-inquiry__q {
   line-height: 1.9;
 }
-.ps-site .contact-inquiry dt {
+.ps-site .contact-inquiry__q {
   color: var(--ps-ink);
 }
 .ps-site :is(.profile-label, .contact-label) {

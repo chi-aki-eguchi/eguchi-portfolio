@@ -1978,7 +1978,9 @@ test.describe("公開サイト — 相談の画面に別の事業を重ねない
   // 2026-09-19 実測（390px の本番 /contact）: 送信ボタン y=1013 の 48px 下に
   // 「FOR PHOTOGRAPHERS／ポートフォリオ制作・料金を見る」が出ていた。頼もうと
   // している人の次の行動と競合する。販売の導線そのものは他のページに残す。
-  test("Contact には出さず、Top には今までどおり出す", async ({ page }) => {
+  // 2026-10-07: 制作の案内は About の1か所だけ。作品のページは写真と
+  // 「撮影のご依頼」だけで終える（オーナー「もっとシンプルでわかりやすく」）。
+  test("Contact と作品のページには出さず、About にだけ出す", async ({ page }) => {
     const apiMocks = await installPublicApiMocks(page, {
       ...SYNTHETIC_SETTINGS,
       servicePageMode: "on",
@@ -1990,14 +1992,44 @@ test.describe("公開サイト — 相談の画面に別の事業を重ねない
     // 2026-09-30: 「FOR PHOTOGRAPHERS」の節から、フッターの1行（.ps-service）へ。
     const bridge = page.locator(".classic-service-note .ps-service");
 
-    await page.goto("/", { waitUntil: "domcontentloaded" });
-    await expect(bridge, "Top では今までどおり出る").toBeVisible();
+    for (const path of ["/about", "/en/about"]) {
+      await page.goto(path, { waitUntil: "domcontentloaded" });
+      await expect(bridge, `${path} では出る`).toBeVisible();
+    }
+
+    for (const path of ["/", "/gallery", "/series"]) {
+      await page.goto(path, { waitUntil: "domcontentloaded" });
+      await expect(page.locator("main")).toBeVisible();
+      await expect(page.locator("footer")).toBeVisible();
+      await expect(bridge, `${path} の作品の後ろに制作の案内が出ている`).toHaveCount(0);
+    }
 
     for (const path of ["/contact", "/en/contact", "/contact?work=anything"]) {
       await page.goto(path, { waitUntil: "domcontentloaded" });
       await expect(page.locator("form")).toBeVisible();
       await expect(bridge, `${path} に別の事業の案内が出ている`).toHaveCount(0);
     }
+
+    expect(apiMocks.unexpectedRequests).toEqual([]);
+  });
+
+  // 2026-10-07: フォームの下の質問3つは畳んでおく。全部開いていると、フォームより
+  // 長い文がその下に続いていた。押した1つだけ答えが開く。
+  test("Contact の質問は畳んであり、押すと答えが開く", async ({ page }) => {
+    const apiMocks = await installPublicApiMocks(page, {
+      ...SYNTHETIC_SETTINGS,
+      siteUrl: "https://akieguchi.com",
+      formspreeUrl: "https://example.test/synthetic-contact",
+    });
+    await page.goto("/contact", { waitUntil: "domcontentloaded" });
+    const items = page.locator(".contact-inquiry__item");
+    await expect(items).toHaveCount(3);
+    await expect(page.locator(".contact-inquiry__item[open]")).toHaveCount(0);
+    await expect(items.first().locator(".contact-inquiry__a")).toBeHidden();
+
+    await items.first().locator("summary").click();
+    await expect(items.first().locator(".contact-inquiry__a")).toBeVisible();
+    await expect(page.locator(".contact-inquiry__item[open]")).toHaveCount(1);
 
     expect(apiMocks.unexpectedRequests).toEqual([]);
   });

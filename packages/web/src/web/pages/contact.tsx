@@ -515,10 +515,14 @@ export default function ContactPage({
                   >
                     {p.title}
                   </h3>
+                  {/* 金額は札の中でいちばん読める大きさにする（2026-10-08）。以前は本文と
+                      同じ大きさ・補足と同じ薄さで、欧文書体の数字は題名や箇条書きより
+                      小さく見え、料金を見に来た人が最初に探す数字が一番目立たなかった。 */}
                   {p.price && (
                     <p
-                      className="mt-2 font-en tracking-[0.02em] break-words text-[rgba(var(--foreground-rgb),0.62)]"
-                      style={{ fontSize: "var(--body-size, 0.95rem)" }}
+                      className="mt-3 font-en tracking-[0.02em] break-words text-[rgba(var(--foreground-rgb),0.86)]"
+                      // 欧文書体の数字は既定だと高さの揃わない形で、1 が I に見える。揃った数字にする。
+                      style={{ fontSize: "1.5rem", lineHeight: 1.3, fontVariantNumeric: "lining-nums" }}
                     >
                       {p.price}
                     </p>

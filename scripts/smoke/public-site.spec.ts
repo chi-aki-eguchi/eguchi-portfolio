@@ -2773,3 +2773,115 @@ test.describe("公開サイト — Contact送信の重複防止とフォーカ�
     expect(apiMocks.unexpectedRequests).toEqual([]);
   });
 });
+
+// ──────────────────────────────────────────────────────────────────────────
+// 2026-10-08: 見る人の操作に応える動き（オーナー「もうちょっと動き・遊び・
+// 凝った感じが欲しい」）。数字ではなく、起きることを見張る:
+//   - 写真の並びでマウスを動かすあいだだけ、触れた1枚以外が沈む。止めれば戻る。
+//   - 左のメニューの印の線が、触れた項目へ移り、離すといまのページへ帰る。
+//   - ビューアの番号が、送った向きへ回る（DOM の文字は今の番号だけ）。
+// ──────────────────────────────────────────────────────────────────────────
+test.describe("操作に応える動き", () => {
+  test.beforeEach(async ({}, testInfo) => {
+    test.skip(
+      !["desktop", "desktop-safari"].includes(testInfo.project.name),
+      "マウスのある広い画面の動き",
+    );
+  });
+
+  const veiled = (page: Page) =>
+    page.evaluate(
+      () =>
+        [...document.querySelectorAll("main .photo-card")].filter(
+          (card) => Number(getComputedStyle(card, "::after").opacity) > 0.2,
+        ).length,
+    );
+
+  test("Gallery: 動かすあいだだけまわりが沈み、止めると全部が戻る", async ({ page }) => {
+    await installPublicApiMocks(page);
+    await page.goto("/gallery");
+    const cards = page.locator("main .photo-card");
+    await expect(cards.first()).toBeVisible();
+    const total = await cards.count();
+    expect(total).toBeGreaterThan(1);
+    expect(await veiled(page)).toBe(0);
+
+    const box = (await cards.first().boundingBox())!;
+    await page.mouse.move(box.x + box.width / 2 - 12, box.y + box.height / 2, { steps: 4 });
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2, { steps: 4 });
+    await expect.poll(() => veiled(page)).toBe(total - 1);
+    // 触れている1枚そのものには何も掛けない。
+    expect(
+      await cards.first().evaluate((card) => Number(getComputedStyle(card, "::after").opacity)),
+    ).toBe(0);
+    // マウスを止めると、置いたままでも元の濃さへ戻る。
+    await expect.poll(() => veiled(page), { timeout: 5000 }).toBe(0);
+  });
+
+  test("作品のページ: 隣の写真を沈めない", async ({ page }) => {
+    await installPublicApiMocks(page);
+    await page.goto(`/series/${SYNTHETIC_SERIES[0].slug}`);
+    const cards = page.locator("main .photo-card");
+    await expect(cards.first()).toBeVisible();
+    const box = (await cards.first().boundingBox())!;
+    await page.mouse.move(box.x + box.width / 2 - 12, box.y + box.height / 2, { steps: 4 });
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2, { steps: 4 });
+    await expect(page.locator("body")).toHaveAttribute("data-spot", "");
+    expect(await veiled(page)).toBe(0);
+  });
+
+  test("左のメニュー: 印の線が触れた項目へ移り、離すといまのページへ帰る", async ({ page }) => {
+    await installPublicApiMocks(page, { ...SYNTHETIC_SETTINGS, navPosition: "left" });
+    await page.goto("/gallery");
+    const list = page.locator("ul.public-nav-list");
+    await expect(list).toHaveAttribute("data-rail", "on");
+    const lineY = () =>
+      list.evaluate((ul) => new DOMMatrix(getComputedStyle(ul, "::before").transform).m42);
+    const rowY = (href: string) =>
+      page.evaluate((h) => {
+        const ul = document.querySelector("ul.public-nav-list")!;
+        const row = ul.querySelector(`a[href="${h}"]`)!.getBoundingClientRect();
+        return Math.round(row.top - ul.getBoundingClientRect().top + row.height / 2);
+      }, href);
+
+    await expect.poll(lineY).toBe(await rowY("/gallery"));
+    // 項目ごとの線は出さない（線は1本）。
+    expect(
+      await page
+        .locator('ul.public-nav-list a[aria-current="page"]')
+        .evaluate((a) => getComputedStyle(a, "::before").content),
+    ).toBe("none");
+
+    await page.locator('ul.public-nav-list a[href="/contact"]').hover();
+    await expect.poll(lineY).toBe(await rowY("/contact"));
+    await page.mouse.move(800, 500, { steps: 4 });
+    await expect.poll(lineY).toBe(await rowY("/gallery"));
+
+    await page.locator('ul.public-nav-list a[href="/about"]').click();
+    await expect(page).toHaveURL(/\/about$/);
+    await page.mouse.move(800, 500, { steps: 4 });
+    await expect.poll(lineY).toBe(await rowY("/about"));
+  });
+
+  test("ビューア: 番号が送った向きへ回り、文字は今の番号だけ", async ({ page }) => {
+    await installPublicApiMocks(page);
+    await page.goto("/gallery");
+    await page.locator("main .photo-card").first().click();
+    const counter = page.locator(".lb-counter");
+    const roll = counter.locator(".lb-roll");
+    await expect(roll).toHaveText("1");
+    await expect(roll).not.toHaveAttribute("data-dir");
+
+    await page.keyboard.press("ArrowRight");
+    await expect(roll).toHaveText("2");
+    await expect(roll).toHaveAttribute("data-dir", "up");
+    await expect(roll).toHaveAttribute("data-old", "1");
+    await page.keyboard.press("ArrowLeft");
+    await expect(roll).toHaveText("1");
+    await expect(roll).toHaveAttribute("data-dir", "down");
+    // 最初から前へ戻ると最後の1枚へ回り込む。向きは「前へ」のまま。
+    await page.keyboard.press("ArrowLeft");
+    await expect(roll).toHaveAttribute("data-dir", "down");
+    await expect(counter).toHaveText(/^\d+ \/ \d+/);
+  });
+});

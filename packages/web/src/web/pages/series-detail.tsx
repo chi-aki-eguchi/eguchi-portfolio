@@ -293,7 +293,8 @@ export default function SeriesDetailPage() {
         </p>
       )}
 
-      <div ref={fadeRef}>
+      {/* 作品は並びで見るもの。隣の写真を沈める演出（styles.css「触れた1枚だけが残り」）は掛けない。 */}
+      <div ref={fadeRef} data-photo-sequence>
         {photos.length === 0 ? (
           <div className="py-16 text-center">
             <p className="font-ja text-xs tracking-[0.08em] text-[color:var(--text-quiet)]">この{shelfNoun}にはまだ写真がありません</p>

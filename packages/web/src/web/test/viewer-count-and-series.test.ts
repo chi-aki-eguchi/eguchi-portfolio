@@ -24,7 +24,7 @@ const top = src("../pages/top.tsx");
 describe("ビューアの枚数", () => {
   test("分母は描画済みではなく、渡された総数を使う", () => {
     expect(lightbox).toContain(
-      "{index + 1} / {Math.max(totalCount ?? 0, photos.length)}",
+      "<RollingNumber value={index + 1} /> / {Math.max(totalCount ?? 0, photos.length)}",
     );
     // 渡されなかった場合に 0 を出さないこと（従来どおり描画済みに倒す）。
     expect(lightbox).not.toContain("{index + 1} / {totalCount}");

@@ -16,6 +16,8 @@ import { PhotoSiteFrame } from "./photo-site/PhotoSiteFrame";
 import { PhotoServiceNote } from "./photo-site/PhotoServiceNote";
 import { waitForWebFonts } from "../lib/web-fonts";
 import { useNavFit } from "../hooks/useNavFit";
+import { useRailMarker } from "../hooks/useRailMarker";
+import { usePhotoSpotlight } from "../hooks/usePhotoSpotlight";
 import { lockPageScroll } from "../lib/scroll-lock";
 import { PAGE_EXIT_MS } from "./PageTransition";
 import { useDarkModeContext, useServiceVisibility } from "./provider";
@@ -504,6 +506,11 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   )
     ? data!.footerLayout!
     : "center";
+
+  // 写真の並びの上でマウスを動かすあいだ、触れた1枚を残してまわりを沈める。
+  usePhotoSpotlight();
+  // 左のメニューの印の線を、触れた項目へ滑らせる（線は CSS、高さだけここで書く）。
+  useRailMarker(navListRef, `${location}|${navItems.map((i) => i.href).join(",")}`);
 
   // メニューの文字を大きくしても崩れないように、入りきるかを測る（useNavFit）。
   // 入らなければ PC でもハンバーガーへ。左のメニューは帯を広げてから。

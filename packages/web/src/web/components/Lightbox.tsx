@@ -132,6 +132,37 @@ export function viewerPalette(style: string | undefined): ViewerPalette {
 }
 
 const preloaded = new Set<string>();
+/**
+ * 送った向きへ回る番号（フィルムの駒数計）。次へ＝下から上がり、前へ＝上から下りる。
+ * 最後から最初へ回り込んだときも「次へ」の向きにする。出ていく数字は CSS の
+ * ::before（data-old）が描くので、DOM の文字はいつも今の番号だけ。
+ */
+function RollingNumber({ value }: { value: number }) {
+  const [roll, setRoll] = useState<{ cur: number; old: number | null; dir: number }>({
+    cur: value,
+    old: null,
+    dir: 0,
+  });
+  if (roll.cur !== value) {
+    const step = value - roll.cur;
+    setRoll({
+      cur: value,
+      old: roll.cur,
+      dir: Math.abs(step) > 1 ? -Math.sign(step) : Math.sign(step),
+    });
+  }
+  return (
+    <span
+      key={roll.cur}
+      className="lb-roll"
+      data-old={roll.old ?? undefined}
+      data-dir={roll.dir > 0 ? "up" : roll.dir < 0 ? "down" : undefined}
+    >
+      <span className="lb-roll__in">{roll.cur}</span>
+    </span>
+  );
+}
+
 function preloadPhoto(photo: LightboxPhoto | undefined) {
   if (!photo) return;
   const preview = photo.lqipSrc || photoSrcFor(photo, 600, 84, "webp");
@@ -1232,7 +1263,7 @@ export function Lightbox({
           zIndex: 10,
         }}
       >
-        {index + 1} / {Math.max(totalCount ?? 0, photos.length)}
+        <RollingNumber value={index + 1} /> / {Math.max(totalCount ?? 0, photos.length)}
         {/* Title for SR context; visually the caption block below shows it */}
         <span className="sr-only">
           {photos[index]?.title ? ` ${photos[index].title}` : ""}

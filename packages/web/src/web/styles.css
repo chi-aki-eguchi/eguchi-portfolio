@@ -3842,6 +3842,39 @@ body {
   }
 }
 
+/* ─── 触れた1枚だけが残り、まわりが壁へ少し沈む（2026-10-08）───
+   オーナー「もうちょっと動き・遊び・凝った感じが欲しい」。本番を数えたら、
+   写真の並びはマウスを動かしても何も応えていなかった（影が 1 段濃くなるだけ）。
+   **触れた写真そのものは 1 画素も変えない**（2026-07-08 の決定のまま）。
+   変えるのはまわり——壁の色の薄い幕を掛けて、視線の先だけを残す。
+
+   - **マウスを動かしているあいだだけ**（hooks/usePhotoSpotlight.ts が
+     `<body data-spot>` を付け外しする）。PC では画面のほとんどが写真なので、
+     触れているあいだずっと沈めると、マウスを置いたまま眺める人には壁が
+     いつも薄く見える。止めれば 1.3 秒で全部が元へ戻り、送るあいだも戻す。
+   - 写真と写真の間（5px）を横切る一瞬は「どれにも触れていない」になる。
+     戻りを 0.14 秒待たせて、横切るたびに全体が明滅しないようにする。
+   - 幕の濃さだけを変える（opacity）。位置も大きさも動かないので、
+     「動きを減らす」設定でも残す（下の一括指定の対象から名指しで戻す）。
+   - 指で触る端末には hover が無い。マウスのある画面だけ。
+   - 作品（シリーズ・Work の中）には掛けない。隣り合う2枚は並べて見るもの
+     なので、片方を沈めない（pages/series-detail.tsx の data-photo-sequence）。 */
+@media (hover: hover) and (pointer: fine) {
+  .photo-card::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: var(--background);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity var(--dur-spot-out, 0.7s) var(--ease-reveal) 0.14s;
+  }
+  body[data-spot] main:not(:has([data-photo-sequence])):has(.photo-card:hover) .photo-card:not(:hover)::after {
+    opacity: var(--spot-dim, 0.34);
+    transition: opacity var(--dur-spot-in, 0.45s) var(--ease-reveal) 0.04s;
+  }
+}
+
 /* ─── Collage framed layout ───
    The white frame moves as one piece on hover (quiet: small, slow), and the
    inner .photo-card keeps its resting state so the photo doesn't slide
@@ -4044,6 +4077,41 @@ header > nav {
   /* 線と下線の二重の印にしない。下線は触れたときの合図に残す。 */
   .nav-pos-left header .nav-link-luxury.nav-link-public[aria-current="page"]::after {
     transform: scaleX(0);
+  }
+
+  /* ─── 印の線が、触れた項目へ滑っていく（2026-10-08、hooks/useRailMarker.ts）───
+     いまいるページの左の短い線を、項目ごとの飾りではなく**1本の線**にする。
+     マウスを載せた項目へ滑り、離すといまのページへ帰る。ページを移ると、
+     線が新しい行き先へ移って着く。位置は JS が --rail-y に書く。
+     線が動いているあいだは、文字の下線を出さない（印を二重にしない）。 */
+  .nav-pos-left > header > nav ul[data-rail] {
+    position: relative;
+  }
+  .nav-pos-left > header > nav ul[data-rail]::before {
+    content: "";
+    position: absolute;
+    left: -20px;
+    top: 0;
+    width: 12px;
+    height: 1px;
+    background: var(--foreground);
+    transform: translateY(var(--rail-y, 0px));
+    opacity: 0;
+    pointer-events: none;
+  }
+  .nav-pos-left > header > nav ul[data-rail="on"]::before {
+    opacity: 1;
+  }
+  .nav-pos-left > header > nav ul[data-rail][data-rail-ready]::before {
+    transition:
+      transform var(--dur-rail, 0.5s) var(--ease-rail, cubic-bezier(0.3, 0.7, 0.2, 1)),
+      opacity var(--dur-hover) var(--ease-quart);
+  }
+  .nav-pos-left > header > nav ul[data-rail] a[aria-current="page"]::before {
+    content: none;
+  }
+  .nav-pos-left header ul[data-rail] .nav-link-luxury::after {
+    display: none;
   }
 }
 
@@ -4964,6 +5032,43 @@ img {
   }
 }
 
+/* 写真を送ると、番号がフィルムの駒数計のように送った向きへ回る（2026-10-08）。
+   次へ＝新しい数字が下から上がり、前へ＝上から下りる。出ていく数字は
+   ::before（data-old）で描く——読み上げにも文字の検査にも二重に出さない。
+   枠で切らず、短い距離と濃淡だけで回す（この書体の数字は下へ出るので、
+   枠で切ると 3・4・5・7・9 の足が欠ける）。 */
+.lb-roll {
+  position: relative;
+  display: inline-block;
+  --roll: 0.6em;
+}
+.lb-roll[data-dir="down"] {
+  --roll: -0.6em;
+}
+.lb-roll[data-dir] > .lb-roll__in {
+  display: inline-block;
+  animation: lb-roll-in 0.52s var(--ease-reveal) both;
+}
+.lb-roll[data-dir]::before {
+  content: attr(data-old);
+  position: absolute;
+  right: 0;
+  top: 0;
+  animation: lb-roll-out 0.3s var(--ease-exit) both;
+}
+@keyframes lb-roll-in {
+  from {
+    opacity: 0;
+    transform: translateY(var(--roll));
+  }
+}
+@keyframes lb-roll-out {
+  to {
+    opacity: 0;
+    transform: translateY(calc(var(--roll) * -1));
+  }
+}
+
 /* 明るい表示⇄暗い表示を替える瞬間は、色を時間をかけて変えない
    （hooks/useDarkMode.ts が替える2コマの間だけ付ける）。 */
 html[data-theme-switching],
@@ -5121,6 +5226,10 @@ dialog.lightbox-morph[data-morph-closing] > :not(.lb-content):not(.lb-ghost) {
   }
   .fade-in-item {
     transition-duration: var(--dur-drift) !important;
+  }
+  /* まわりが沈む幕（.photo-card::after）は濃淡だけなので残す。 */
+  .photo-card::after {
+    transition-duration: var(--dur-spot-in, 0.45s) !important;
   }
   /* ヒーローは transition ではなく animation で濃くなる。`hero-photo-in` は
      `to { opacity: 1 }` だけ＝移動を含まないので、そのまま走らせてよい。

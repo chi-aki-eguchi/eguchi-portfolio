@@ -27,3 +27,35 @@ header[data-mobile-menu-open="true"] .public-mobile-menu {
 .public-mobile-menu__language { margin-top: auto; padding-top: 24px; }
 .public-mobile-menu__language .language-switch { gap: 16px; font-size: 14px !important; }
 .public-mobile-menu__language a, .public-mobile-menu__language [aria-current] { display: inline-flex; align-items: center; justify-content: center; min-width: 44px; min-height: 44px; }
+
+/* ─── 開くと、項目が上の帯から順に下りてくる（2026-10-08）───
+   以前は display の切り替えだけで、押した瞬間に画面がまるごと入れ替わっていた
+  （本番を撮って確認。スマホで動きが一つも無い場所だった）。
+   地は濃くなって現れ、項目は上から 55ms ずつ遅れて、6px 上から所定の位置へ着く。
+   「下からふわっと持ち上がる」定番は使わない——帯から巻き出る向きに合わせる。
+   閉じる側は今までどおり一度で消す（ページの移り変わりが終わるのを待って
+   閉じる仕組みと、時間を取り合わないため）。 */
+header[data-mobile-menu-open="true"] .public-mobile-menu {
+  animation: public-mobile-menu-in 0.32s var(--ease-reveal) both;
+}
+header[data-mobile-menu-open="true"] .public-mobile-menu > * {
+  animation: public-mobile-menu-item-in 0.55s var(--ease-reveal) backwards;
+  animation-delay: calc(60ms + var(--menu-i, 6) * 55ms);
+}
+.public-mobile-menu > :nth-child(1) { --menu-i: 0; }
+.public-mobile-menu > :nth-child(2) { --menu-i: 1; }
+.public-mobile-menu > :nth-child(3) { --menu-i: 2; }
+.public-mobile-menu > :nth-child(4) { --menu-i: 3; }
+.public-mobile-menu > :nth-child(5) { --menu-i: 4; }
+.public-mobile-menu > :nth-child(6) { --menu-i: 5; }
+@keyframes public-mobile-menu-in {
+  from { opacity: 0; }
+}
+@keyframes public-mobile-menu-item-in {
+  from { opacity: 0; transform: translateY(-6px); }
+}
+/* 「動きを減らす」: 一括指定は長さだけを縮め、遅れ（delay）は残る。残すと
+   その間だけ項目の無い空のメニューが出るので、順送りそのものをやめる。 */
+@media (prefers-reduced-motion: reduce) {
+  header[data-mobile-menu-open="true"] .public-mobile-menu > * { animation: none; }
+}

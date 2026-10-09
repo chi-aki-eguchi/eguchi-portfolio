@@ -11,17 +11,24 @@
  */
 import { sortPhotosBySetting } from "./photo-sort";
 import { BOOK_DESIGN_ENABLED } from "./site-design-flag";
+import { previewDesign } from "./design-preview";
+import { isDevelopDesignValue } from "../../shared/develop-structure";
 import {
   isMeaningfulGear,
   tidyCameraName,
 } from "./series-colophon";
 import type { GalleryPhoto } from "../components/PhotoGallery";
 
-export const SITE_DESIGNS = ["classic", "book"] as const;
+export const SITE_DESIGNS = ["classic", "book", "develop"] as const;
 export type SiteDesign = (typeof SITE_DESIGNS)[number];
 
-/** 保存されている骨格を読む。写真中心は 2026-09-30 に止めた（`site-design-flag.ts`）。 */
+/**
+ * 保存されている骨格を読む。写真中心は 2026-09-30 に止めた（`site-design-flag.ts`）。
+ * 新しい構成（develop、2026-10-10）は、保存された値か、そのタブだけの下見
+ * （`?design=develop`、`design-preview.ts`）で選ばれる。
+ */
 export function siteDesignFrom(value: string | null | undefined): SiteDesign {
+  if (previewDesign() === "develop" || isDevelopDesignValue(value)) return "develop";
   return BOOK_DESIGN_ENABLED && value === "book" ? "book" : "classic";
 }
 
@@ -57,6 +64,21 @@ export function usesBookChrome(
   location: string,
 ): boolean {
   if (design !== "book") return false;
+  return !CLASSIC_CHROME_PREFIXES.some(
+    (p) => location === p || location.startsWith(`${p}/`),
+  );
+}
+
+/**
+ * 新しい構成（develop）で描く経路か。器は今までのレイアウトをそのまま使い、
+ * メニューの項目とページの組み立てだけが替わる。制作サービスの案内と管理画面は
+ * 写真集のときと同じく、今までどおり。
+ */
+export function usesDevelopStructure(
+  design: SiteDesign,
+  location: string,
+): boolean {
+  if (design !== "develop") return false;
   return !CLASSIC_CHROME_PREFIXES.some(
     (p) => location === p || location.startsWith(`${p}/`),
   );

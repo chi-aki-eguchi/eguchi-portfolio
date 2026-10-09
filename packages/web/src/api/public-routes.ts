@@ -1,3 +1,5 @@
+import { isDevelopOnlyPath } from "../shared/develop-structure";
+
 const SPA_STATIC_PATHS = new Set([
   "/",
   "/gallery",
@@ -110,9 +112,17 @@ export function isKnownSpaPath(pathname: string): boolean {
 
 export function htmlStatusForSpaPath(
   pathname: string,
-  options: { seriesFound?: boolean; photoFound?: boolean } = {},
+  options: {
+    seriesFound?: boolean;
+    photoFound?: boolean;
+    /** 保存されている構成が新しい構成（siteDesign = "develop"）か。 */
+    developStructure?: boolean;
+  } = {},
 ): number {
   const normalized = normalizeSpaPathname(pathname);
+  // `/portrait`・`/life`・`/info` は新しい構成のサイトにだけ在る。今までの構成の
+  // サイトでは、無いページを 200 で返さない。
+  if (isDevelopOnlyPath(normalized)) return options.developStructure ? 200 : 404;
   if (isSeriesDetailPath(normalized)) return options.seriesFound ? 200 : 404;
   // 存在しない写真のidを 200 で返さない。**シリーズで一度やった失敗**
   // （棚を足したときに `/work/:slug` が 404 で返っていた件）の裏返しで、

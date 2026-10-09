@@ -31,6 +31,10 @@ export type ViteManifest = Record<string, ViteManifestEntry>;
 export const ROUTE_MODULES: Record<string, string> = {
   "/": "src/web/pages/top.tsx",
   "/gallery": "src/web/pages/gallery.tsx",
+  // 新しい構成（siteDesign = "develop"）の扉。
+  "/portrait": "src/web/pages/develop-list.tsx",
+  "/life": "src/web/pages/develop-list.tsx",
+  "/info": "src/web/pages/develop-info.tsx",
   "/series": "src/web/pages/series.tsx",
   // Work の棚（2026-08-30）。シリーズと同じ部品なので、読む先も同じ。
   "/work": "src/web/pages/series.tsx",

@@ -24,6 +24,7 @@ import {
   shouldRedirectEmptyWorkShelf,
 } from "./api/public-routes";
 import { contentTypeForStaticPath } from "./api/static-files";
+import { isDevelopDesignValue } from "./shared/develop-structure";
 import { bootThemeStyle } from "./api/boot-style";
 import { bootSettingsScript } from "./api/boot-settings";
 import { earlyPhotosScript } from "./shared/early-photos";
@@ -533,6 +534,8 @@ async function buildSitemap(fallbackOrigin: string): Promise<string> {
     "/series",
     "/about",
     "/contact",
+    // 新しい構成（siteDesign = "develop"）を保存しているサイトだけ、その扉を載せる。
+    ...(isDevelopDesignValue(settings.siteDesign) ? ["/portrait", "/life", "/info"] : []),
     ...INDEXABLE_POLICY_PATHS,
     // i18n Phase 3: 英語文が入力済みのサイトのみ /en/* を sitemap に載せる
     // （配布テンプレート既定では日本語のままの英語URLを検索対象にしない）
@@ -1071,6 +1074,7 @@ async function serveNonApi(request: Request, url: URL): Promise<Response> {
             ? seriesFound
             : undefined,
           photoFound: photoId != null ? photoFound : undefined,
+          developStructure: isDevelopDesignValue(settings.siteDesign),
         });
     // 実在するページにだけ本文を入れる。404 の <noscript> に本文と
     // リンクを並べると、無いページを「中身のあるページ」として配ることになる。

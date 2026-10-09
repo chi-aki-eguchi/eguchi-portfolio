@@ -1,3 +1,12 @@
+## Current State — 2026-10-10 JST / 新しい構成（Portrait・Life・Series・Info）を製品へ 第1段階
+
+- 今回の引き継ぎ: オーナー「どうにか綺麗に入れてみてほしい。元々あるものが欠けないように。あと daily じゃなくて life がいいかも」（2026-10-10）。試作（`scratch/simple-20261007/prototype/`、下の 2026-10-07〜09 の記録）を製品へ入れ始める。主担当・編集担当 Claude Code のみ。基点 `origin/main=bdf018a`、checkout `/Users/chiaki/wt-develop`、branch `claude/develop-design`。元 checkout の書きかけには触れない。
+- 完成条件（第1段階）: 保存されている設定を変えない限り、公開サイトも管理画面も今までどおり（既存の単体・smoke が通る）。そのうえで、住所に `?design=develop` を付けたタブだけ新しい構成で見られる：メニューが Portrait／Life／Series／Info、トップが表紙＋扉の目次、`/portrait`・`/life`・`/info` が開く。今までのページ（Gallery・Series・Work・About・Contact・英語・方針・制作案内）は新しい構成でも全部開ける。
+- 入れ方の判断: 新しい「器」を別に作らず、**今のレイアウト（左のメニュー・言語の切り替え・暗い表示・フッター・約180個の設定）をそのまま使い、メニューの項目とページの組み立てだけを替える**。色・書体・大きさの設定は今までの物がそのまま効く。写真の段組みとビューアは既にある部品（`PhotoStream`・`Lightbox`）を使う。`siteDesign` の3つ目の値 `develop`（既定は `classic` のまま）。
+- 編集対象: `packages/web/src/shared/develop-structure.ts`（新）、`web/lib/design-preview.ts`（新）、`web/lib/book.ts`、`web/components/Layout.tsx`、`web/components/develop/`（新）、`web/pages/develop-list.tsx`・`develop-info.tsx`（新）、`web/pages/top.tsx`、`web/app.tsx`、`api/public-routes.ts`、`server.ts`、関連テスト、`scripts/smoke/`。
+- 対象外（次の段階）: 現像・にじみの動き、新しい1枚表示、Info の作り直し（今回は About と Contact の中身を続けて出す）、管理画面（切り替え・選んで並べる・細かい調整）、本番の設定の変更。Portrait／Life に出す写真は、今回は写真の分類（portrait／それ以外の分類）から出す。
+- 次の一手: 実装 → `bun run check` → 関連 smoke → push → 本番で「既定は今までどおり」「`?design=develop` で新しい構成」を確認。
+
 ## Current State — 2026-10-05 JST / 仕事・作品の紹介ページ初期版
 
 - 今回の引き継ぎ: オーナー「一旦初期版作れないの？」を受けて実装。主担当・編集担当Codexのみ。基点 `origin/main=5e90c17ab1335c463ad5e04ad7ef5afb55bbbd8f`、checkout `/Users/chiaki/.codex/worktrees/portfolio-intro/eguchi-portfolio-app`、branch `codex/portfolio-intro`。元mainの既存差分は保持。

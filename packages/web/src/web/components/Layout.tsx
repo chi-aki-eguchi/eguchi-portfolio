@@ -11,7 +11,7 @@ import { shelfNeedsCount, shouldShowShelf } from "../lib/shelf-nav";
 import { CLIENT_SITE_FALLBACKS } from "../lib/site-fallbacks";
 import { httpHrefOrNull, safeHref } from "../lib/utils";
 import { BackToTop } from "./BackToTop";
-import { galleryExcludesSeries, siteDesignFrom, usesBookChrome } from "../lib/book";
+import { galleryExcludesSeries, siteDesignFrom, usesBookChrome, usesDevelopStructure } from "../lib/book";
 import { PhotoSiteFrame } from "./photo-site/PhotoSiteFrame";
 import { PhotoServiceNote } from "./photo-site/PhotoServiceNote";
 import { waitForWebFonts } from "../lib/web-fonts";
@@ -33,6 +33,8 @@ const JA_TO_EN_PATH: Record<string, string> = {
   "/about": "/en/about",
   "/profile": "/en/about",
   "/contact": "/en/contact",
+  // 新しい構成の Info（About と Contact を続けて出すページ）。英語は今までの Contact へ。
+  "/info": "/en/contact",
   "/privacy": "/privacy/en",
   "/terms": "/terms/en",
 };
@@ -334,6 +336,10 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     /^(?:\/portfolio-kit(?:\/(?:consult|guide|en|start(?:\/en)?))?|\/start(?:\/en)?)$/.test(location);
   const bookChrome = usesBookChrome(siteDesignFrom(data?.siteDesign), location) ||
     (siteDesignFrom(data?.siteDesign) === "book" && ownerServiceChrome);
+  // 新しい構成（siteDesign = "develop"、2026-10-10）。器はこのレイアウトのまま、
+  // メニューの項目だけが Portrait／Life／Series／Info になる。今までのページは
+  // 同じ住所で開ける（Gallery はトップと各ページの末尾から、About と Contact は Info から）。
+  const developStructure = usesDevelopStructure(siteDesignFrom(data?.siteDesign), location);
   const shelfItems = bookChrome
     ? [
         ...(showSeries || showWork ? [{ href: "/series", label: "Works" }] : []),
@@ -351,15 +357,25 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       : []),
   ];
   const navItems = [
-    ...shelfItems,
-    {
-      href: isEnglishChrome ? "/en/about" : "/about",
-      label: data?.navLabelAbout ?? "About",
-    },
-    {
-      href: isEnglishChrome ? "/en/contact" : "/contact",
-      label: data?.navLabelContact ?? "Contact",
-    },
+    ...(developStructure
+      ? [
+          { href: "/portrait", label: "Portrait" },
+          { href: "/life", label: "Life" },
+          ...(showSeries || showWork ? [{ href: "/series", label: "Series" }] : []),
+          // 英語のページを読んでいる人は、英語の Contact へ（Info の英語版は次の段階）。
+          { href: isEnglishChrome ? "/en/contact" : "/info", label: "Info" },
+        ]
+      : [
+          ...shelfItems,
+          {
+            href: isEnglishChrome ? "/en/about" : "/about",
+            label: data?.navLabelAbout ?? "About",
+          },
+          {
+            href: isEnglishChrome ? "/en/contact" : "/contact",
+            label: data?.navLabelContact ?? "Contact",
+          },
+        ]),
     // 制作の入口は、オーナーのサイトではメニューに置かずフッターの1行へ（写真中心の器と
     // 同じ、2026-09-30 オーナー「サイトが複雑」）。制作案内のページを見ている間だけ出す。
     // 配布先で「メニューに出す」を選んだときは、今までどおりメニューに置く。
@@ -386,6 +402,13 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     return null;
   };
   const isActive = (href: string) => {
+    if (developStructure) {
+      // Info は、自己紹介と依頼のページ（今までの About・Contact と英語版）をまとめて受け持つ。
+      if (href === "/info" || href === "/en/contact")
+        return /^\/(info|about|profile|contact|en\/about|en\/contact)$/.test(location);
+      // 撮影ごとの実例（Work）は Portrait の続き。
+      if (href === "/portrait") return /^\/(portrait|work)(\/|$)/.test(location);
+    }
     const section = canonicalSection(href);
     if (section) return canonicalSection(location) === section;
     if (bookChrome && href === "/series")
@@ -655,7 +678,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       className={`min-h-screen text-[var(--foreground)] nav-pos-${bookChrome ? "top site-book" : effectiveNavPosition} nav-fx-${navHoverEffect}${
         seeThrough && !bookChrome ? " header-see-through" : ""
       }`}
-      data-site-design={bookChrome ? "book" : undefined}
+      data-site-design={bookChrome ? "book" : developStructure ? "develop" : undefined}
       style={
         navFit.railPx
           ? ({ "--nav-rail-w": `${navFit.railPx}px` } as React.CSSProperties)

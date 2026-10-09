@@ -2782,6 +2782,8 @@ test.describe("公開サイト — Contact送信の重複防止とフォーカ�
 //   - ビューアの番号が、送った向きへ回る（DOM の文字は今の番号だけ）。
 // ──────────────────────────────────────────────────────────────────────────
 test.describe("操作に応える動き", () => {
+  // Playwright は1つ目の引数に分割代入の形を要求する（使う fixture が無くても `{}`）。
+  // eslint-disable-next-line no-empty-pattern
   test.beforeEach(async ({}, testInfo) => {
     test.skip(
       !["desktop", "desktop-safari"].includes(testInfo.project.name),

@@ -1,0 +1,257 @@
+/* 新しい構成（siteDesign = "develop"、2026-10-10）のトップと Portrait／Life。
+   色・書体・文字の大きさは、今までの設定（--foreground・--background・.font-en など）を
+   そのまま使う。ここで決めるのは並べ方と、濃さの切り替えだけ。
+   動きは濃淡が基本（表紙の入れ替え・扉の写真の入れ替え）。動かすのは、触れた扉の
+   言葉だけ（見る人の操作に応える動き）。 */
+
+.dv-home {
+  padding-bottom: clamp(3rem, 8vh, 6rem);
+}
+
+/* ── 表紙：写真だけ。名前は重ねない ───────────────────── */
+.dv-cover {
+  --dv-cover-foot: 3.25rem;
+}
+.dv-cover__frame {
+  position: relative;
+  /* 画面の高さ − ここまでの高さ（上の帯など、描いてから測る）− 下の1行。 */
+  height: max(320px, calc(100svh - var(--dv-cover-top, 96px) - var(--dv-cover-foot) - 0.75rem));
+  overflow: hidden;
+  background: rgba(var(--foreground-rgb), 0.04);
+}
+.dv-cover__photo {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transition: opacity 1.6s ease;
+}
+.dv-cover__photo[data-on] {
+  opacity: 1;
+}
+.dv-cover__photo picture,
+.dv-cover__img {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.dv-cover__img {
+  object-fit: cover;
+}
+.dv-cover__count {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  height: var(--dv-cover-foot);
+  margin: 0;
+  font-size: 0.8125rem;
+  letter-spacing: 0.16em;
+  font-variant-numeric: lining-nums;
+  color: rgba(var(--foreground-rgb), 0.6);
+}
+.dv-cover__bar {
+  position: relative;
+  width: 4.5rem;
+  height: 1px;
+  background: rgba(var(--foreground-rgb), 0.18);
+  overflow: hidden;
+}
+.dv-cover__bar::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: var(--foreground);
+  transform: scaleX(0);
+  transform-origin: left;
+  animation: dv-fill 6.4s linear forwards;
+}
+@keyframes dv-fill {
+  to {
+    transform: scaleX(1);
+  }
+}
+
+/* ── 扉の目次：大きな言葉が入口。触れた扉の写真が隣に出る ───── */
+.dv-doors {
+  display: grid;
+  grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
+  gap: clamp(1.5rem, 4vw, 4rem);
+  align-items: start;
+  margin-top: clamp(4rem, 14vh, 10rem);
+}
+.dv-doors__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border-top: 1px solid rgba(var(--foreground-rgb), 0.14);
+}
+.dv-door {
+  display: grid;
+  grid-template-columns: 2.5rem minmax(0, 1fr) auto;
+  align-items: baseline;
+  gap: 1rem;
+  padding: clamp(0.9rem, 2.2vh, 1.5rem) 0;
+  border-bottom: 1px solid rgba(var(--foreground-rgb), 0.14);
+  color: rgba(var(--foreground-rgb), 0.55);
+  text-decoration: none;
+  transition: color 0.5s ease;
+}
+.dv-door[data-active],
+.dv-door:hover,
+.dv-door:focus-visible {
+  color: var(--foreground);
+}
+.dv-door__no {
+  font-size: 0.8125rem;
+  letter-spacing: 0.14em;
+  font-variant-numeric: lining-nums;
+}
+.dv-door__title {
+  font-size: clamp(2.25rem, 4.6vw, 4.25rem);
+  line-height: 1.05;
+  letter-spacing: 0.005em;
+  transition: transform 0.8s cubic-bezier(0.2, 0.7, 0.1, 1);
+}
+.dv-door__note {
+  font-size: 0.8125rem;
+  letter-spacing: 0.1em;
+}
+.dv-door__photo {
+  display: none;
+}
+@media (hover: hover) {
+  .dv-door:hover .dv-door__title {
+    transform: translateX(0.6rem);
+  }
+}
+.dv-stage {
+  position: relative;
+  aspect-ratio: 4 / 5;
+  overflow: hidden;
+  background: rgba(var(--foreground-rgb), 0.04);
+}
+.dv-stage__photo {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transition: opacity 0.9s ease;
+}
+.dv-stage__photo[data-on] {
+  opacity: 1;
+}
+.dv-stage__photo picture,
+.dv-stage__img,
+.dv-door__photo picture,
+.dv-door__img {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.dv-stage__img,
+.dv-door__img {
+  object-fit: cover;
+}
+
+/* ── すべての写真（Gallery）への入口 ─────────────────────── */
+.dv-archive {
+  margin: clamp(2.5rem, 7vh, 5rem) 0 0;
+}
+.dv-archive__link {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 1rem;
+  min-height: 2.75rem;
+  padding-bottom: 0.15rem;
+  color: var(--foreground);
+  text-decoration: none;
+  border-bottom: 1px solid rgba(var(--foreground-rgb), 0.3);
+  transition: border-color 0.4s ease;
+}
+.dv-archive__link:hover,
+.dv-archive__link:focus-visible {
+  border-color: var(--foreground);
+}
+.dv-archive__link .font-en {
+  font-size: 1.125rem;
+  letter-spacing: 0.04em;
+}
+.dv-archive__note {
+  font-size: 0.8125rem;
+  letter-spacing: 0.08em;
+  color: rgba(var(--foreground-rgb), 0.6);
+}
+
+/* ── Portrait／Life ──────────────────────────────────── */
+.dv-list__head {
+  display: flex;
+  align-items: baseline;
+  gap: 0.9rem;
+}
+.dv-list__count {
+  margin: 0;
+  font-size: 0.875rem;
+  letter-spacing: 0.12em;
+  font-variant-numeric: lining-nums;
+  color: rgba(var(--foreground-rgb), 0.55);
+}
+.dv-list__foot {
+  margin-top: clamp(4rem, 12vh, 8rem);
+}
+.dv-sessions__title {
+  margin: 0 0 0.75rem;
+  font-size: 0.875rem;
+  font-weight: 400;
+  letter-spacing: 0.1em;
+  color: rgba(var(--foreground-rgb), 0.6);
+}
+.dv-sessions ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border-top: 1px solid rgba(var(--foreground-rgb), 0.14);
+}
+.dv-sessions a {
+  display: block;
+  padding: 0.9rem 0;
+  border-bottom: 1px solid rgba(var(--foreground-rgb), 0.14);
+  font-size: clamp(1.25rem, 2.2vw, 1.75rem);
+  color: var(--foreground);
+  text-decoration: none;
+}
+
+@media (max-width: 767px) {
+  .dv-doors {
+    display: block;
+    margin-top: 3.5rem;
+  }
+  .dv-stage {
+    display: none;
+  }
+  .dv-door {
+    grid-template-columns: 2rem minmax(0, 1fr) auto;
+    row-gap: 0.75rem;
+    padding: 1rem 0 1.25rem;
+    color: var(--foreground);
+  }
+  .dv-door__photo {
+    display: block;
+    grid-column: 1 / -1;
+    aspect-ratio: 3 / 2;
+    overflow: hidden;
+    background: rgba(var(--foreground-rgb), 0.04);
+  }
+  .dv-door__title {
+    font-size: 2.25rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dv-cover__photo,
+  .dv-stage__photo,
+  .dv-door,
+  .dv-door__title {
+    transition: none;
+  }
+  .dv-cover__bar::after {
+    animation: none;
+  }
+}

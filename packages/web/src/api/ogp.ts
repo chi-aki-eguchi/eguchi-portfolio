@@ -1,4 +1,5 @@
 import { OWNER_SERVICE_TITLE } from "../shared/site-title";
+import { isDevelopDesignValue, isDevelopOnlyPath } from "../shared/develop-structure";
 import { portfolioPlans } from "../shared/portfolio-product";
 import {
   DEFAULT_SITE_URL as SITE_URL_DEFAULT,
@@ -106,6 +107,11 @@ const PAGE_TITLES: Record<string, string> = {
   // Work の棚（2026-08-31）。**ここに足さないと `/work` が Not Found 扱いになり、
   // 画面は出るのに HTTP 404 を返す**（実測。共有カードも「Not Found」になる）。
   "/work": PAGE_TITLE.work,
+  // 新しい構成（siteDesign = "develop"、2026-10-10）にだけ在る扉。今までの構成の
+  // サイトでは、下の developMissing が Not Found・noindex のままにする。
+  "/portrait": "Portrait",
+  "/life": "Life",
+  "/info": "Info",
   "/about": PAGE_TITLE.about,
   "/profile": PAGE_TITLE.about,
   "/contact": PAGE_TITLE.contact,
@@ -557,6 +563,9 @@ export function injectOgp(
     "/gallery",
     "/series",
     "/work",
+    "/portrait",
+    "/life",
+    "/info",
     "/about",
     "/profile",
     "/contact",
@@ -587,7 +596,9 @@ export function injectOgp(
     ((pathname.startsWith("/series/") || pathname.startsWith("/work/")) &&
       !!override?.title) ||
     (isPhotoDetail && !!override?.title);
-  const missingPublicPage = !isKnown || serviceUnavailable;
+  const developMissing =
+    isDevelopOnlyPath(pathname) && !isDevelopDesignValue(settings.siteDesign);
+  const missingPublicPage = !isKnown || serviceUnavailable || developMissing;
   // A per-page override (e.g. a specific series) wins over the static route title.
   const title = missingPublicPage
     ? `Not Found | ${base}`

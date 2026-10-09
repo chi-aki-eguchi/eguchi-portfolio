@@ -12,6 +12,9 @@ import type {
 } from "../shared/policy-content";
 import { PublicAnalytics } from "./components/PublicAnalytics";
 import { JaPhrases } from "./components/JaPhrases";
+import { useQuery } from "@tanstack/react-query";
+import { api, jsonOrThrow } from "./lib/api";
+import { siteDesignFrom } from "./lib/book";
 
 // Lazy-load all pages — only the shell is eagerly loaded
 const TopPage = lazy(() => import("./pages/top"));
@@ -22,6 +25,8 @@ const PhotoDetailPage = lazy(() => import("./pages/photo-detail"));
 const ProfilePage = lazy(() => import("./pages/profile"));
 const ContactPage = lazy(() => import("./pages/contact"));
 const PolicyPage = lazy(() => import("./pages/policy"));
+const DevelopListPage = lazy(() => import("./pages/develop-list"));
+const DevelopInfoPage = lazy(() => import("./pages/develop-info"));
 const ServicePage = lazy(() => import("./pages/service"));
 const PortfolioGuidePage = lazy(() => import("./pages/portfolio-guide"));
 const ServiceConsultPage = lazy(() => import("./pages/service-consult"));
@@ -87,6 +92,53 @@ function PublicPolicyRoute({
     </Layout>
   );
   return page;
+}
+
+function NotFoundPage() {
+  return (
+    <TitledRoute title="Not Found">
+      {/* 2026-09-29: 薄い巨大な「404」・大文字の英字・飾りの線をやめ、何が起きたかと次の行き先だけを。 */}
+      <section className="max-w-2xl mx-auto site-page py-28 md:py-40 min-h-[60vh] flex flex-col justify-center">
+        <h1 className="text-xl md:text-2xl leading-relaxed text-[var(--foreground)]">
+          ページが見つかりませんでした
+        </h1>
+        <p
+          className="mt-4 text-[rgba(var(--foreground-rgb),0.72)]"
+          style={{ fontSize: "max(0.875rem, var(--body-size, 0.875rem))", lineHeight: 1.9 }}
+        >
+          <JaPhrases>お探しのページは存在しないか、移動した可能性があります。</JaPhrases><span lang="en" className="block mt-1">Page not found (404).</span>
+        </p>
+        <p className="mt-8 flex flex-wrap gap-x-8 gap-y-2 text-sm">
+          <Link to="/" className="inline-flex min-h-11 items-center underline underline-offset-4">
+            トップへ戻る
+          </Link>
+          <Link to="/gallery" className="inline-flex min-h-11 items-center underline underline-offset-4">
+            すべての写真を見る
+          </Link>
+        </p>
+      </section>
+    </TitledRoute>
+  );
+}
+
+/**
+ * 新しい構成（siteDesign = "develop"）にだけ在るページ。今までの構成のサイトでは
+ * 今までどおり「見つかりませんでした」を出す（サーバーも 404 を返す）。
+ */
+function DevelopRoute({ title, children }: { title: string; children: React.ReactNode }) {
+  const { data, isLoading } = useQuery({
+    queryKey: ["settings"],
+    queryFn: async () => jsonOrThrow(await api.settings.$get()),
+  });
+  if (isLoading) return <PageFallback />;
+  if (siteDesignFrom(data?.siteDesign) !== "develop") return <NotFoundPage />;
+  return (
+    <PageTransition>
+      <TitledRoute title={title}>
+        <Suspense fallback={<PageFallback />}>{children}</Suspense>
+      </TitledRoute>
+    </PageTransition>
+  );
 }
 
 function App() {
@@ -181,6 +233,28 @@ function App() {
                   </Suspense>
                 </TitledRoute>
               </PageTransition>
+            </Layout>
+          </Route>
+          {/* 新しい構成の扉（2026-10-10）。 */}
+          <Route path="/portrait">
+            <Layout>
+              <DevelopRoute title="Portrait">
+                <DevelopListPage kind="portrait" />
+              </DevelopRoute>
+            </Layout>
+          </Route>
+          <Route path="/life">
+            <Layout>
+              <DevelopRoute title="Life">
+                <DevelopListPage kind="life" />
+              </DevelopRoute>
+            </Layout>
+          </Route>
+          <Route path="/info">
+            <Layout>
+              <DevelopRoute title="Info">
+                <DevelopInfoPage />
+              </DevelopRoute>
             </Layout>
           </Route>
           <Route path="/about">
@@ -376,28 +450,7 @@ function App() {
           {/* Catch-all 404 — avoids a blank screen on unknown SPA paths */}
           <Route>
             <Layout>
-              <TitledRoute title="Not Found">
-                {/* 2026-09-29: 薄い巨大な「404」・大文字の英字・飾りの線をやめ、何が起きたかと次の行き先だけを。 */}
-                <section className="max-w-2xl mx-auto site-page py-28 md:py-40 min-h-[60vh] flex flex-col justify-center">
-                  <h1 className="text-xl md:text-2xl leading-relaxed text-[var(--foreground)]">
-                    ページが見つかりませんでした
-                  </h1>
-                  <p
-                    className="mt-4 text-[rgba(var(--foreground-rgb),0.72)]"
-                    style={{ fontSize: "max(0.875rem, var(--body-size, 0.875rem))", lineHeight: 1.9 }}
-                  >
-                    <JaPhrases>お探しのページは存在しないか、移動した可能性があります。</JaPhrases><span lang="en" className="block mt-1">Page not found (404).</span>
-                  </p>
-                  <p className="mt-8 flex flex-wrap gap-x-8 gap-y-2 text-sm">
-                    <Link to="/" className="inline-flex min-h-11 items-center underline underline-offset-4">
-                      トップへ戻る
-                    </Link>
-                    <Link to="/gallery" className="inline-flex min-h-11 items-center underline underline-offset-4">
-                      すべての写真を見る
-                    </Link>
-                  </p>
-                </section>
-              </TitledRoute>
+              <NotFoundPage />
             </Layout>
           </Route>
         </Switch>

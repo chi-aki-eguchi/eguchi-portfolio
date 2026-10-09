@@ -33,6 +33,7 @@ import { orientedDimensions } from "../../shared/image-url";
 import { isServiceOwnerSite } from "../../shared/service-visibility";
 import { PhotoHome } from "../components/photo-site/PhotoHome";
 import { siteDesignFrom } from "../lib/book";
+import { DevelopTop } from "../components/develop/DevelopTop";
 import { isDarkTextColor, textShadowOverPhoto } from "../lib/color-contrast";
 import { JaPhrases } from "../components/JaPhrases";
 
@@ -1281,6 +1282,7 @@ export default function TopPage() {
   });
   const topWorksMode = settings?.topWorksMode || "auto";
   const isBookDesign = siteDesignFrom(settings?.siteDesign) === "book";
+  const isDevelopDesign = siteDesignFrom(settings?.siteDesign) === "develop";
   const homeGalleryCount = Math.max(
     1,
     parseInt(settings?.homeGalleryCount ?? "12", 10) || 12,
@@ -1313,7 +1315,8 @@ export default function TopPage() {
     },
     // 写真集の骨格では、トップの写真は章（作品ページと同じ順）から出す。
     // ランダムの束は使わないので取りに行かない。
-    enabled: !settingsLoading && !isBookDesign,
+    // 新しい構成のトップは、要る物を自分で集める（DevelopTop）。
+    enabled: !settingsLoading && !isBookDesign && !isDevelopDesign,
   });
   const { data: heroData, isLoading: heroLoading } = useQuery({
     queryKey: ["hero-photos"],
@@ -1541,6 +1544,17 @@ export default function TopPage() {
     </Suspense>
   );
 
+  if (isDevelopDesign)
+    return (
+      <>
+        <DevelopTop
+          settings={settings}
+          pickedCover={heroPhotosPicked}
+          coverLoading={heroLoading}
+        />
+        {experiencePanel}
+      </>
+    );
   if (isBookDesign)
     return (
       <>

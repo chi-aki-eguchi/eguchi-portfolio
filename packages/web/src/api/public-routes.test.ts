@@ -139,7 +139,10 @@ describe("app.tsx と各一覧の突き合わせ", () => {
     );
 
   test("**公開ページを app.tsx へ足したら、SPA の経路一覧にも足す**（忘れると HTTP 404）", () => {
-    const missing = publicPaths.filter((p) => htmlStatusForSpaPath(p) !== 200);
+    // 新しい構成にだけ在る扉（/portrait など）は、その構成のサイトで 200 になること。
+    const missing = publicPaths.filter(
+      (p) => htmlStatusForSpaPath(p, { developStructure: true }) !== 200,
+    );
     expect(missing).toEqual([]);
   });
 
@@ -288,5 +291,19 @@ describe("photoDetailId", () => {
 
   test("既知パスとして数え、SPA の 404 に落とさない", () => {
     expect(isKnownSpaPath("/photo/1607")).toBe(true);
+  });
+
+  test("新しい構成にだけ在る住所は、今までの構成のサイトでは 404 のまま", () => {
+    for (const path of ["/portrait", "/life", "/info", "/portrait/"]) {
+      expect(htmlStatusForSpaPath(path)).toBe(404);
+      expect(htmlStatusForSpaPath(path, { developStructure: false })).toBe(404);
+      expect(htmlStatusForSpaPath(path, { developStructure: true })).toBe(200);
+    }
+    // 今までの住所は、どちらの構成でも変わらない。
+    for (const path of ["/", "/gallery", "/series", "/about", "/contact", "/en/contact"]) {
+      expect(htmlStatusForSpaPath(path, { developStructure: true })).toBe(200);
+      expect(htmlStatusForSpaPath(path, { developStructure: false })).toBe(200);
+    }
+    expect(htmlStatusForSpaPath("/nope", { developStructure: true })).toBe(404);
   });
 });

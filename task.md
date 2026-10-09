@@ -5,7 +5,13 @@
 - 入れ方の判断: 新しい「器」を別に作らず、**今のレイアウト（左のメニュー・言語の切り替え・暗い表示・フッター・約180個の設定）をそのまま使い、メニューの項目とページの組み立てだけを替える**。色・書体・大きさの設定は今までの物がそのまま効く。写真の段組みとビューアは既にある部品（`PhotoStream`・`Lightbox`）を使う。`siteDesign` の3つ目の値 `develop`（既定は `classic` のまま）。
 - 編集対象: `packages/web/src/shared/develop-structure.ts`（新）、`web/lib/design-preview.ts`（新）、`web/lib/book.ts`、`web/components/Layout.tsx`、`web/components/develop/`（新）、`web/pages/develop-list.tsx`・`develop-info.tsx`（新）、`web/pages/top.tsx`、`web/app.tsx`、`api/public-routes.ts`、`server.ts`、関連テスト、`scripts/smoke/`。
 - 対象外（次の段階）: 現像・にじみの動き、新しい1枚表示、Info の作り直し（今回は About と Contact の中身を続けて出す）、管理画面（切り替え・選んで並べる・細かい調整）、本番の設定の変更。Portrait／Life に出す写真は、今回は写真の分類（portrait／それ以外の分類）から出す。
-- 次の一手: 実装 → `bun run check` → 関連 smoke → push → 本番で「既定は今までどおり」「`?design=develop` で新しい構成」を確認。
+- 製品 `3fcafaa`・`55f7623`（基点 `bdf018a`）。下見の住所: https://akieguchi.com/?design=develop （そのタブの間だけ。`?design=classic` でやめる。noindex）。
+- コードで確認（2026-10-10）: `bun run check` 成功（単体 1601 成功・3 対象外、型・lint・build）。全体 smoke 829 成功・307 対象外・失敗 0（28.1分、`3fcafaa`）。新しい構成の spec `scripts/smoke/public-develop-structure.spec.ts` は desktop・mobile・desktop-safari・mobile-safari で 20 成功（`55f7623`）。`55f7623` の差分は新しい構成だけのコードと `api/ogp.ts` の既知経路の判定で、全体の単体と上の spec を回し直した（全体 smoke は回し直していない）。
+- 公開環境で確認（2026-10-10 01:45 JST、build `55f76237`、`scratch/develop-20261010/live.mjs`、解析の通信は遮断）: Chromium・WebKit × PC 1440／スマホ 390 で各 30 項目・計 60 項目ずつ成功。既定（印なし）はメニューが今までどおりで、`/portrait`・`/life`・`/info` は HTTP 404・題名 Not Found・noindex。下見では、メニューが Portrait／Life／Series／Info、表紙が最初の画面に収まる、扉4つ、Portrait 16枚・Life 16枚、ビューアが開閉、`/info` に自己紹介・料金・依頼フォーム、今までの `/gallery`・`/series`・`/work`・`/about`・`/contact`・`/en/about`・`/en/contact`・`/privacy` も開ける、横はみ出し無し。画像 `scratch/develop-20261010/develop-stage1-live-20261010.png`。
+- 途中で見つけて直した点: ①今までの構成のサイトで `/portrait` などが 404・Not Found なのに robots だけ `index, follow` だった（`ogp.ts` は題名と robots を別の条件で決めていた。新しい扉を「無いページ」として一か所で判定するようにした）。②ページの見出しを出さない設定（本番 `pageTitleStyle: hidden`）で、枚数の数字だけが左上に残っていた（数字をやめた）。③表紙が1枚のとき、番号の行のぶん下が空いていた。④main の lint が `public-site.spec.ts:2785` の1件で落ちていた（`e91690e` 由来。Playwright が要求する `{}` に注記を付けた）。見張りのテスト（`public-routes.test.ts`・`route-preload.test.ts`）が、足した3つの住所の一覧への入れ忘れを正しく止めた。
+- 分かったこと: 本番は `gallerySortOrder: random` なので、Portrait／Life の並びも開くたびに変わる（今回は Gallery と同じ並べ方を使った）。表紙は「トップに出す」が1枚なので入れ替わらない。`/info` は h1 が2つ（About と Contact をそのまま続けたため）。
+- 残り（次の段階）: ②Portrait／Life を「選んだ写真・選んだ順」にする（設定キーを足す）と、現像・にじみの動き、新しい1枚表示。③Info を1ページとして組み直す（h1 を1つに、英語版）。④管理画面（切り替え・選んで並べる・細かい調整）。公開の切り替えは、オーナーが下見を見てから（保存値 `siteDesign` はいま `book`＝今までの構成として描かれている）。未確認: 実機の iPhone。
+- 試作の改名（2026-10-10）: Daily → Life（`prototype/look.js` の初期値と管理画面の試作。`admin-check.mjs` 87項目成功）。
 
 ## Current State — 2026-10-05 JST / 仕事・作品の紹介ページ初期版
 

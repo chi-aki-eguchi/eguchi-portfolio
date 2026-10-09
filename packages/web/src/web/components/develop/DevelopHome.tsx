@@ -105,6 +105,7 @@ function Cover({ photos, name }: { photos: DevelopPhoto[]; name: string }) {
     <section
       ref={boxRef}
       className="dv-cover"
+      data-single={count < 2 ? "true" : undefined}
       aria-label="表紙"
       style={top === null ? undefined : ({ "--dv-cover-top": `${top}px` } as React.CSSProperties)}
     >

@@ -12,6 +12,10 @@
 .dv-cover {
   --dv-cover-foot: 3.25rem;
 }
+/* 表紙が1枚だけのときは、下の「01 ― 03」の行が無い。その分も写真に使う。 */
+.dv-cover[data-single] {
+  --dv-cover-foot: 0.75rem;
+}
 .dv-cover__frame {
   position: relative;
   /* 画面の高さ − ここまでの高さ（上の帯など、描いてから測る）− 下の1行。 */
@@ -181,18 +185,6 @@
 }
 
 /* ── Portrait／Life ──────────────────────────────────── */
-.dv-list__head {
-  display: flex;
-  align-items: baseline;
-  gap: 0.9rem;
-}
-.dv-list__count {
-  margin: 0;
-  font-size: 0.875rem;
-  letter-spacing: 0.12em;
-  font-variant-numeric: lining-nums;
-  color: rgba(var(--foreground-rgb), 0.55);
-}
 .dv-list__foot {
   margin-top: clamp(4rem, 12vh, 8rem);
 }

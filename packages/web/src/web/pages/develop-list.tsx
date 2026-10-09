@@ -95,11 +95,6 @@ export default function DevelopListPage({ kind }: { kind: DevelopListKind }) {
         <PageTitle className="ps-page-head__title" revealClass="">
           {title}
         </PageTitle>
-        {photos.length > 0 && (
-          <p className="dv-list__count font-en" aria-label={`${photos.length}枚`}>
-            {String(photos.length).padStart(2, "0")}
-          </p>
-        )}
       </div>
       {photosQ.isLoading && <ContentStatus state="loading" />}
       {photosQ.isError && (

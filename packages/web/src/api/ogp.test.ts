@@ -193,6 +193,21 @@ describe("injectOgp robots policy", () => {
     expect(html).toContain("Not Found |");
     expect(html).not.toContain("rel=\"alternate\"");
   });
+  test("新しい構成の扉は、その構成を保存したサイトでだけ在るページ", () => {
+    const titleOf = (html: string) => html.match(/<title>([^<]*)<\/title>/)?.[1] ?? "";
+    for (const [path, name] of [["/portrait", "Portrait"], ["/life", "Life"], ["/info", "Info"]] as const) {
+      const classic = injectOgp(page, {}, path);
+      expect(robotsOf(classic)).toBe("noindex, nofollow");
+      expect(titleOf(classic)).toStartWith("Not Found");
+      const develop = injectOgp(page, { siteDesign: "develop" }, path);
+      expect(robotsOf(develop)).toBe("index, follow");
+      expect(titleOf(develop)).toStartWith(`${name} |`);
+    }
+    // 今までのページは、どちらの構成でも変わらない。
+    expect(robotsOf(injectOgp(page, { siteDesign: "develop" }, "/gallery"))).toBe("index, follow");
+    expect(robotsOf(injectOgp(page, { siteDesign: "develop" }, "/no-such-page"))).toBe("noindex, nofollow");
+  });
+
   test("admin and unknown paths are noindex", () => {
     expect(robotsOf(injectOgp(page, {}, "/admin"))).toBe("noindex, nofollow");
     expect(robotsOf(injectOgp(page, {}, "/admin/login"))).toBe(

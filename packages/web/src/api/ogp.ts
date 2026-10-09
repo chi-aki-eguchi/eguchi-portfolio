@@ -591,14 +591,18 @@ export function injectOgp(
   // series (override.title set by the caller). Unknown/unpublished slugs render
   // the SPA's not-found view — without this they'd look like normal share cards.
   const isPhotoDetail = /^\/photo\/\d+$/.test(pathname);
-  const isKnown =
-    KNOWN_ROUTES.includes(pathname) ||
-    ((pathname.startsWith("/series/") || pathname.startsWith("/work/")) &&
-      !!override?.title) ||
-    (isPhotoDetail && !!override?.title);
+  // 新しい構成にだけ在る扉は、その構成を保存していないサイトでは無いページ。
+  // 題名だけでなく、robots・構造化データ・計測も「無いページ」と同じ扱いにする
+  // （2026-10-10、本番で題名は Not Found なのに robots が index のままだった）。
   const developMissing =
     isDevelopOnlyPath(pathname) && !isDevelopDesignValue(settings.siteDesign);
-  const missingPublicPage = !isKnown || serviceUnavailable || developMissing;
+  const isKnown =
+    !developMissing &&
+    (KNOWN_ROUTES.includes(pathname) ||
+      ((pathname.startsWith("/series/") || pathname.startsWith("/work/")) &&
+        !!override?.title) ||
+      (isPhotoDetail && !!override?.title));
+  const missingPublicPage = !isKnown || serviceUnavailable;
   // A per-page override (e.g. a specific series) wins over the static route title.
   const title = missingPublicPage
     ? `Not Found | ${base}`

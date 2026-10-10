@@ -41,8 +41,9 @@ export function DevelopTop({
     staleTime: 60_000,
   });
   const photos = useMemo(
-    () => sortPhotosBySetting(photosQ.data?.photos ?? [], settings?.gallerySortOrder) as DevelopPhoto[],
-    [photosQ.data, settings?.gallerySortOrder],
+    // 扉の写真は、その先のページの最初の1枚。ページと同じく、管理画面で決めた順で読む。
+    () => sortPhotosBySetting(photosQ.data?.photos ?? [], "manual") as DevelopPhoto[],
+    [photosQ.data],
   );
   // 選んだ表紙がまだ届いていない間は、代わりの写真を一瞬出さない。
   const coverPhotos = pickedCover.length > 0 ? pickedCover : coverLoading ? [] : photos.slice(0, 1);

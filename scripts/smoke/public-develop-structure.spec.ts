@@ -86,12 +86,33 @@ test("新しい構成 › 下見の住所で、メニュー・表紙・扉の目
 });
 
 test("新しい構成 › Portrait と Life は分類から出て、押すとビューアが開く", async ({ page, api }, testInfo) => {
-  await withCategories(page, api);
+  const photos = await withCategories(page, api);
+  // Gallery を「ランダム」にしているサイトでも、Portrait／Life の並びは開くたびに変わらない（管理画面で決めた順）。
+  const settings = (await (await api.get("/api/settings")).json()) as Record<string, unknown>;
+  await page.route("**/api/settings**", (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ ...settings, gallerySortOrder: "random" }),
+    }),
+  );
   await page.goto("/?design=develop", { waitUntil: "networkidle" });
   await page.locator('.dv-door[href="/portrait"]').click();
   await expect(page).toHaveURL(/\/portrait$/);
   await expect(page.getByRole("heading", { level: 1, name: "Portrait" })).toBeVisible();
   await expect(page.locator(".ps-tile")).toHaveCount(5);
+  const shown = () =>
+    page.locator(".ps-tile__button").evaluateAll((els) => els.map((e) => Number(e.getAttribute("data-photo-tile"))));
+  const firstOrder = await shown();
+  const manual = photos
+    .filter((p) => p.category === "portrait")
+    .map((p, i) => ({ id: p.id, order: Number((p as { sortOrder?: number }).sortOrder ?? 0), i }))
+    .sort((a, b) => a.order - b.order || a.i - b.i)
+    .map((p) => p.id);
+  expect(firstOrder).toEqual(manual);
+  await page.reload({ waitUntil: "networkidle" });
+  await expect(page.locator(".ps-tile")).toHaveCount(5);
+  expect(await shown()).toEqual(firstOrder);
   expect(await noSideScroll(page)).toBeLessThanOrEqual(0);
   await page.screenshot({ path: testInfo.outputPath("develop-portrait.png"), fullPage: true });
 
@@ -113,6 +134,9 @@ test("新しい構成 › Info は自己紹介と依頼。今までのページ�
   await expect(page.locator(".dv-info .profile-page")).toBeVisible();
   // 依頼の部分は今までの Contact そのもの（フォームを出すかどうかは今までの設定に従う）。
   await expect(page.locator(".dv-info .contact-page")).toBeVisible();
+  // 1ページとして読めること：h1 は1つだけ。すぐ下に依頼の欄があるので、自己紹介の末尾の案内は出さない。
+  await expect(page.locator("main h1")).toHaveCount(1);
+  await expect(page.locator(".dv-info .profile-page .inquiry-note")).toHaveCount(0);
   expect(await noSideScroll(page)).toBeLessThanOrEqual(0);
   await page.screenshot({ path: testInfo.outputPath("develop-info.png"), fullPage: true });
 

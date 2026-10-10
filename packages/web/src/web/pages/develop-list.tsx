@@ -22,7 +22,7 @@ const COPY: Record<DevelopListKind, { title: string; label: string }> = {
 /**
  * 新しい構成の Portrait／Life（2026-10-10）。
  *
- * 写真は分類から出す（`shared/develop-structure.ts`）。段組みとビューアは
+ * 写真は分類から出す（`shared/develop-structure.ts`）。並びは管理画面で決めた順。段組みとビューアは
  * 写真中心のサイト用に作った部品（PhotoStream）をそのまま使う：元の縦横比のまま、
  * 切り抜かず、押すといつものビューアが開く。
  */
@@ -52,9 +52,11 @@ export default function DevelopListPage({ kind }: { kind: DevelopListKind }) {
     () =>
       developListPhotos(
         kind,
-        sortPhotosBySetting(photosQ.data?.photos ?? [], settings?.gallerySortOrder) as GalleryPhoto[],
+        // 並びは管理画面で決めた順。Gallery を「ランダム」にしていても、ここは開くたびに変えない
+        // （見せたい順に選ぶページなので。2026-10-11、本番は Gallery がランダムで毎回並びが変わっていた）。
+        sortPhotosBySetting(photosQ.data?.photos ?? [], "manual") as GalleryPhoto[],
       ),
-    [kind, photosQ.data, settings?.gallerySortOrder],
+    [kind, photosQ.data],
   );
   const photographerName = settings?.siteName || settings?.siteNameEn || settings?.profileName || "";
   const works = kind === "portrait" ? (worksQ.data?.series ?? []) : [];

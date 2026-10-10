@@ -22,6 +22,7 @@ export function PageTitle({
   className = "",
   align,
   revealClass = "page-entrance",
+  as: Heading = "h1",
 }: {
   children: React.ReactNode;
   /** 下側の余白など、ページ固有の間隔 */
@@ -30,6 +31,8 @@ export function PageTitle({
   align?: "left" | "center";
   /** ページごとの登場演出のクラス名 */
   revealClass?: string;
+  /** ほかのページの中身に続けて出すとき（新しい構成の Info）は h2 にする。1ページに h1 を2つ置かない。 */
+  as?: "h1" | "h2";
 }) {
   const { data } = useQuery({
     queryKey: ["settings"],
@@ -42,13 +45,13 @@ export function PageTitle({
     : "label";
 
   if (style === "hidden")
-    return <h1 className="sr-only">{children}</h1>;
+    return <Heading className="sr-only">{children}</Heading>;
 
   const centered = align ? align === "center" : style === "label";
 
   if (style === "display")
     return (
-      <h1
+      <Heading
         className={`font-bold break-words ${centered ? "text-center" : ""} ${revealClass} ${className}`}
         style={{
           fontSize: "var(--heading-size, 1.25rem)",
@@ -58,11 +61,11 @@ export function PageTitle({
         }}
       >
         {children}
-      </h1>
+      </Heading>
     );
 
   return (
-    <h1
+    <Heading
       /* 見出しは設定で自由に書ける。折り返せない語だと箱の幅は変わらないまま
          文字だけ外へ出る（実測 320px: 中身385px / 枠272px）。 */
       className={`font-en uppercase break-words ${centered ? "text-center" : ""} ${revealClass} ${className}`}
@@ -74,6 +77,6 @@ export function PageTitle({
       }}
     >
       {children}
-    </h1>
+    </Heading>
   );
 }

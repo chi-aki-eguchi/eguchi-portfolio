@@ -50,8 +50,11 @@ const readableBodyStyle = {
 
 export default function ProfilePage({
   language = "ja",
+  embedded = false,
 }: {
   language?: "ja" | "en";
+  /** 依頼のページを続けて出すとき（新しい構成の Info）。すぐ下にフォームがあるので「お問い合わせ」への案内は出さない。 */
+  embedded?: boolean;
 }) {
   usePageLanguage(language);
   const english = language === "en";
@@ -486,7 +489,7 @@ export default function ProfilePage({
           外した）。note の記事が後から届くと JOURNAL の段が生まれ、**画面に
           出ている帯を押しのける**（実測: 帯が y=537 から画面外へ）。
           出そろってから出せば、動くものが無い。 */}
-      {!holdBio && (!noteOn || noteData !== undefined) && <InquiryCta language={language} />}
+      {!embedded && !holdBio && (!noteOn || noteData !== undefined) && <InquiryCta language={language} />}
     </section>
   );
 }

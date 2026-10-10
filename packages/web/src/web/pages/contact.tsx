@@ -128,8 +128,11 @@ const readableBodyStyle = {
 
 export default function ContactPage({
   language = "ja",
+  embedded = false,
 }: {
   language?: "ja" | "en";
+  /** 自己紹介に続けて出すとき（新しい構成の Info）。ページの見出しを h2 にする。 */
+  embedded?: boolean;
 }) {
   usePageLanguage(language);
   const english = language === "en";
@@ -603,6 +606,7 @@ export default function ContactPage({
         <PageTitle
           className="mb-12"
           align={layout === "center" ? "center" : "left"}
+          as={embedded ? "h2" : "h1"}
         >
           {pageLabel}
         </PageTitle>

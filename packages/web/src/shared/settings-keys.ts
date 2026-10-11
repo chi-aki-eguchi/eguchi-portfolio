@@ -168,6 +168,10 @@ export const SETTINGS_PREVIEW_KEYS = [
   "topWorksLayout",
   "topWorksMode",
   "topWorksIds",
+  // 新しい構成（siteDesign = "develop"）の Portrait／Life に出す写真（写真IDをカンマで並べた文字列。並び順＝表示順）。
+  // 空なら写真の分類から出す。
+  "developPortraitIds",
+  "developLifeIds",
   "seriesGridColumns",
   "seriesGridColumnsMobile",
   "heroRandom",

@@ -42,14 +42,17 @@ export function developDoors({
   seriesCover,
   profilePhoto,
   showSeries,
+  picked,
 }: {
   photos: DevelopPhoto[];
   seriesCover: DevelopPhoto | null;
   profilePhoto: DevelopPhoto | null;
   showSeries: boolean;
+  /** Portrait／Life に選んだ写真（設定の文字列）。扉の写真は、その先のページの最初の1枚にする。 */
+  picked?: { portrait?: string | null; life?: string | null };
 }): DevelopDoor[] {
-  const portrait = developListPhotos("portrait", photos);
-  const life = developListPhotos("life", photos);
+  const portrait = developListPhotos("portrait", photos, picked?.portrait);
+  const life = developListPhotos("life", photos, picked?.life);
   return [
     { key: "portrait" as const, href: "/portrait", title: "Portrait", note: "人を撮る", photo: portrait[0] ?? null },
     { key: "life" as const, href: "/life", title: "Life", note: "日常の写真", photo: life[0] ?? null },
@@ -251,8 +254,15 @@ export function DevelopHome({
     [settings?.profilePhotoUrl],
   );
   const doors = useMemo(
-    () => developDoors({ photos, seriesCover, profilePhoto, showSeries }),
-    [photos, seriesCover, profilePhoto, showSeries],
+    () =>
+      developDoors({
+        photos,
+        seriesCover,
+        profilePhoto,
+        showSeries,
+        picked: { portrait: settings?.developPortraitIds, life: settings?.developLifeIds },
+      }),
+    [photos, seriesCover, profilePhoto, showSeries, settings?.developPortraitIds, settings?.developLifeIds],
   );
   return (
     <div className="dv-home site-page site-page-top">

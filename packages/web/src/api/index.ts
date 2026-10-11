@@ -1504,6 +1504,9 @@ const app = new Hono()
         // トップ Works の写真選択 — auto(並び順) | random | manual(topWorksIds)
         topWorksMode: settings.topWorksMode ?? "auto",
         topWorksIds: settings.topWorksIds ?? "",
+        // 新しい構成の Portrait／Life に出す写真（選んだ順）。空なら分類から出す（shared/develop-structure.ts）。
+        developPortraitIds: settings.developPortraitIds ?? "",
+        developLifeIds: settings.developLifeIds ?? "",
         // ── O6: smart albums (admin-only) — JSON array of saved photo filters ──
         smartAlbums: settings.smartAlbums ?? "[]",
         // ── I: series navigation toggle (JS-driven, like gallery) ──

@@ -242,7 +242,7 @@ export const SETTINGS_SECTION_KEYS = {
   // admin-settings-section-keys.test.ts が見ている。
   mood: [],
   // サイトの骨格（写真中心／いつもの構成）だけを選ぶ節。
-  "page-layout": ["siteDesign"],
+  "page-layout": ["siteDesign", "developPortraitIds", "developLifeIds"],
   // トップの形（写真中心）。
   home: ["bookCoverPhotoId", "photoTopLayout"],
   // 作家の言葉の文（トップと About に出る）。

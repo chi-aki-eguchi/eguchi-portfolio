@@ -128,6 +128,29 @@ test("新しい構成 › Portrait と Life は分類から出て、押すとビ
   await expect(page.locator(".ps-tile")).toHaveCount(6);
 });
 
+test("新しい構成 › 選んだ写真があれば、分類に関係なく、選んだ順で出る", async ({ page, api }) => {
+  const photos = await withCategories(page, api);
+  // 分類の無い写真（11枚目以降）を2枚と、分類 life の1枚を、この順で Portrait に選ぶ。
+  const picked = [photos[12]!.id, photos[6]!.id, photos[11]!.id];
+  const settings = (await (await api.get("/api/settings")).json()) as Record<string, unknown>;
+  await page.route("**/api/settings**", (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ ...settings, developPortraitIds: picked.join(","), developLifeIds: "" }),
+    }),
+  );
+  await page.goto("/portrait?design=develop", { waitUntil: "networkidle" });
+  await expect(page.locator(".ps-tile")).toHaveCount(3);
+  const shown = await page
+    .locator(".ps-tile__button")
+    .evaluateAll((els) => els.map((e) => Number(e.getAttribute("data-photo-tile"))));
+  expect(shown).toEqual(picked);
+  // 選んでいない Life は、今までどおり分類から出る。
+  await page.goto("/life", { waitUntil: "networkidle" });
+  await expect(page.locator(".ps-tile")).toHaveCount(6);
+});
+
 test("新しい構成 › Info は自己紹介と依頼。今までのページも同じ住所で開ける", async ({ page, api }, testInfo) => {
   await withCategories(page, api);
   await page.goto("/info?design=develop", { waitUntil: "networkidle" });

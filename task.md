@@ -1,3 +1,12 @@
+
+## 今回の引き継ぎ — 2026-10-11 収入経路の販売案内更新
+
+- 主担当・編集担当: Codex 1名。目的は既存素材の購入先を明確にし、既存写真ツールの操作動画を制作して受注・販売の見本を増やす。実収入は別途検証。
+- checkout: work/five-income-site / codex/five-income-20261001。基点 a05c3cf9。開始時clean、既存mainの別作業差分は保持。
+- 編集対象: workroom/index.html・materials.html と今回の記録。写真ツールの動画は完成・確認後に掲載範囲を決める。
+- 完成条件: Adobe公開5点へのリンク・審査中の旧案内の訂正、PC/mobileの読める表示、commit/push/本番一致。新規商品・価格・広告・契約・顧客送信・DBは対象外。
+- ローカル検証: Adobeの公開5点を再確認、各商品リンクと1,200角画像・SVG原本非公開を照合。1440pxと390pxで画像・文字・購入先・ページ内移動・横はみ出しなしを確認。次はcommit/push後の本番一致。
+
 ## Current State — 2026-10-10 JST / 新しい構成（Portrait・Life・Series・Info）を製品へ 第1段階
 
 - 今回の引き継ぎ: オーナー「どうにか綺麗に入れてみてほしい。元々あるものが欠けないように。あと daily じゃなくて life がいいかも」（2026-10-10）。試作（`scratch/simple-20261007/prototype/`、下の 2026-10-07〜09 の記録）を製品へ入れ始める。主担当・編集担当 Claude Code のみ。基点 `origin/main=bdf018a`、checkout `/Users/chiaki/wt-develop`、branch `claude/develop-design`。元 checkout の書きかけには触れない。

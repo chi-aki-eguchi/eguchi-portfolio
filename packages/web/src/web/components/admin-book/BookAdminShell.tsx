@@ -156,6 +156,7 @@ export function BookAdminShell({
           <a className="admin-book__tool admin-book__tool--narrow" href={siteHref} target="_blank" rel="noopener" onClick={closeMenu}>
             {en ? "View site" : "サイトを見る"} ↗
           </a>
+          {pdfEnabled && !locked && <a className="admin-book__tool" href="/admin/pages" onClick={closeMenu}>{en ? "Page photos" : "ページの写真"}</a>}
           {pdfEnabled && !locked && <a className="admin-book__tool" href="/admin/pdf" target="_blank" rel="noopener" onClick={closeMenu}>{en ? "PDF portfolio" : "PDF作品集"}</a>}
           <button type="button" className="bk-ax-btn admin-book__tool" onClick={() => { closeMenu(); onToggleTheme(); }} aria-pressed={theme === "dark"}>
             {theme === "dark" ? (en ? "Light display" : "明るい表示") : (en ? "Dark display" : "暗い表示")}

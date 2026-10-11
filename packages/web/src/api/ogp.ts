@@ -585,6 +585,7 @@ export function injectOgp(
     "/admin",
     "/admin/login",
     "/admin/pdf",
+    "/admin/pages",
     "/admin/demo",
   ];
   // /series/:slug is indexable only when the slug resolved to a real published

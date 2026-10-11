@@ -1,0 +1,920 @@
+/* 新しい構成のページに出す写真を「選んで、並べる」画面（/admin/pages、2026-10-11）。
+   写真アプリと同じ考え方：番号は出さない／つまみで大きさを変えて見渡す／つかんで動かす／
+   押して選んで、まとめて動かす・外す／いま見ている月を出す。
+   色は管理画面の紙と墨と同じ値を、この画面の中だけで決める（下の --admin-*）。
+   `.admin-atelier` は付けない：あちらは全部のボタンへ色・枠・影・高さを !important で掛けるので、
+   写真そのものがボタンであるこの画面では、選んだ印の枠や写真の地が消える（2026-10-11 に踏んだ）。
+   スマホで「カクッ」「チラッ」としないための決まり（試作を実機で触って分かった事）：
+   指で押したときの灰色を出さない／写真は届いてから濃くなって出る／足す画面は濃さだけで出す／
+   つまんでいる間は見た目だけを変える（並べ直しは motion.ts と hooks.ts）。 */
+.pp-root {
+  --admin-paper: #f7f5f1;
+  --admin-ink: #1b1917;
+  --admin-paper-soft: color-mix(in srgb, var(--admin-paper) 97.5%, var(--admin-ink));
+  --admin-paper-deep: color-mix(in srgb, var(--admin-paper) 94.5%, var(--admin-ink));
+  --admin-muted: color-mix(in srgb, var(--admin-ink) 62%, var(--admin-paper));
+  --admin-line: color-mix(in srgb, var(--admin-paper) 89%, var(--admin-ink));
+  --admin-line-strong: color-mix(in srgb, var(--admin-paper) 82%, var(--admin-ink));
+  --admin-accent: #a07f5b;
+  --admin-accent-fill: #7e603f;
+  --admin-danger: #a33b2e;
+  --pp-display: "Cormorant Garamond", "Shippori Mincho", "Hiragino Mincho ProN", serif;
+  min-height: 100vh;
+  background: var(--admin-paper);
+  color: var(--admin-ink);
+  font-family: "Hiragino Sans", "Yu Gothic", "Noto Sans JP", sans-serif;
+  font-size: 15px;
+  line-height: 1.75;
+  letter-spacing: 0.02em;
+}
+.pp-root,
+.pp-root * {
+  -webkit-tap-highlight-color: transparent;
+}
+.pp-root button,
+.pp-root a,
+.pp-root select,
+.pp-root input {
+  touch-action: manipulation;
+}
+.pp-page {
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 28px 32px 150px;
+}
+.pp-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px 24px;
+}
+.pp-head h1 {
+  margin: 0;
+  font-family: var(--pp-display);
+  font-size: 34px;
+  font-weight: 500;
+  line-height: 1.3;
+}
+.pp-head p {
+  margin: 6px 0 0;
+  max-width: 40em;
+  font-size: 14px;
+  color: var(--admin-muted);
+}
+.pp-root a {
+  color: inherit;
+}
+.pp-back {
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  margin-bottom: 10px;
+  font-size: 13px;
+  color: var(--admin-muted);
+  text-decoration: none;
+}
+.pp-back:hover {
+  color: var(--admin-ink);
+}
+.pp-button {
+  all: unset;
+  box-sizing: border-box;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  padding: 0 18px;
+  border: 1px solid var(--admin-ink);
+  font-size: 14px;
+  white-space: nowrap;
+  transition: background 0.3s, color 0.3s, opacity 0.3s;
+}
+.pp-button:hover {
+  background: var(--admin-ink);
+  color: var(--admin-paper);
+}
+.pp-button--solid {
+  background: var(--admin-ink);
+  color: var(--admin-paper);
+}
+.pp-button--solid:hover {
+  opacity: 0.85;
+}
+.pp-button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+.pp-button:focus-visible,
+.pp-tile:focus-visible,
+.pp-pick:focus-visible,
+.pp-tabs button:focus-visible {
+  outline: 2px solid var(--admin-ink);
+  outline-offset: 2px;
+}
+
+/* ── ページの切り替え（Portrait / Life） ─────────────────── */
+.pp-tabs {
+  display: flex;
+  gap: 4px;
+  margin: 18px 0 6px;
+  border-bottom: 1px solid var(--admin-line);
+}
+.pp-tabs button {
+  all: unset;
+  box-sizing: border-box;
+  cursor: pointer;
+  min-height: 44px;
+  padding: 0 18px;
+  font-family: var(--pp-display);
+  font-size: 21px;
+  color: var(--admin-muted);
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  transition: color 0.3s, border-color 0.3s;
+}
+.pp-tabs button[aria-selected="true"] {
+  color: var(--admin-ink);
+  border-color: var(--admin-ink);
+}
+.pp-tabs button small {
+  margin-left: 8px;
+  font-size: 13px;
+  color: var(--admin-muted);
+}
+.pp-note {
+  margin: 12px 0 0;
+  padding: 10px 14px;
+  border-left: 3px solid var(--admin-accent);
+  background: var(--admin-paper-soft);
+  font-size: 13.5px;
+}
+.pp-error {
+  margin: 12px 0 0;
+  padding: 10px 14px;
+  border-left: 3px solid var(--admin-danger);
+  background: var(--admin-paper-soft);
+  font-size: 13.5px;
+  color: var(--admin-danger);
+}
+
+/* ── 選んだ写真：この並びのまま、サイトに出る ─────────────── */
+.pp-tools {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 18px;
+  margin: 16px 0 12px;
+  font-size: 13px;
+  color: var(--admin-muted);
+}
+.pp-tools__count {
+  margin-right: auto;
+}
+.pp-zoom {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  flex: none;
+  color: var(--admin-muted);
+}
+.pp-zoom i {
+  display: block;
+  border: 1px solid currentColor;
+  border-radius: 1px;
+}
+.pp-zoom__small {
+  width: 7px;
+  height: 7px;
+}
+.pp-zoom__large {
+  width: 13px;
+  height: 13px;
+}
+.pp-zoom input {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 132px;
+  height: 24px;
+  margin: 0;
+  background: transparent;
+  cursor: pointer;
+}
+.pp-zoom input::-webkit-slider-runnable-track {
+  height: 2px;
+  background: var(--admin-line-strong);
+}
+.pp-zoom input::-moz-range-track {
+  height: 2px;
+  background: var(--admin-line-strong);
+}
+.pp-zoom input::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 14px;
+  height: 14px;
+  margin-top: -6px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--admin-ink);
+}
+.pp-zoom input::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--admin-ink);
+}
+.pp-grid,
+.pp-lib {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(var(--pp-tile, 168px), 1fr));
+  gap: var(--pp-gap, 12px);
+}
+.pp-grid {
+  position: relative;
+  user-select: none;
+  -webkit-user-select: none;
+  /* 縦に送るのはブラウザに任せ、2本の指でつまむ動きは画面が受け取る（頁そのものは拡大しない）。 */
+  touch-action: pan-y;
+}
+.pp-tile,
+.pp-pick {
+  all: unset;
+  box-sizing: border-box;
+  position: relative;
+  display: block;
+  aspect-ratio: 1 / 1;
+  overflow: hidden;
+  background: var(--admin-paper-deep);
+  -webkit-touch-callout: none;
+}
+.pp-tile {
+  cursor: grab;
+  transition: opacity 0.25s;
+}
+.pp-pick {
+  cursor: pointer;
+}
+.pp-tile img,
+.pp-pick img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  pointer-events: none;
+  transition: transform 0.35s cubic-bezier(0.2, 0.7, 0.1, 1), opacity 0.25s ease;
+}
+.pp-tile[aria-pressed="true"] {
+  box-shadow: inset 0 0 0 3px var(--admin-ink);
+}
+.pp-tile[aria-pressed="true"] img {
+  transform: scale(0.86);
+}
+.pp-tile[data-moving] {
+  opacity: 0.25;
+}
+.pp-check {
+  position: absolute;
+  right: max(4px, 6%);
+  bottom: max(4px, 6%);
+  width: clamp(14px, 24%, 22px);
+  height: clamp(14px, 24%, 22px);
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--admin-ink);
+  color: var(--admin-paper);
+  box-shadow: 0 0 0 1.5px var(--admin-paper);
+  font-size: clamp(9px, 1em, 13px);
+  line-height: 1;
+  transform: scale(0);
+  transition: transform 0.3s cubic-bezier(0.2, 0.7, 0.1, 1);
+}
+.pp-tile[aria-pressed="true"] .pp-check,
+.pp-pick[aria-pressed="true"] .pp-check {
+  transform: scale(1);
+}
+.pp-add {
+  all: unset;
+  box-sizing: border-box;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  aspect-ratio: 1 / 1;
+  border: 1px dashed var(--admin-line-strong);
+  color: var(--admin-muted);
+  font-size: clamp(16px, calc(var(--pp-tile, 168px) * 0.2), 34px);
+  line-height: 1;
+  transition: background 0.3s, color 0.3s;
+}
+.pp-add:hover {
+  background: var(--admin-paper-soft);
+  color: var(--admin-ink);
+}
+.pp-dropline {
+  position: absolute;
+  z-index: 3;
+  width: 3px;
+  border-radius: 2px;
+  background: var(--admin-accent);
+  pointer-events: none;
+}
+/* つかんだ写真は body に置く（.admin-atelier の外なので、色は直に書く）。 */
+.pp-ghost {
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 70;
+  pointer-events: none;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.3);
+  will-change: transform;
+}
+.pp-ghost img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.pp-ghost b {
+  position: absolute;
+  right: -9px;
+  top: -9px;
+  box-sizing: border-box;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 6px;
+  display: grid;
+  place-items: center;
+  border-radius: 11px;
+  background: #a07f5b;
+  color: #fff;
+  font-size: 12.5px;
+  font-weight: 600;
+}
+body.pp-dragging,
+body.pp-dragging * {
+  cursor: grabbing !important;
+}
+.pp-hint {
+  margin: 18px 0 0;
+  max-width: 62em;
+  font-size: 13px;
+  color: var(--admin-muted);
+}
+
+/* 選んでいる間だけ、下に出る帯 */
+.pp-selbar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: calc(22px + env(safe-area-inset-bottom, 0px));
+  z-index: 45;
+  display: flex;
+  justify-content: center;
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(12px);
+  transition: opacity 0.3s, transform 0.45s cubic-bezier(0.2, 0.7, 0.1, 1);
+}
+.pp-selbar[data-show] {
+  opacity: 1;
+  transform: none;
+}
+.pp-selbar__in {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  box-sizing: border-box;
+  max-width: calc(100% - 12px);
+  padding: 4px 6px 4px 16px;
+  background: var(--admin-ink);
+  color: var(--admin-paper);
+  font-size: 13.5px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.22);
+}
+.pp-selbar[data-show] .pp-selbar__in {
+  pointer-events: auto;
+}
+.pp-selbar__in span {
+  margin-right: 10px;
+  white-space: nowrap;
+}
+.pp-selbar__in button {
+  all: unset;
+  box-sizing: border-box;
+  cursor: pointer;
+  min-width: 42px;
+  min-height: 44px;
+  padding: 0 10px;
+  text-align: center;
+  white-space: nowrap;
+  transition: background 0.25s;
+}
+.pp-selbar__in button:hover {
+  background: rgba(255, 255, 255, 0.16);
+}
+
+/* 「保存しました」。選んでいる間は、帯の上へよける。 */
+.pp-toast {
+  position: fixed;
+  left: 50%;
+  bottom: calc(22px + env(safe-area-inset-bottom, 0px));
+  z-index: 55;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  box-sizing: border-box;
+  max-width: calc(100% - 20px);
+  padding: 10px 16px;
+  background: var(--admin-ink);
+  color: var(--admin-paper);
+  font-size: 13.5px;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-50%, 10px);
+  transition: opacity 0.3s, transform 0.45s cubic-bezier(0.2, 0.7, 0.1, 1), bottom 0.3s;
+}
+.pp-toast[data-show] {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translate(-50%, 0);
+}
+.pp-root:has(.pp-selbar[data-show]) .pp-toast {
+  bottom: calc(84px + env(safe-area-inset-bottom, 0px));
+}
+.pp-toast button {
+  all: unset;
+  cursor: pointer;
+  min-height: 32px;
+  display: inline-flex;
+  align-items: center;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.5);
+}
+
+/* ── 写真を足す画面 ─────────────────────────────────── */
+.pp-sheet {
+  /* <dialog> の既定（中央寄せ・枠・余白・幅の上限）を外して、画面いっぱいに敷く。 */
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  max-height: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  color: var(--admin-ink);
+  font: inherit;
+  z-index: 50;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr);
+  background: var(--admin-paper);
+  animation: pp-sheet-in 0.22s ease both;
+}
+@keyframes pp-sheet-in {
+  from {
+    opacity: 0;
+  }
+}
+.pp-sheet__head {
+  grid-row: 1;
+  grid-column: 1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 18px;
+  padding: 16px 28px;
+  border-bottom: 1px solid var(--admin-line);
+}
+.pp-sheet__title {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 600;
+}
+.pp-sheet__count {
+  font-size: 13.5px;
+  color: var(--admin-muted);
+  white-space: nowrap;
+}
+.pp-sheet__hint {
+  font-size: 12.5px;
+  color: var(--admin-muted);
+}
+.pp-sheet__zoom {
+  display: inline-flex;
+  margin-left: auto;
+}
+.pp-chips {
+  order: 5;
+  width: 100%;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.pp-chips button,
+.pp-chips select {
+  box-sizing: border-box;
+  min-height: 34px;
+  padding: 0 13px;
+  border: 1px solid var(--admin-line);
+  border-radius: 0;
+  background: transparent;
+  color: var(--admin-muted);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+  transition: border-color 0.3s, color 0.3s;
+}
+.pp-chips button {
+  all: unset;
+  box-sizing: border-box;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  min-height: 34px;
+  padding: 0 13px;
+  border: 1px solid var(--admin-line);
+  color: var(--admin-muted);
+  font-size: 13px;
+  white-space: nowrap;
+  transition: border-color 0.3s, color 0.3s;
+}
+.pp-chips select {
+  flex: none;
+  max-width: 16em;
+}
+.pp-chips button[aria-pressed="true"],
+.pp-chips select[data-on] {
+  border-color: var(--admin-ink);
+  color: var(--admin-ink);
+}
+.pp-chips button b {
+  margin-left: 6px;
+  font-weight: 400;
+}
+.pp-pool {
+  grid-row: 2;
+  grid-column: 1;
+  position: relative;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 0 66px 90px 28px;
+  scrollbar-width: none;
+  touch-action: pan-y;
+}
+.pp-pool::-webkit-scrollbar {
+  display: none;
+}
+.pp-now {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+  margin: 0 -66px 0 -28px;
+  padding: 11px 28px 10px;
+  border-bottom: 1px solid var(--admin-line);
+  background: var(--admin-paper);
+  font-size: 13px;
+  color: var(--admin-muted);
+}
+.pp-now[hidden] {
+  display: none;
+}
+.pp-now b {
+  font-size: 14.5px;
+  font-weight: 600;
+  color: var(--admin-ink);
+}
+.pp-now span {
+  margin-left: auto;
+  white-space: nowrap;
+}
+.pp-lib {
+  align-content: start;
+}
+.pp-period {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin: 18px 0 0;
+  font-size: 13.5px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+}
+.pp-period span {
+  font-size: 12.5px;
+  font-weight: 400;
+  color: var(--admin-muted);
+}
+.pp-pick img {
+  opacity: 0;
+}
+.pp-pick img[data-loaded] {
+  opacity: 1;
+}
+.pp-pick[aria-pressed="true"] img[data-loaded] {
+  opacity: 0.42;
+}
+.pp-none {
+  grid-column: 1 / -1;
+  margin: 40px 0;
+  font-size: 14px;
+  color: var(--admin-muted);
+}
+/* 右端のつまみ：全体のどこを見ているかを出し、つかむと送れる */
+.pp-scrub {
+  grid-row: 2;
+  grid-column: 1;
+  justify-self: end;
+  position: relative;
+  z-index: 3;
+  width: 54px;
+  margin: 58px 4px 16px 0;
+  touch-action: none;
+  cursor: ns-resize;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.pp-scrub[hidden] {
+  display: none;
+}
+.pp-scrub::before {
+  content: "";
+  position: absolute;
+  right: 13px;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: var(--admin-line-strong);
+}
+.pp-scrub__year {
+  position: absolute;
+  right: 22px;
+  transform: translateY(-50%);
+  font-size: 11.5px;
+  line-height: 1;
+  color: var(--admin-muted);
+  white-space: nowrap;
+  transition: opacity 0.25s;
+}
+.pp-scrub__year::after {
+  content: "";
+  position: absolute;
+  right: -12px;
+  top: 50%;
+  width: 7px;
+  height: 1px;
+  background: var(--admin-muted);
+}
+.pp-scrub__thumb {
+  position: absolute;
+  right: 5px;
+  top: 0;
+  width: 17px;
+  height: 5px;
+  margin-top: -2.5px;
+  border-radius: 3px;
+  background: var(--admin-ink);
+}
+.pp-scrub__tip {
+  position: absolute;
+  right: 30px;
+  top: 50%;
+  padding: 8px 11px;
+  background: var(--admin-ink);
+  color: var(--admin-paper);
+  font-size: 13px;
+  line-height: 1;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(6px, -50%);
+  transition: opacity 0.25s, transform 0.35s cubic-bezier(0.2, 0.7, 0.1, 1);
+}
+.pp-scrub[data-on] .pp-scrub__tip {
+  opacity: 1;
+  transform: translate(0, -50%);
+}
+.pp-scrub[data-on] .pp-scrub__year {
+  opacity: 0.35;
+}
+
+/* ── サイトの構成（今までの構成 ⇄ 新しい構成） ─────────────── */
+.pp-design {
+  margin-top: 56px;
+  padding-top: 26px;
+  border-top: 1px solid var(--admin-line);
+  max-width: 760px;
+}
+.pp-design h2 {
+  margin: 0 0 6px;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+}
+.pp-design p {
+  margin: 0 0 12px;
+  font-size: 13.5px;
+  color: var(--admin-muted);
+}
+.pp-design__choices {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.pp-design__choices button {
+  all: unset;
+  box-sizing: border-box;
+  cursor: pointer;
+  min-height: 64px;
+  padding: 12px 16px;
+  border: 1px solid var(--admin-line);
+  background: var(--admin-paper-soft);
+  transition: box-shadow 0.3s;
+}
+.pp-design__choices button[aria-pressed="true"] {
+  box-shadow: inset 0 0 0 2px var(--admin-ink);
+}
+.pp-design__choices b {
+  display: block;
+  font-size: 15px;
+  font-weight: 600;
+}
+.pp-design__choices span {
+  display: block;
+  font-size: 12.5px;
+  color: var(--admin-muted);
+}
+.pp-design__choices i {
+  float: right;
+  font-style: normal;
+  font-size: 12px;
+  padding: 1px 9px;
+  background: var(--admin-accent-fill);
+  color: #fff;
+}
+.pp-design__confirm {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 14px;
+  margin-top: 14px;
+  padding: 14px 16px;
+  border-left: 3px solid var(--admin-accent);
+  background: var(--admin-paper-soft);
+  font-size: 14px;
+}
+.pp-design__confirm span {
+  flex: 1 1 18em;
+}
+.pp-design__links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 20px;
+  margin-top: 14px;
+  font-size: 13.5px;
+}
+.pp-design__links a {
+  color: var(--admin-ink);
+}
+
+@media (hover: none) {
+  .pp-add:hover {
+    background: none;
+    color: var(--admin-muted);
+  }
+}
+@media (max-width: 767px) {
+  .pp-page {
+    padding: 18px 16px 150px;
+  }
+  .pp-tools {
+    margin-top: 12px;
+  }
+  .pp-zoom input {
+    width: 124px;
+    height: 40px;
+  }
+  .pp-zoom input::-webkit-slider-thumb {
+    width: 24px;
+    height: 24px;
+    margin-top: -11px;
+  }
+  .pp-zoom input::-moz-range-thumb {
+    width: 24px;
+    height: 24px;
+  }
+  .pp-selbar {
+    bottom: calc(14px + env(safe-area-inset-bottom, 0px));
+  }
+  .pp-selbar__in {
+    padding: 0 2px 0 12px;
+    font-size: 13px;
+  }
+  .pp-selbar__in span {
+    margin-right: 4px;
+  }
+  .pp-selbar__in button {
+    min-height: 46px;
+    padding: 0 8px;
+  }
+  .pp-toast {
+    left: 10px;
+    right: 10px;
+    max-width: none;
+    justify-content: space-between;
+    bottom: calc(14px + env(safe-area-inset-bottom, 0px));
+    transform: translate(0, 10px);
+  }
+  .pp-toast[data-show] {
+    transform: none;
+  }
+  .pp-root:has(.pp-selbar[data-show]) .pp-toast {
+    bottom: calc(72px + env(safe-area-inset-bottom, 0px));
+  }
+  .pp-sheet__head {
+    padding: 14px 16px;
+    gap: 8px 10px;
+    overflow: hidden;
+  }
+  .pp-sheet__title {
+    flex: 1 1 calc(100% - 132px);
+    min-width: calc(100% - 132px);
+    font-size: 16px;
+  }
+  .pp-sheet__head [data-pp-done] {
+    order: 1;
+    padding: 0 14px;
+  }
+  .pp-sheet__count {
+    order: 2;
+    flex: 1;
+    min-width: 0;
+  }
+  .pp-sheet__zoom {
+    order: 2;
+    margin-left: 0;
+  }
+  .pp-sheet__hint {
+    display: none;
+  }
+  .pp-chips {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+    box-sizing: content-box;
+    margin-right: -16px;
+    padding-right: 16px;
+  }
+  .pp-chips::-webkit-scrollbar {
+    display: none;
+  }
+  .pp-chips button,
+  .pp-chips select {
+    flex: none;
+    font-size: 16px;
+  }
+  .pp-chips button {
+    font-size: 13px;
+  }
+  .pp-pool {
+    padding: 0 52px 90px 16px;
+  }
+  .pp-now {
+    margin: 0 -52px 0 -16px;
+    padding: 9px 16px 8px;
+  }
+  .pp-period {
+    margin-top: 14px;
+  }
+  .pp-scrub {
+    width: 50px;
+    margin: 50px 0 14px 0;
+  }
+  .pp-scrub__year {
+    right: 20px;
+    font-size: 11px;
+  }
+  .pp-scrub__year::after {
+    right: -10px;
+    width: 6px;
+  }
+  .pp-design__choices {
+    grid-template-columns: 1fr;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pp-root *,
+  .pp-sheet {
+    transition: none !important;
+    animation: none !important;
+  }
+}

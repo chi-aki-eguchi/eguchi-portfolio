@@ -1,7 +1,7 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Link } from "wouter";
 import { Picture } from "../Picture";
-import { developListPhotos } from "../../../shared/develop-structure";
+import { DEVELOP_DOOR_NOTES, developListPhotos } from "../../../shared/develop-structure";
 import "./develop.css";
 
 type Settings = Record<string, string | null | undefined> | undefined;
@@ -54,12 +54,12 @@ export function developDoors({
   const portrait = developListPhotos("portrait", photos, picked?.portrait);
   const life = developListPhotos("life", photos, picked?.life);
   return [
-    { key: "portrait" as const, href: "/portrait", title: "Portrait", note: "人を撮る", photo: portrait[0] ?? null },
-    { key: "life" as const, href: "/life", title: "Life", note: "日常の写真", photo: life[0] ?? null },
+    { key: "portrait" as const, href: "/portrait", title: "Portrait", note: DEVELOP_DOOR_NOTES.portrait, photo: portrait[0] ?? null },
+    { key: "life" as const, href: "/life", title: "Life", note: DEVELOP_DOOR_NOTES.life, photo: life[0] ?? null },
     ...(showSeries
-      ? [{ key: "series" as const, href: "/series", title: "Series", note: "まとまった作品", photo: seriesCover }]
+      ? [{ key: "series" as const, href: "/series", title: "Series", note: DEVELOP_DOOR_NOTES.series, photo: seriesCover }]
       : []),
-    { key: "info" as const, href: "/info", title: "Info", note: "料金と依頼", photo: profilePhoto },
+    { key: "info" as const, href: "/info", title: "Info", note: DEVELOP_DOOR_NOTES.info, photo: profilePhoto },
   ];
 }
 
@@ -266,6 +266,7 @@ export function DevelopHome({
   );
   return (
     <div className="dv-home site-page site-page-top">
+      {/* 下の余白は置かない（フッターの上の余白の設定に任せる）。 */}
       <h1 className="sr-only">{name || "Photographs"}</h1>
       <Cover photos={coverPhotos} name={name} />
       <Doors doors={doors} />
@@ -274,6 +275,9 @@ export function DevelopHome({
           <Link to="/gallery" className="dv-archive__link">
             <span className="font-en">{settings?.navLabelGallery || "Gallery"}</span>
             <span className="dv-archive__note">すべての写真</span>
+            <span className="dv-archive__arrow font-en" aria-hidden="true">
+              →
+            </span>
           </Link>
         </p>
       )}

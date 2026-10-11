@@ -144,19 +144,22 @@ export default function AdminPagesPage() {
 
   return frame(
     <>
-      <a className="pp-back" href="/admin">
-        ← 管理画面へ戻る
-      </a>
+      {/* スマホでは「戻る・題・サイトで見る」を1行にまとめる（題に1行使うと、写真の始まりが 40px 下がる）。 */}
       <header className="pp-head">
-        <div>
-          <h1>ページの写真</h1>
-          <p>
-            新しい構成（Portrait・Life・Series・Info）のページに出す写真を選んで、並べます。変えると、その場で保存されます。
-          </p>
-        </div>
-        <a className="pp-button" href="/?design=develop" target="_blank" rel="noopener">
+        <a className="pp-back" href="/admin" aria-label="管理画面へ戻る">
+          <span aria-hidden="true">←</span>
+          <span>
+            <span className="pp-back__long">管理画面へ</span>戻る
+          </span>
+        </a>
+        <h1>ページの写真</h1>
+        {/* いま並べているページを、新しい構成で開く（保存した構成が今までの物でも、下見できる）。 */}
+        <a className="pp-back pp-back--view" href={`/${tab}?design=develop`} target="_blank" rel="noopener">
           サイトで見る ↗
         </a>
+        <p className="pp-head__lead">
+          新しい構成（Portrait・Life・Series・Info）のページに出す写真を選んで、並べます。変えると、その場で保存されます。
+        </p>
       </header>
 
       <div className="pp-tabs" role="tablist" aria-label="ページ">
@@ -181,7 +184,7 @@ export default function AdminPagesPage() {
       )}
       {!picked && (
         <p className="pp-note">
-          まだ選んでいないので、いまは写真の分類から出しています。並べ替えたり足したりすると、その並びがこのページの写真として保存されます。
+          いまは写真の分類から出しています。動かしたり足したりすると、その並びが保存されます。
         </p>
       )}
       <PagePhotoEditor

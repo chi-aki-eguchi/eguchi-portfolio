@@ -17,6 +17,14 @@ export function isDevelopOnlyPath(pathname: string): boolean {
 
 export type DevelopListKind = "portrait" | "life";
 
+/** 扉の添え書き。トップの扉の目次と、スマホのメニューで同じ言葉を使う。 */
+export const DEVELOP_DOOR_NOTES = {
+  portrait: "人を撮る",
+  life: "日常の写真",
+  series: "まとまった作品",
+  info: "料金と依頼",
+} as const;
+
 /** "12, 7,12 ,x" → [12, 7]。重複は最初の1つを残す（`web/lib/top-works-ids.ts` と同じ読み方）。 */
 export function parsePhotoIdList(value: string | null | undefined): number[] {
   const seen = new Set<number>();

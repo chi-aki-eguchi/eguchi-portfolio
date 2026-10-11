@@ -1,4 +1,4 @@
-import { Fragment, useMemo } from "react";
+import { Fragment, useMemo, type ReactNode } from "react";
 import { jaPhrases } from "../lib/ja-phrases";
 
 export { jaPhrases } from "../lib/ja-phrases";
@@ -25,6 +25,29 @@ export { jaPhrases } from "../lib/ja-phrases";
  */
 const NOWRAP_MAX = 12;
 
+/**
+ * 長い文節の中の、桁区切りのある数字（¥10,000・3.5・2026.10.12 など）は、折らない箱に入れる
+ * （2026-10-12）。keep-all の中でも桁区切りのコンマの後では折り返せてしまい、本番のスマホ
+ * （Safari）で「ポートレート撮影 60分 ¥10,／000。学生の方は半額です。」と金額が2行に割れていた
+ * （文がちょうど1行に入らない幅のとき、text-wrap: pretty が2行の長さをそろえようとして選ぶ）。
+ * 続く句読点・閉じ括弧も一緒に入れる（行の頭に「。」だけを落とさない）。
+ */
+const NUMBER = /([¥￥$€]?\d+(?:[,.]\d+)+[%％円]?[。、，．）)」』]*)/;
+
+function keepNumbers(phrase: string): ReactNode {
+  const parts = phrase.split(NUMBER);
+  if (parts.length < 3) return phrase;
+  return parts.map((part, i) =>
+    i % 2 === 1 ? (
+      <span key={i} className="ja-phrase">
+        {part}
+      </span>
+    ) : (
+      part
+    ),
+  );
+}
+
 export function JaPhrases({ children }: { children: string | null | undefined }) {
   const text = children ?? "";
   const phrases = useMemo(() => jaPhrases(text), [text]);
@@ -34,7 +57,7 @@ export function JaPhrases({ children }: { children: string | null | undefined })
       {phrases.map((phrase, i) => (
         <Fragment key={i}>
           {i > 0 && <wbr />}
-          {phrase.length <= NOWRAP_MAX ? <span className="ja-phrase">{phrase}</span> : phrase}
+          {phrase.length <= NOWRAP_MAX ? <span className="ja-phrase">{phrase}</span> : keepNumbers(phrase)}
         </Fragment>
       ))}
     </span>

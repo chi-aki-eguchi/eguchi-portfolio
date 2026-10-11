@@ -4,7 +4,7 @@ import { Picture } from "../Picture";
 import type { GalleryPhoto } from "../PhotoGallery";
 import { orientedDimensions } from "../../../shared/image-url";
 import { photoAltText } from "../../../shared/photo-alt";
-import { planRows, rowOptionsFor, aspectOf } from "../../lib/photo-rows";
+import { planRows, rowOptionsFor, showcaseOptionsFor, aspectOf } from "../../lib/photo-rows";
 import type { SeriesLink } from "../../lib/series-links";
 import { PhotoViewer, usePhotoViewer } from "./viewer";
 
@@ -30,7 +30,8 @@ export function PhotoStream({
   maxRows,
   presentation = "rows",
 }: {
-  presentation?: "rows" | "selection" | "contact-sheet";
+  /** showcase: 選んだ写真を大きく、幅いっぱいの段で見せる（新しい構成の Portrait／Life）。 */
+  presentation?: "rows" | "selection" | "contact-sheet" | "showcase";
   photos: GalleryPhoto[];
   photographerName: string;
   seriesLinkById?: Record<number, SeriesLink>;
@@ -88,6 +89,7 @@ export function PhotoStream({
     if (presentation === "selection") {
       return planSelection(maxRows === 1 ? ratios.slice(0, 1) : ratios, width, viewportHeight, leadReserve ?? 220);
     }
+    if (presentation === "showcase") return planRows(ratios, showcaseOptionsFor(width, viewportHeight));
     const opts = rowOptionsFor(width, viewportHeight);
     if (leadReserve === undefined) return planRows(ratios, opts);
     const full = planRows(ratios, {

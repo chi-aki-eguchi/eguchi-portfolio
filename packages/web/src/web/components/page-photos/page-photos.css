@@ -43,24 +43,38 @@
   padding: 28px 32px 150px;
 }
 .pp-head {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 12px 24px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    "back view"
+    "title title"
+    "lead lead";
+  align-items: center;
+  column-gap: 16px;
+}
+.pp-head > .pp-back {
+  grid-area: back;
+  justify-self: start;
+}
+.pp-head > .pp-back--view {
+  grid-area: view;
+  justify-self: end;
 }
 .pp-head h1 {
-  margin: 0;
+  grid-area: title;
+  margin: 4px 0 0;
   font-family: var(--pp-display);
   font-size: 34px;
   font-weight: 500;
   line-height: 1.3;
 }
-.pp-head p {
+.pp-head__lead {
+  grid-area: lead;
   margin: 6px 0 0;
-  max-width: 40em;
+  /* 幅を 40 文字で止めると「…並べま／す。」と最後の1文字だけ次の行へ落ちていた。広い画面では1行。 */
   font-size: 14px;
   color: var(--admin-muted);
+  text-wrap: pretty;
 }
 .pp-root a {
   color: inherit;
@@ -68,11 +82,12 @@
 .pp-back {
   display: inline-flex;
   align-items: center;
-  min-height: 32px;
-  margin-bottom: 10px;
+  min-height: 36px;
   font-size: 13px;
   color: var(--admin-muted);
   text-decoration: none;
+  white-space: nowrap;
+  gap: 0.4em;
 }
 .pp-back:hover {
   color: var(--admin-ink);
@@ -171,6 +186,10 @@
 }
 .pp-tools__count {
   margin-right: auto;
+  white-space: nowrap;
+}
+.pp-tools__count small {
+  font-size: inherit;
 }
 .pp-zoom {
   display: inline-flex;
@@ -356,11 +375,25 @@ body.pp-dragging,
 body.pp-dragging * {
   cursor: grabbing !important;
 }
-.pp-hint {
-  margin: 18px 0 0;
+.pp-help {
+  margin: 14px 0 0;
   max-width: 62em;
   font-size: 13px;
   color: var(--admin-muted);
+}
+.pp-help summary {
+  display: inline-flex;
+  align-items: center;
+  min-height: 36px;
+  cursor: pointer;
+  list-style: none;
+  border-bottom: 1px solid var(--admin-line);
+}
+.pp-help summary::-webkit-details-marker {
+  display: none;
+}
+.pp-help p {
+  margin: 8px 0 0;
 }
 
 /* 選んでいる間だけ、下に出る帯 */
@@ -793,11 +826,55 @@ body.pp-dragging * {
   }
 }
 @media (max-width: 767px) {
+  /* スマホ：写真が早く始まるように、上の説明を畳む。写真は画面の端から端まで、間は 3px まで。 */
   .pp-page {
-    padding: 18px 16px 150px;
+    padding: 4px 16px 150px;
+  }
+  /* 「← 戻る｜ページの写真｜サイトで見る ↗」を1行に。題は画面の真ん中（左右の列を同じ幅にする）。 */
+  .pp-head {
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    grid-template-areas: "back title view";
+    column-gap: 8px;
+  }
+  .pp-head h1 {
+    margin: 0;
+    font-size: 17px;
+    font-weight: 600;
+    line-height: 44px;
+    white-space: nowrap;
+  }
+  .pp-head__lead,
+  .pp-back__long {
+    display: none;
+  }
+  .pp-head > .pp-back {
+    min-height: 44px;
+  }
+  .pp-tabs {
+    margin: 0;
+  }
+  .pp-tabs button {
+    padding: 0 14px;
+    font-size: 19px;
+  }
+  .pp-note {
+    margin-top: 8px;
+    padding: 7px 10px;
+    font-size: 12.5px;
+    line-height: 1.6;
   }
   .pp-tools {
-    margin-top: 12px;
+    margin: 6px 0;
+  }
+  .pp-tools__count small {
+    display: none;
+  }
+  .pp-grid {
+    margin-inline: -16px;
+    gap: min(var(--pp-gap, 4px), 3px);
+  }
+  .pp-lib {
+    gap: min(var(--pp-gap, 4px), 3px);
   }
   .pp-zoom input {
     width: 124px;

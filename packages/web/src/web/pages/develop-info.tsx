@@ -1,5 +1,7 @@
 import ProfilePage from "./profile";
 import ContactPage from "./contact";
+// Info の中での余白の調整はここ（直接このページを開いても読み込まれるように、ここで読む）。
+import "../components/develop/develop.css";
 
 /**
  * 新しい構成の Info（2026-10-10、第1段階）。

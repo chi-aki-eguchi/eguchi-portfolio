@@ -22,6 +22,7 @@ import { lockPageScroll } from "../lib/scroll-lock";
 import { PAGE_EXIT_MS } from "./PageTransition";
 import { useDarkModeContext, useServiceVisibility } from "./provider";
 import { hasPublicEnglishContent } from "../../shared/public-english";
+import { DEVELOP_DOOR_NOTES } from "../../shared/develop-structure";
 import {
   isAboutRoute,
   isServiceOwnerSite,
@@ -356,14 +357,17 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       ? [{ href: "/work", label: data?.navLabelWork || "Work" }]
       : []),
   ];
-  const navItems = [
+  // 新しい構成の4つは「扉」。スマホのメニューでは、トップの扉の目次と同じ形（番号・名前・
+  // 添え書き）で画面いっぱいに並べる。添え書きは日本語のページを読んでいる人にだけ出す。
+  const doorNote = (key: keyof typeof DEVELOP_DOOR_NOTES) => (isEnglishChrome ? undefined : DEVELOP_DOOR_NOTES[key]);
+  const navItems: { href: string; label: string; door?: boolean; note?: string }[] = [
     ...(developStructure
       ? [
-          { href: "/portrait", label: "Portrait" },
-          { href: "/life", label: "Life" },
-          ...(showSeries || showWork ? [{ href: "/series", label: "Series" }] : []),
+          { href: "/portrait", label: "Portrait", door: true, note: doorNote("portrait") },
+          { href: "/life", label: "Life", door: true, note: doorNote("life") },
+          ...(showSeries || showWork ? [{ href: "/series", label: "Series", door: true, note: doorNote("series") }] : []),
           // 英語のページを読んでいる人は、英語の Contact へ（Info の英語版は次の段階）。
-          { href: isEnglishChrome ? "/en/contact" : "/info", label: "Info" },
+          { href: isEnglishChrome ? "/en/contact" : "/info", label: "Info", door: true, note: doorNote("info") },
         ]
       : [
           ...shelfItems,
@@ -952,13 +956,14 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
         {/* Closed links stay inert; the open menu uses the remaining viewport. */}
         <div id="mobile-menu" inert={!mobileOpen} className="public-mobile-menu md:hidden">
-          {navItems.map(({ href, label }) => (
+          {navItems.map(({ href, label, door, note }, i) => (
             <Link
               key={href}
               to={href}
               aria-current={isActive(href) ? "page" : undefined}
               {...warmOn(href)}
               className="public-mobile-menu__link font-en"
+              data-door={door || undefined}
               data-service-link={href.includes("portfolio-kit") || undefined}
               style={
                 { letterSpacing: "var(--nav-tracking, 0.04em)" } as React.CSSProperties
@@ -976,9 +981,56 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                   setMobileOpen(false);
               }}
             >
-              {label}
+              {door ? (
+                <>
+                  <span className="public-mobile-menu__no" aria-hidden="true">
+                    {String(i + 1).padStart(2, "0")}
+                  </span>
+                  <span className="public-mobile-menu__label">{label}</span>
+                  {note && <span className="public-mobile-menu__note font-ja">{note}</span>}
+                </>
+              ) : (
+                label
+              )}
             </Link>
           ))}
+          {/* 新しい構成：扉の下に、すべての写真（Gallery）と SNS。扉が画面を使い切り、ここが下の縁に来る。 */}
+          {developStructure && (showGallery || data?.profileInstagram || data?.profileTwitter || data?.profileNote) && (
+            <div className="public-mobile-menu__foot">
+              {showGallery && (
+                <Link
+                  to="/gallery"
+                  {...warmOn("/gallery")}
+                  className="public-mobile-menu__sub font-en"
+                  aria-current={location === "/gallery" ? "page" : undefined}
+                  onClick={() => {
+                    if (location === "/gallery") setMobileOpen(false);
+                  }}
+                >
+                  {data?.navLabelGallery || "Gallery"}
+                  <span className="public-mobile-menu__note font-ja">
+                    {isEnglishChrome ? "All photographs" : "すべての写真"}
+                  </span>
+                  <span aria-hidden="true">→</span>
+                </Link>
+              )}
+              <span className="public-mobile-menu__sns">
+                {(
+                  [
+                    [data?.profileInstagram, data?.snsLabelInstagram || "Instagram"],
+                    [data?.profileTwitter, data?.snsLabelTwitter || "X"],
+                    [data?.profileNote, data?.snsLabelNote || "note"],
+                  ] as const
+                ).map(([url, name]) =>
+                  url ? (
+                    <a key={name} href={safeHref(url)} target="_blank" rel="noopener noreferrer" className="font-en">
+                      {name}
+                    </a>
+                  ) : null,
+                )}
+              </span>
+            </div>
+          )}
           {bookChrome && dm && (
             <button
               type="button"

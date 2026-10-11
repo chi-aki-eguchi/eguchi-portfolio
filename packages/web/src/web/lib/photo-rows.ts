@@ -21,6 +21,11 @@ export type RowPlanOptions = {
   maxHeight: number;
   /** 1段に並べる枚数の上限 */
   maxPerRow: number;
+  /**
+   * 2枚以上並べる段の高さの下限（px）。これより低くなる並べ方は選ばない
+   * （スマホで縦と横の写真を並べると、縦の写真が切手の大きさになる）。1枚の段には使わない。
+   */
+  minHeight?: number;
 };
 
 /**
@@ -51,7 +56,7 @@ function fullHeight(ratios: readonly number[], width: number, gap: number): numb
 
 /** 前から1段ずつ、狙いの高さに最も近くなる枚数で区切る。 */
 function groupRows(ratios: readonly number[], opts: RowPlanOptions): { start: number; end: number; target: number }[] {
-  const { width, gap, targets, maxHeight, maxPerRow } = opts;
+  const { width, gap, targets, maxHeight, maxPerRow, minHeight = 0 } = opts;
   const groups: { start: number; end: number; target: number }[] = [];
   let i = 0;
   let turn = 0;
@@ -67,7 +72,8 @@ function groupRows(ratios: readonly number[], opts: RowPlanOptions): { start: nu
       const h = (width - (k - 1) * gap) / sum;
       // 狙いとの差は比で測る（高すぎも低すぎも同じ重み）。上限を超える段は
       // 選ばない——もう1枚足せば収まるなら、そちらにする。
-      const score = Math.abs(Math.log(h / target)) + (h > maxHeight ? 10 : 0);
+      const score =
+        Math.abs(Math.log(h / target)) + (h > maxHeight ? 10 : 0) + (k > 1 && h < minHeight ? 10 : 0);
       if (score < bestScore) {
         best = k;
         bestScore = score;
@@ -93,11 +99,12 @@ function balanceTail(
   groups: { start: number; end: number; target: number }[],
   opts: RowPlanOptions,
 ) {
-  const { width, gap, maxHeight, maxPerRow, targets } = opts;
+  const { width, gap, maxHeight, maxPerRow, targets, minHeight = 0 } = opts;
   const minRow = Math.min(...targets) * 0.6;
   const rowOk = (a: number, b: number) => {
     if (b - a > maxPerRow + 1) return false;
     const h = fullHeight(ratios.slice(a, b), width, gap);
+    if (b - a > 1 && h < minHeight) return false;
     return h <= maxHeight && h >= minRow;
   };
   const last = groups[groups.length - 1];
@@ -214,6 +221,42 @@ export function planRows(
     top += row.height + gap;
   }
   return { rows, height: rows.length ? top - gap : 0 };
+}
+
+/**
+ * 選んだ写真を見せるページ（新しい構成の Portrait／Life、2026-10-12）の段。
+ *
+ * オーナー「無駄なスペース余白がないように、写真がなるべく綺麗に、無駄なく見れるようにしたい」。
+ * それまでの組み方（1枚と2枚を交互に、段の間を広く空ける）は、スマホで横の写真2枚が
+ * 170px ずつの小さな段になり、段の間が毎回 48px 空いていた（実測：5.5画面のうち空きの帯 853px）。
+ *
+ * - どの段も横幅いっぱい（`planRows`）。段の間は写真どうしの間と同じ狭さ
+ * - スマホ: 1枚で幅いっぱい／縦の写真2枚、を交互に。横の写真は必ず1枚（並べると小さい）。
+ *   画面の高さは使わない——実機の iPhone は開いた直後の高さが 664px（検査用の画面は 844px）で、
+ *   高さを基準にすると 2:3 の縦写真が1枚で出なくなり、検査で見た並びと実機の並びが食い違う
+ * - 広い画面: 一覧（Gallery）より大きく見せる。1段は3枚まで、高さは画面の半分〜8割
+ */
+export function showcaseOptionsFor(width: number, viewportHeight: number): RowPlanOptions {
+  if (width < 640) {
+    return {
+      width,
+      gap: 6,
+      targets: [1.25, 0.72].map((f) => f * width),
+      // 1枚の段は、縦に細長い写真（9:16 など）でも幅いっぱいに出す。上限を 1.6 倍にしていると、
+      // その写真だけ高さで止まって左右が 20px ずつ空くか、横の写真と並んで切手の大きさになる。
+      maxHeight: width * 2.2,
+      maxPerRow: 2,
+      minHeight: width * 0.56,
+    };
+  }
+  const vh = Math.max(480, viewportHeight);
+  return {
+    width,
+    gap: width < 1024 ? 8 : 12,
+    targets: [0.78, 0.56, 0.66, 0.5].map((f) => Math.min(860, Math.max(260, f * vh))),
+    maxHeight: Math.min(vh * 0.86, 900),
+    maxPerRow: 3,
+  };
 }
 
 /**

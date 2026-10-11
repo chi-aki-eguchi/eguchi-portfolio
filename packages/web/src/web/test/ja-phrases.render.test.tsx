@@ -74,3 +74,16 @@ test("短い文節は折らない箱（.ja-phrase）に入り、括弧は次の�
     cleanup();
   }
 });
+
+// 本番のスマホで「¥10,／000。」と金額が2行に割れていた（2026-10-12、撮影のご依頼の文）。
+test("長い文節の中でも、桁区切りのある数字は折らない箱に入る（文字は変えない）", async () => {
+  const text = "ポートレート撮影 60分 ¥10,000。学生の方は半額です。";
+  const { host, cleanup } = await render(text);
+  try {
+    expect(host.textContent).toBe(text);
+    const boxes = Array.from(host.querySelectorAll(".ja-phrase")).map((n) => n.textContent);
+    expect(boxes).toContain("¥10,000。");
+  } finally {
+    cleanup();
+  }
+});

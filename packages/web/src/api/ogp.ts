@@ -127,6 +127,7 @@ const PAGE_TITLES: Record<string, string> = {
   "/admin": "Admin",
   "/admin/login": "Admin Login",
   "/admin/pdf": "PDF作品集",
+  "/admin/pages": "ページの写真",
   "/admin/demo": "Portfolio Kit 体験版",
 };
 

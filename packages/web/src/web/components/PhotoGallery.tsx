@@ -176,6 +176,8 @@ const DENSITY_RATIO_EPSILON = 0.01;
  * bottom edges are both in view at once.
  */
 const EDITORIAL_WINDOW_RESERVE = 160;
+/** スマホで写真を幅いっぱいに積むときの間（px）。写真の一覧（PhotoStream の段の間）と同じ。 */
+const MOBILE_STACK_GAP = 6;
 
 /**
  * Columns never outnumber the photos that go in them.
@@ -519,9 +521,14 @@ export function PhotoGallery({
   seriesLinkById,
   categoryLabelBySlug,
   trimPartialRow = false,
+  mobileFullWidth = false,
 }: {
   photos: GalleryPhoto[];
   layoutType?: string;
+  /** スマホで、対の2枚目（72%）と最後の1枚（88%）も幅いっぱいに出す（editorial のみ）。
+   *  新しい構成のサイトで付ける：スマホでは写真を画面の端から端まで見せ、横に空きを作らない
+   *  （2026-10-12 オーナー「無駄な余白だったり謎の余白が多い」）。写真の間は、どこも同じ狭さ。 */
+  mobileFullWidth?: boolean;
   variant?: "top" | "gallery";
   /** そろった格子（正方形・縦・横）で、最後の半端な行を出さない。TOP の
    *  「見本の並び」用。写真を選んで並べる場面では付けない（選んだ写真が消える）。 */
@@ -1380,7 +1387,9 @@ export function PhotoGallery({
         style={{
           display: "flex",
           flexDirection: "column",
-          gap: `${(isMobile ? 64 : 104) * gapScale}px`,
+          // 幅いっぱいに積むスマホでは、対の区別を見せる物（右へ寄せた小さい2枚目）が無い。
+          // 間だけ 11px と 38px が交互になると、理由の分からない空きに見える。写真の一覧と同じ 6px でそろえる。
+          gap: isMobile && mobileFullWidth ? `${MOBILE_STACK_GAP}px` : `${(isMobile ? 64 : 104) * gapScale}px`,
         }}
       >
         {pairs.map((pair, pi) =>
@@ -1389,11 +1398,11 @@ export function PhotoGallery({
               key={pair[0].id}
               style={{ display: "flex", justifyContent: "center" }}
             >
-              <div style={{ width: isMobile ? "88%" : fitWindow(pair[0], 60) }}>
+              <div style={{ width: isMobile ? (mobileFullWidth ? "100%" : "88%") : fitWindow(pair[0], 60) }}>
                 {tile(pair[0], pi * 2, {
                   width: "100%",
                   justifySelf: "stretch",
-                  sizes: isMobile ? "88vw" : "60vw",
+                  sizes: isMobile ? (mobileFullWidth ? "100vw" : "88vw") : "60vw",
                   preferMediumGrid: true,
                 })}
               </div>
@@ -1404,7 +1413,7 @@ export function PhotoGallery({
               style={{
                 display: "flex",
                 flexDirection: "column",
-                gap: `${Math.max(10, Math.round(18 * gapScale))}px`,
+                gap: mobileFullWidth ? `${MOBILE_STACK_GAP}px` : `${Math.max(10, Math.round(18 * gapScale))}px`,
               }}
             >
               <div>
@@ -1415,11 +1424,11 @@ export function PhotoGallery({
                   preferMediumGrid: true,
                 })}
               </div>
-              <div style={{ width: "72%", alignSelf: "flex-end" }}>
+              <div style={{ width: mobileFullWidth ? "100%" : "72%", alignSelf: "flex-end" }}>
                 {tile(pair[1], pi * 2 + 1, {
                   width: "100%",
                   justifySelf: "stretch",
-                  sizes: "72vw",
+                  sizes: mobileFullWidth ? "100vw" : "72vw",
                   preferMediumGrid: true,
                 })}
               </div>

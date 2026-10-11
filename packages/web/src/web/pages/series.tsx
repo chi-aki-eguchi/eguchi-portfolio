@@ -34,7 +34,7 @@ export default function SeriesListPage({
     <section className="max-w-5xl mx-auto site-page site-page-top pb-16 md:pb-32 min-h-[60vh]" ref={entranceRef}>
       <PageTitle className="mb-8 md:mb-12">{heading}</PageTitle>
 
-      <SeriesGrid kind={kind} />
+      <SeriesGrid kind={kind} edgeToEdgeOnMobile={siteDesignFrom(data?.siteDesign) === "develop"} />
     </section>
   );
 }

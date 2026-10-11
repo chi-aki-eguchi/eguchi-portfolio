@@ -64,7 +64,15 @@ function PeriodText({ text }: { text: string }) {
  */
 export type ShelfKind = "series" | "work";
 
-export function SeriesGrid({ kind = "series" }: { kind?: ShelfKind }) {
+export function SeriesGrid({
+  kind = "series",
+  edgeToEdgeOnMobile = false,
+}: {
+  kind?: ShelfKind;
+  /** スマホで、表紙を画面の端から端まで並べる（新しい構成のサイト。2026-10-12）。
+   *  題名を表紙に重ねる札（overlay）のときだけ効く——題名が下に付く札は、文字に左右の余白が要る。 */
+  edgeToEdgeOnMobile?: boolean;
+}) {
   const { data: settings } = useQuery({
     queryKey: ["settings"],
     queryFn: async () => jsonOrThrow(await api.settings.$get()),
@@ -118,7 +126,9 @@ export function SeriesGrid({ kind = "series" }: { kind?: ShelfKind }) {
     "galleryGapScale",
     num(settings?.galleryGapScale, 1),
   );
-  const gap = (isMobile ? 18 : 32) * gapScale;
+  const bleed = isMobile && edgeToEdgeOnMobile && cardStyle === "overlay";
+  // 端から端まで並べるときは、写真の一覧（PhotoStream）と同じ 6px。
+  const gap = bleed ? 6 : (isMobile ? 18 : 32) * gapScale;
 
   // Tiles are `.page-entrance` (opacity:0 until observed). Own the observer here
   // instead of relying on the parent page's — tiles that mount after the parent's
@@ -217,7 +227,9 @@ export function SeriesGrid({ kind = "series" }: { kind?: ShelfKind }) {
         alignItems: "start",
         ...(soloWidth
           ? { maxWidth: "min(100%, 460px)", marginInline: "auto" }
-          : breakout),
+          : bleed
+            ? { marginInline: "calc(-1 * var(--page-inset))" }
+            : breakout),
       }}
     >
       {series.map((s) => (

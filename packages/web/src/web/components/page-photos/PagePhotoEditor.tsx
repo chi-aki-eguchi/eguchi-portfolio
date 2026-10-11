@@ -71,7 +71,8 @@ export function PagePhotoEditor({
   );
   const order = useMemo(() => list.map((p) => p.id), [list]);
   const [selected, setSelected] = useState<ReadonlySet<number>>(() => new Set());
-  const [zoom, setZoom] = useStoredZoom("page", 75, 32);
+  // スマホでは写真を画面の端から端まで並べる（左右の余白 0）。最初はちょうど3列。
+  const [zoom, setZoom] = useStoredZoom("page", 75, 0);
   const [picking, setPicking] = useState(false);
   const gridRef = useRef<HTMLDivElement>(null);
   const capture = useFlip(gridRef);
@@ -312,7 +313,9 @@ export function PagePhotoEditor({
   return (
     <div className="pp-editor">
       <div className="pp-tools">
-        <span className="pp-tools__count">{list.length} 枚　この並びのまま、サイトに出ます</span>
+        <span className="pp-tools__count">
+          {list.length} 枚<small>　この並びのまま、サイトに出ます</small>
+        </span>
         <ZoomSlider
           value={zoom}
           onChange={(v) => {
@@ -351,10 +354,14 @@ export function PagePhotoEditor({
           ＋
         </button>
       </div>
-      <p className="pp-hint">
-        写真をつかんで動かすと、並べ替えられます（スマホは長押ししてから動かす）。押すと選べて、何枚かまとめて動かしたり外したりできます。
-        右上のつまみ（スマホは2本の指でつまんでも）で写真を小さくすると、全体を見渡せます。「外す」はこのページから外すだけで、写真そのものは消えません。
-      </p>
+      {/* 使い方は畳んでおく（毎回は読まない。開いたままだと、写真の下に長い文が居座る）。 */}
+      <details className="pp-help">
+        <summary>使い方</summary>
+        <p>
+          写真をつかんで動かすと、並べ替えられます（スマホは長押ししてから動かす）。押すと選べて、何枚かまとめて動かしたり外したりできます。
+          右上のつまみ（スマホは2本の指でつまんでも）で写真を小さくすると、全体を見渡せます。「外す」はこのページから外すだけで、写真そのものは消えません。
+        </p>
+      </details>
 
       <div className="pp-selbar" data-show={selected.size > 0 || undefined} role="toolbar" aria-label="選んだ写真">
         <div className="pp-selbar__in">

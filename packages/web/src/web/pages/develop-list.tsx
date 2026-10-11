@@ -23,8 +23,8 @@ const COPY: Record<DevelopListKind, { title: string; label: string }> = {
  * 新しい構成の Portrait／Life（2026-10-10）。
  *
  * 写真は、選んだ物があればその順で、無ければ分類から出す（`shared/develop-structure.ts`）。段組みとビューアは
- * 写真中心のサイト用に作った部品（PhotoStream）をそのまま使う：元の縦横比のまま、
- * 切り抜かず、押すといつものビューアが開く。
+ * 写真中心のサイト用に作った部品（PhotoStream）を使う：元の縦横比のまま、切り抜かず、
+ * どの段も横幅いっぱい（`showcaseOptionsFor`）。スマホでは画面の端から端まで。押すといつものビューアが開く。
  */
 export default function DevelopListPage({ kind }: { kind: DevelopListKind }) {
   const { data: settings } = useQuery({
@@ -86,6 +86,9 @@ export default function DevelopListPage({ kind }: { kind: DevelopListKind }) {
           <Link to="/gallery" className="dv-archive__link">
             <span className="font-en">{settings?.navLabelGallery || "Gallery"}</span>
             <span className="dv-archive__note">すべての写真</span>
+            <span className="dv-archive__arrow font-en" aria-hidden="true">
+              →
+            </span>
           </Link>
         </p>
       )}
@@ -94,12 +97,11 @@ export default function DevelopListPage({ kind }: { kind: DevelopListKind }) {
   );
 
   return (
-    <section className="dv-list max-w-6xl mx-auto site-page site-page-top pb-16 md:pb-32 min-h-[60vh]" data-kind={kind}>
-      <div className="ps-page-head dv-list__head" data-title-style={settings?.pageTitleStyle || "label"}>
-        <PageTitle className="ps-page-head__title" revealClass="">
-          {title}
-        </PageTitle>
-      </div>
+    <section className="dv-list site-page site-page-top min-h-[60vh]" data-kind={kind}>
+      {/* 見出しを出さない設定（hidden）のときは、場所も取らない（空の箱を置くと、写真の上に謎の余白が残る）。 */}
+      <PageTitle className="dv-list__title" revealClass="">
+        {title}
+      </PageTitle>
       {photosQ.isLoading && <ContentStatus state="loading" />}
       {photosQ.isError && (
         <ContentStatus state="error" error={photosQ.error} onRetry={() => void photosQ.refetch()} />
@@ -116,7 +118,7 @@ export default function DevelopListPage({ kind }: { kind: DevelopListKind }) {
           photographerName={photographerName}
           seriesLinkById={seriesLinkById}
           label={label}
-          presentation="selection"
+          presentation="showcase"
           after={foot}
         />
       )}

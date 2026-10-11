@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { planRows, rowOptionsFor, leadCount } from "./photo-rows";
+import { planRows, rowOptionsFor, showcaseOptionsFor, leadCount } from "./photo-rows";
 
 // 縦(0.667)・横(1.5)・正方形・パノラマを混ぜた、現実に近い並び。
 const mix = [1.5, 0.667, 1.5, 1.5, 0.667, 0.667, 1, 1.5, 2.4, 0.8, 1.5, 0.667, 1.5, 1.33, 0.667, 1.5, 1.5, 0.75, 1.5, 0.667];
@@ -120,5 +120,88 @@ describe("段の組み方", () => {
     expect(plan.rows[0]!.full).toBe(true);
     expect(plan.rows[0]!.items.length).toBeGreaterThan(1);
     expect(plan.rows[0]!.height).toBeGreaterThan(736 * 0.6);
+  });
+});
+
+describe("選んだ写真を見せるページの段（showcase）", () => {
+  const L = 1.5; // 横の写真
+  const V = 2 / 3; // 縦の写真
+  const mixed = [L, V, V, L, V, L, L, V, V, V, L, V, L, V, L, L];
+
+  test("スマホ：どの段も画面の幅いっぱい。横の写真は1枚、縦の写真は1枚か2枚。3枚は並べない", () => {
+    for (const width of [360, 375, 390, 430]) {
+      const opts = showcaseOptionsFor(width, 844);
+      const plan = planRows(mixed, opts);
+      expect(plan.rows.flatMap((r) => r.items).length).toBe(mixed.length);
+      for (const row of plan.rows) {
+        expect(row.items.length).toBeLessThanOrEqual(2);
+        const last = row.items[row.items.length - 1]!;
+        // 段の右端が幅にそろう（左右に空きが無い）。
+        expect(Math.abs(last.x + last.width - width)).toBeLessThan(1);
+        expect(row.items[0]!.x).toBe(0);
+        // 横の写真は、ほかの写真と並べて小さくしない。
+        if (row.items.some((it) => mixed[it.index] === L)) expect(row.items.length).toBe(1);
+      }
+      // 段の間は、写真どうしの間と同じ 6px。
+      for (let i = 1; i < plan.rows.length; i++) {
+        const prev = plan.rows[i - 1]!;
+        expect(Math.round(plan.rows[i]!.top - (prev.top + prev.height))).toBe(6);
+      }
+    }
+  });
+
+  test("スマホ：縦の写真だけなら「1枚で大きく」と「2枚並び」が交互（4:5 でも 2:3 でも）", () => {
+    for (const ratio of [4 / 5, 2 / 3]) {
+      const plan = planRows(Array.from({ length: 12 }, () => ratio), showcaseOptionsFor(390, 664));
+      expect(plan.rows.map((r) => r.items.length)).toEqual([1, 2, 1, 2, 1, 2, 1, 2]);
+    }
+  });
+
+  test("スマホ：並びは画面の高さで変わらない（実機は 664px、検査用は 844px。アドレスバーの出入りでも同じ）", () => {
+    const shape = (vh: number) =>
+      planRows(mixed, showcaseOptionsFor(390, vh)).rows.map((r) => `${r.items.length}:${Math.round(r.height)}`);
+    expect(shape(664)).toEqual(shape(844));
+    expect(shape(548)).toEqual(shape(844));
+  });
+
+  test("スマホ：縦と横の写真を並べた低い段を、終わりの組み直しでも作らない", () => {
+    for (let n = 1; n <= 9; n++) {
+      const plan = planRows(mixed.slice(0, n), showcaseOptionsFor(390, 664));
+      for (const row of plan.rows) {
+        if (row.items.length > 1) expect(row.height).toBeGreaterThanOrEqual(390 * 0.56);
+      }
+    }
+  });
+
+  test("スマホ：縦に細長い写真（9:16）も、横の写真と並べず、1枚で幅いっぱいに出す", () => {
+    const tall = 9 / 16;
+    for (const ratios of [[tall, L, tall, L], [L, tall, L], [tall], [V, tall, L, L, tall, 2.35]]) {
+      const plan = planRows(ratios, showcaseOptionsFor(390, 664));
+      for (const row of plan.rows) {
+        expect(row.full).toBe(true);
+        const last = row.items[row.items.length - 1]!;
+        expect(Math.abs(last.x + last.width - 390)).toBeLessThan(1);
+        if (row.items.length > 1) expect(row.height).toBeGreaterThanOrEqual(390 * 0.56);
+      }
+    }
+  });
+
+  test("広い画面：どの段も幅いっぱいで、1段は4枚まで。画面より高い段を作らない", () => {
+    for (const [width, vh] of [[1216, 900], [1000, 800], [1680, 1050]] as const) {
+      const opts = showcaseOptionsFor(width, vh);
+      const plan = planRows(mixed, opts);
+      for (const row of plan.rows) {
+        expect(row.items.length).toBeLessThanOrEqual(opts.maxPerRow + 1);
+        const last = row.items[row.items.length - 1]!;
+        expect(Math.abs(last.x + last.width - width)).toBeLessThan(1);
+        expect(row.height).toBeLessThanOrEqual(opts.maxHeight + 0.5);
+      }
+    }
+  });
+
+  test("一覧（Gallery）の段より大きく見せる：同じ写真なら段の数が多い", () => {
+    const showcase = planRows(mixed, showcaseOptionsFor(1216, 900));
+    const wall = planRows(mixed, rowOptionsFor(1216, 900));
+    expect(showcase.rows.length).toBeGreaterThanOrEqual(wall.rows.length);
   });
 });

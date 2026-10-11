@@ -283,6 +283,12 @@ describe("injectOgp robots policy", () => {
     expect(pdf).not.toContain("Not Found");
     expect(robotsOf(pdf)).toBe("noindex, nofollow");
 
+    // 2026-10-12: 「ページの写真」は題名の台帳に入れ忘れていて、開く前のタブの名前が既定のままだった。
+    const pages = injectOgp(page, {}, "/admin/pages");
+    expect(pages).toContain("<title>ページの写真 | Photographer Name | Photography</title>");
+    expect(pages).not.toContain("Not Found");
+    expect(robotsOf(pages)).toBe("noindex, nofollow");
+
     const demo = injectOgp(page, {}, "/admin/demo");
     expect(demo).toContain("<title>Portfolio Kit 体験版 |");
     expect(demo).not.toContain("Not Found");

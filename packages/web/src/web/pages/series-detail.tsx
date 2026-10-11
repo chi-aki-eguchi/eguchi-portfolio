@@ -304,6 +304,7 @@ export default function SeriesDetailPage() {
             photos={photos}
             layoutType={seriesLayout}
             seriesName={data?.series.title}
+            mobileFullWidth={siteDesignFrom(settings?.siteDesign) === "develop"}
           />
         )}
       </div>

@@ -2,10 +2,18 @@
    色・書体・文字の大きさは、今までの設定（--foreground・--background・.font-en など）を
    そのまま使う。ここで決めるのは並べ方と、濃さの切り替えだけ。
    動きは濃淡が基本（表紙の入れ替え・扉の写真の入れ替え）。動かすのは、触れた扉の
-   言葉だけ（見る人の操作に応える動き）。 */
+   言葉だけ（見る人の操作に応える動き）。
 
-.dv-home {
-  padding-bottom: clamp(3rem, 8vh, 6rem);
+   余白の決まり（2026-10-12、オーナー「無駄な余白だったり謎の余白が多い」）:
+   ・区切りの余白は、管理画面の余白の設定（表紙の下 --spacing-hero-bottom、セクションの間
+     --spacing-section-gap）に従う。今までのページと同じ倍率が効くので、設定で詰めたサイトでは
+     ここも詰まる。固定の大きな余白は置かない（設定を 0.2 にしても、ここだけ 60〜130px 空いていた）
+   ・スマホでは、写真は画面の端から端まで。左右を空けるのは文字だけ
+   ・ページの下は自分では空けない（フッターの上の余白の設定に任せる） */
+.dv-home,
+.dv-list {
+  --dv-after-cover: max(0.75rem, calc(4rem * var(--spacing-hero-bottom, 1)));
+  --dv-section: max(1.5rem, calc(4.5rem * var(--spacing-section-gap, 1)));
 }
 
 /* ── 表紙：写真だけ。名前は重ねない ───────────────────── */
@@ -80,18 +88,33 @@
   grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
   gap: clamp(1.5rem, 4vw, 4rem);
   align-items: start;
-  margin-top: clamp(4rem, 14vh, 10rem);
+  margin-top: var(--dv-after-cover);
 }
 .dv-doors__list {
+  /* 一覧と写真は、上も下もそろえる。以前は上だけそろえていて、扉が4つだと一覧（440px）が
+     写真（601px）より短く、一覧の下・写真の左に 160px の空きが残っていた（1440px で実測）。
+     一覧だけを段の高さ（＝写真の高さ）まで伸ばし、行を均等に広げる：最初の罫が写真の上端、
+     最後の罫が写真の下端に来る。写真の側は伸ばさない（縦横比を持つ箱を伸ばすと、Safari は
+     高さに合わせて幅を縮め、写真の右が空く）。 */
+  align-self: stretch;
+  display: flex;
+  flex-direction: column;
   list-style: none;
   margin: 0;
   padding: 0;
   border-top: 1px solid rgba(var(--foreground-rgb), 0.14);
 }
+.dv-doors__list > li {
+  display: flex;
+  flex: 1 1 auto;
+}
 .dv-door {
+  flex: 1 1 auto;
   display: grid;
   grid-template-columns: 2.5rem minmax(0, 1fr) auto;
   align-items: baseline;
+  /* 広がった行の中では、文字を上下の真ん中に（文字どうしは今までどおり底をそろえる）。 */
+  align-content: center;
   gap: 1rem;
   padding: clamp(0.9rem, 2.2vh, 1.5rem) 0;
   border-bottom: 1px solid rgba(var(--foreground-rgb), 0.14);
@@ -157,22 +180,27 @@
 
 /* ── すべての写真（Gallery）への入口 ─────────────────────── */
 .dv-archive {
-  margin: clamp(2.5rem, 7vh, 5rem) 0 0;
+  margin: var(--dv-section) 0 0;
 }
 .dv-archive__link {
   display: inline-flex;
   align-items: baseline;
   gap: 1rem;
-  min-height: 2.75rem;
-  padding-bottom: 0.15rem;
+  /* 押しやすい高さ（44px 以上）を、文字の上下に同じだけ足して作る。 */
+  padding: 0.6rem 0;
   color: var(--foreground);
   text-decoration: none;
-  border-bottom: 1px solid rgba(var(--foreground-rgb), 0.3);
-  transition: border-color 0.4s ease;
 }
-.dv-archive__link:hover,
-.dv-archive__link:focus-visible {
-  border-color: var(--foreground);
+/* 下線は引かない。すぐ下に撮影依頼の帯の罫が来るので、短い線と長い線が二重に見えていた。
+   押せることは矢印で示す（About の「note →」と同じ書き方）。 */
+.dv-archive__arrow {
+  color: rgba(var(--foreground-rgb), 0.6);
+  transition: transform 0.4s ease, color 0.4s ease;
+}
+.dv-archive__link:hover .dv-archive__arrow,
+.dv-archive__link:focus-visible .dv-archive__arrow {
+  color: var(--foreground);
+  transform: translateX(0.3rem);
 }
 .dv-archive__link .font-en {
   font-size: 1.125rem;
@@ -184,9 +212,23 @@
   color: rgba(var(--foreground-rgb), 0.6);
 }
 
+/* ── 撮影依頼の帯（トップ・Portrait・Life の最後）──────────────
+   帯は自分の幅（62rem）で真ん中に寄るので、広い画面では上の写真・「すべての写真」と左端が
+   112px ずれていた。ここでは並べる幅いっぱいに引いて、左端をそろえる。
+   上の余白はセクションの間（--dv-section）。帯の罫が、すぐ上のリンクの下線に貼り付かない。 */
+.dv-home .inquiry-note,
+.dv-list .inquiry-note {
+  max-width: none;
+  margin-top: var(--dv-section);
+}
+
 /* ── Portrait／Life ──────────────────────────────────── */
+/* 見出しは、出す設定のときだけ場所を取る（出さない設定では h1 が sr-only になり、この指定は当たらない）。 */
+.dv-list__title {
+  margin-bottom: 1.5rem;
+}
 .dv-list__foot {
-  margin-top: clamp(4rem, 12vh, 8rem);
+  margin-top: var(--dv-section);
 }
 .dv-sessions__title {
   margin: 0 0 0.75rem;
@@ -211,18 +253,44 @@
 }
 
 @media (max-width: 767px) {
+  /* 写真は画面の端から端まで。 */
+  .dv-cover__frame,
+  .dv-door__photo,
+  .dv-list .ps-stream {
+    width: auto;
+    margin-inline: calc(-1 * var(--page-inset));
+  }
+  /* 扉は「写真＋その名前」で1組。名前は自分の写真のすぐ下（8px）、次の扉の写真までは
+     その3倍以上あける。以前は名前の上下が 14px・26px とほぼ同じで、名前がどちらの写真の物か
+     迷う並びだった。区切りは余白だけでつける（罫は引かない——写真そのものが区切りになる）。 */
+  .dv-home {
+    --dv-door-gap: max(1.5rem, calc(3rem * var(--spacing-section-gap, 1)));
+  }
   .dv-doors {
     display: block;
-    margin-top: 3.5rem;
+    /* 表紙と最初の扉の間は、扉どうしの間より狭くしない。 */
+    margin-top: max(var(--dv-after-cover), var(--dv-door-gap));
+  }
+  .dv-doors__list {
+    display: block;
+    border-top: 0;
+  }
+  .dv-doors__list > li {
+    display: block;
   }
   .dv-stage {
     display: none;
   }
   .dv-door {
     grid-template-columns: 2rem minmax(0, 1fr) auto;
-    row-gap: 0.75rem;
-    padding: 1rem 0 1.25rem;
+    row-gap: 0.5rem;
+    padding: 0;
+    margin-bottom: var(--dv-door-gap);
+    border-bottom: 0;
     color: var(--foreground);
+  }
+  .dv-doors__list li:last-child .dv-door {
+    margin-bottom: 0;
   }
   .dv-door__photo {
     display: block;
@@ -236,11 +304,35 @@
   }
 }
 
+/* ── Info ──────────────────────────────────────────────
+   今までの About と Contact は、それぞれ「1ページぶんの最低の高さ」（画面の6割）を持っている。
+   続けて出すと、中身が短いときに、自己紹介と依頼の間・依頼とフッターの間が大きく空く
+   （人工データで実測：スマホ 336px と 485px）。Info の中では最低の高さを外す。 */
+.dv-info .profile-page,
+.dv-info .contact-page,
+.dv-info > section {
+  min-height: 0;
+}
+
+/* ── Info（スマホ）─────────────────────────────────────
+   About と Contact の文の間を詰める指定は styles.css にある（単独の /about・/contact にも同じ指定を
+   効かせるため。このファイルは新しい構成のページを開いたときにしか読まれない）。ここは、2つを
+   続けて出すときだけの指定。 */
+@media (max-width: 767px) {
+  .dv-info .profile-page {
+    padding-bottom: 0;
+  }
+  .dv-info .contact-page {
+    padding-bottom: 1.5rem;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .dv-cover__photo,
   .dv-stage__photo,
   .dv-door,
-  .dv-door__title {
+  .dv-door__title,
+  .dv-archive__arrow {
     transition: none;
   }
   .dv-cover__bar::after {

@@ -115,6 +115,26 @@ test.describe("admin — ページの写真（選んで並べる）", () => {
     expect(await page.locator(".pp-grid .pp-tile").evaluateAll((els) => els.filter((e) => /\d/.test(e.textContent ?? "")).length)).toBe(0);
     await expect(page.locator(".pp-selbar[data-show]")).toHaveCount(0);
     expect(await noSideScroll(page)).toBeLessThanOrEqual(0);
+    // 「サイトで見る」は、いま並べているページを新しい構成で開く。
+    await expect(page.getByRole("link", { name: "サイトで見る ↗" })).toHaveAttribute("href", "/portrait?design=develop");
+    // スマホ：写真は早く始まり（説明は畳む）、画面の端から端まで並ぶ。
+    if (page.viewportSize()!.width < 640) {
+      const grid = await page.evaluate(() => {
+        const tiles = [...document.querySelectorAll(".pp-grid .pp-tile")].map((t) => t.getBoundingClientRect());
+        return {
+          top: Math.round(tiles[0]!.top),
+          left: Math.round(Math.min(...tiles.map((r) => r.left))),
+          right: Math.round(Math.max(...tiles.map((r) => r.right))),
+          vw: innerWidth,
+          cols: tiles.filter((r) => Math.abs(r.top - tiles[0]!.top) < 2).length,
+        };
+      });
+      // 戻る・題・サイトで見るは1行。写真は、この人工データ（まだ選んでいない＝案内あり）で 240px より上から。
+      expect(grid.top).toBeLessThan(240);
+      expect(grid.left).toBe(0);
+      expect(grid.right).toBe(grid.vw);
+      expect(grid.cols).toBe(3);
+    }
 
     // 写真は作り直されないこと（作り直すと、スマホでは一瞬消えて出直す）。
     await page.locator(".pp-grid .pp-tile img").evaluateAll((imgs) => imgs.forEach((img) => img.setAttribute("data-kept", "")));

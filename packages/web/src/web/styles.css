@@ -7190,6 +7190,32 @@ body[data-photo-crop="whole"] img.series-stream-media {
 .contact-inquiry__q:focus-visible { outline: 1px solid currentColor; outline-offset: 2px; }
 .contact-inquiry__a { margin: 0; padding: 0 2rem 1.125rem 0; }
 @media (max-width: 639px) { .inquiry-note { flex-direction: column; gap: 0.75rem; } .inquiry-note > div { flex: none; } }
+/* スマホ：帯の下の余白（32px）に、続く「次に見る」の上の余白（40px）が足されて、罫も無いのに
+   85px 空いていた（2026-10-12 本番のシリーズで実測）。続く行き先は、帯のすぐ下に置く。 */
+@media (max-width: 767px) { .inquiry-note + nav { margin-top: 0.5rem; } }
+
+/* ─── 新しい構成（develop）のスマホ：自己紹介と依頼の文の間を一段ずつ詰める（2026-10-12）───
+   About と Contact は、区切りごとに 40〜48px の余白を持つ。スマホでは見出しの薄い罫がほとんど
+   見えないので、理由の分からない空きが続いて見える（本番の Info で実測：6.7画面のうち、48px 以上の
+   空きの帯が 8本・571px）。単独の /about・/contact と、2つを続けて出す /info に同じ指定を効かせる
+   ので、いつも読まれるこのファイルに置く（components/develop/develop.css は新しい構成のページを
+   開いたときにしか読まれない）。今までの構成のサイトと、広い画面は変えない。 */
+@media (max-width: 767px) {
+  [data-site-design="develop"] :is(.profile-page, .contact-page, [data-contact-pricing]) [class~="mt-12"] { margin-top: 1.75rem; }
+  [data-site-design="develop"] :is(.profile-page, .contact-page, [data-contact-pricing]) [class~="mt-10"] { margin-top: 1.5rem; }
+  [data-site-design="develop"] :is(.profile-page, .contact-page, [data-contact-pricing]) [class~="mt-8"] { margin-top: 1.25rem; }
+  [data-site-design="develop"] :is(.profile-page, .contact-page, [data-contact-pricing]) [class~="mb-12"] { margin-bottom: 1.25rem; }
+  [data-site-design="develop"] :is(.profile-page, .contact-page, [data-contact-pricing]) [class~="mb-10"] { margin-bottom: 1.5rem; }
+  [data-site-design="develop"] :is(.profile-page, .contact-page, [data-contact-pricing]) [class~="pt-8"] { padding-top: 1.25rem; }
+  /* SNS の行は自己紹介の続き。自己紹介との間（上）を、次の見出しとの間（下）より狭くする
+     （上下とも 58px で、行が宙に浮いて見えていた）。 */
+  [data-site-design="develop"] .profile-page [class~="mt-10"][class~="pt-6"] { margin-top: 0.75rem; padding-top: 0.5rem; }
+  [data-site-design="develop"] .profile-page .profile-label { margin-bottom: 1rem; }
+  /* 自己紹介の写真も、ほかのページの写真と同じく画面の端から端まで。 */
+  [data-site-design="develop"] .profile-page [data-profile-layout] > .page-entrance:first-child:has(> img) { margin-inline: calc(-1 * var(--page-inset)); }
+  /* About の最後：撮影依頼の帯の下（32px）に、制作の案内の上（40px）が足されて 103px 空いていた。 */
+  [data-site-design="develop"] .classic-service-note { padding-top: 0.5rem; }
+}
 
 /* 文字の欄が未設定のときの「自動」の印（2026-09-30）。数字はプレビューの今の値。 */
 .admin-typo-auto {

@@ -521,14 +521,16 @@ export function PhotoGallery({
   seriesLinkById,
   categoryLabelBySlug,
   trimPartialRow = false,
-  mobileFullWidth = false,
+  fillWidth = false,
 }: {
   photos: GalleryPhoto[];
   layoutType?: string;
-  /** スマホで、対の2枚目（72%）と最後の1枚（88%）も幅いっぱいに出す（editorial のみ）。
-   *  新しい構成のサイトで付ける：スマホでは写真を画面の端から端まで見せ、横に空きを作らない
-   *  （2026-10-12 オーナー「無駄な余白だったり謎の余白が多い」）。写真の間は、どこも同じ狭さ。 */
-  mobileFullWidth?: boolean;
+  /** editorial で、使える幅を使い切る（新しい構成のサイトで付ける。2026-10-12 オーナー
+   *  「無駄な余白だったり謎の余白が多い」「今までの設定とか機能を踏まえて改善して詰めて」）。
+   *  - スマホ: 対の2枚目（72%）と最後の1枚（88%）も幅いっぱい。写真の間はどこも同じ狭さ
+   *  - PC: 対を表紙と同じ幅まで広げ、2枚で幅を分け合う（高さで止まった分は、もう1枚へ回す）。
+   *    対の間は、対の中と同じ（写真の間隔の設定 galleryGapScale に従う）。大小は組ごとに左右を入れ替える */
+  fillWidth?: boolean;
   variant?: "top" | "gallery";
   /** そろった格子（正方形・縦・横）で、最後の半端な行を出さない。TOP の
    *  「見本の並び」用。写真を選んで並べる場面では付けない（選んだ写真が消える）。 */
@@ -732,9 +734,14 @@ export function PhotoGallery({
       "contact-sheet",
     ].includes(mode);
   // Rotated collage corners need a small mat to stay inside the viewport.
+  // editorial を広げるとき（fillWidth）は、シリーズの表紙と同じ幅（左右 16px ずつ内側・最大 1600px。
+  // SeriesCover.tsx と同じ決め方）にそろえる。
+  // 以前は 976px の枠のままで、1232px の表紙の下に、左右 128px ずつ狭い対が並んでいた。
   const frameW = edgeToEdge
     ? Math.max(0, room.available - (mode === "collage" ? 24 : 0))
-    : fittedFrameW;
+    : fillWidth && mode === "editorial" && room.available > 0
+      ? Math.max(room.natural, Math.min(room.available - 32, 1600))
+      : fittedFrameW;
   const frameStyle = frameW
     ? ({
         // Wider than the parent, still centred on it: the negative margin is
@@ -1376,6 +1383,15 @@ export function PhotoGallery({
       // the photos to stamps; there the reader scrolls a little instead.
       return `min(${share}%, max(calc((100vh - ${EDITORIAL_WINDOW_RESERVE}px) * ${aspect}), ${Math.round(share * 0.6)}%))`;
     };
+    // fillWidth 用：写真が窓の高さに収まる幅の上限。低い窓で切手にならないよう、下限（枠の何%）を持つ。
+    const capWidth = (photo: GalleryPhoto, floorShare: number) => {
+      const d = orientedDimensions(photo.width, photo.height, photo.rotationDeg);
+      if (!d.width || !d.height) return "100%";
+      const aspect = (d.width / d.height).toFixed(4);
+      return `max(calc((100vh - ${EDITORIAL_WINDOW_RESERVE}px) * ${aspect}), ${floorShare}%)`;
+    };
+    // 対の中の間。fillWidth では対と対の間も同じにする（どちらも「写真の間隔」の設定に従う）。
+    const pairGap = Math.max(12, Math.round(48 * gapScale));
     // Phones stack the spread instead of squeezing it side by side. Side by
     // side, the second photo was 140px wide on a 390px phone — too small to look
     // at. Stacked, the large frame runs edge to edge and its partner follows
@@ -1389,7 +1405,9 @@ export function PhotoGallery({
           flexDirection: "column",
           // 幅いっぱいに積むスマホでは、対の区別を見せる物（右へ寄せた小さい2枚目）が無い。
           // 間だけ 11px と 38px が交互になると、理由の分からない空きに見える。写真の一覧と同じ 6px でそろえる。
-          gap: isMobile && mobileFullWidth ? `${MOBILE_STACK_GAP}px` : `${(isMobile ? 64 : 104) * gapScale}px`,
+          gap: fillWidth
+            ? `${isMobile ? MOBILE_STACK_GAP : pairGap}px`
+            : `${(isMobile ? 64 : 104) * gapScale}px`,
         }}
       >
         {pairs.map((pair, pi) =>
@@ -1398,11 +1416,17 @@ export function PhotoGallery({
               key={pair[0].id}
               style={{ display: "flex", justifyContent: "center" }}
             >
-              <div style={{ width: isMobile ? (mobileFullWidth ? "100%" : "88%") : fitWindow(pair[0], 60) }}>
+              <div
+                style={{
+                  width: isMobile
+                    ? fillWidth ? "100%" : "88%"
+                    : fillWidth ? `min(100%, ${capWidth(pair[0], 36)})` : fitWindow(pair[0], 60),
+                }}
+              >
                 {tile(pair[0], pi * 2, {
                   width: "100%",
                   justifySelf: "stretch",
-                  sizes: isMobile ? (mobileFullWidth ? "100vw" : "88vw") : "60vw",
+                  sizes: isMobile ? (fillWidth ? "100vw" : "88vw") : fillWidth ? "80vw" : "60vw",
                   preferMediumGrid: true,
                 })}
               </div>
@@ -1413,7 +1437,7 @@ export function PhotoGallery({
               style={{
                 display: "flex",
                 flexDirection: "column",
-                gap: mobileFullWidth ? `${MOBILE_STACK_GAP}px` : `${Math.max(10, Math.round(18 * gapScale))}px`,
+                gap: fillWidth ? `${MOBILE_STACK_GAP}px` : `${Math.max(10, Math.round(18 * gapScale))}px`,
               }}
             >
               <div>
@@ -1424,14 +1448,41 @@ export function PhotoGallery({
                   preferMediumGrid: true,
                 })}
               </div>
-              <div style={{ width: mobileFullWidth ? "100%" : "72%", alignSelf: "flex-end" }}>
+              <div style={{ width: fillWidth ? "100%" : "72%", alignSelf: "flex-end" }}>
                 {tile(pair[1], pi * 2 + 1, {
                   width: "100%",
                   justifySelf: "stretch",
-                  sizes: mobileFullWidth ? "100vw" : "72vw",
+                  sizes: fillWidth ? "100vw" : "72vw",
                   preferMediumGrid: true,
                 })}
               </div>
+            </div>
+          ) : fillWidth ? (
+            // 幅を2枚で分け合う。伸びる割合は 56:38（大小の差は残す）で、窓の高さで止まった写真の
+            // 余りは flex がもう1枚へ回す。2枚とも止まったときだけ、組を真ん中に寄せる。
+            // 高さの違いは上下の真ん中でそろえる（片方だけ下へずらすと、下にはみ出した分が
+            // 次の組との間に足されて、62px の間が 150px を超えることがあった）。
+            <div
+              key={pair[0].id}
+              style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: `${pairGap}px` }}
+            >
+              {pair.map((photo, k) => {
+                // 大きい方は、組ごとに左・右と入れ替える（空きが片側に積み重ならない）。並びの順は変えない。
+                const big = (pi % 2 === 0) === (k === 0);
+                return (
+                  <div
+                    key={photo.id}
+                    style={{ flex: `${big ? 56 : 38} 1 0`, minWidth: 0, maxWidth: capWidth(photo, big ? 34 : 24) }}
+                  >
+                    {tile(photo, pi * 2 + k, {
+                      width: "100%",
+                      justifySelf: "stretch",
+                      sizes: big ? "50vw" : "36vw",
+                      preferMediumGrid: true,
+                    })}
+                  </div>
+                );
+              })}
             </div>
           ) : (
             <div

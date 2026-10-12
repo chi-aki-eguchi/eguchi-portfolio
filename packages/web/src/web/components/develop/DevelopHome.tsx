@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import { Link } from "wouter";
 import { Picture } from "../Picture";
 import { DEVELOP_DOOR_NOTES, developListPhotos } from "../../../shared/develop-structure";
@@ -28,8 +28,6 @@ export type DevelopDoor = {
   photo: DevelopPhoto | null;
 };
 
-/** 表紙の写真が替わる間隔。 */
-export const COVER_INTERVAL_MS = 6400;
 
 const pad = (n: number) => String(n).padStart(2, "0");
 
@@ -66,85 +64,6 @@ export function developDoors({
 function position(photo: DevelopPhoto): string | undefined {
   if (photo.focalX == null && photo.focalY == null) return undefined;
   return `${photo.focalX ?? 50}% ${photo.focalY ?? 50}%`;
-}
-
-/**
- * 表紙。写真だけを枠いっぱいに出し、名前は重ねない（名前はメニューにある）。
- * 何枚か選んであれば、濃さだけで入れ替える。動きを減らす設定では入れ替えない。
- */
-function Cover({ photos, name }: { photos: DevelopPhoto[]; name: string }) {
-  const boxRef = useRef<HTMLElement>(null);
-  const [top, setTop] = useState<number | null>(null);
-  const [at, setAt] = useState(0);
-  const count = photos.length;
-
-  // 表紙の高さ = 画面の高さ − ここまでの高さ（上の帯など）− 下の1行。幅が変わったときだけ測り直す
-  // （スマホは送るたびにアドレスバーで高さが変わるので、高さの変化では測り直さない）。
-  useLayoutEffect(() => {
-    const el = boxRef.current;
-    if (!el) return;
-    let lastWidth = -1;
-    const measure = () => {
-      if (Math.abs(window.innerWidth - lastWidth) < 1) return;
-      lastWidth = window.innerWidth;
-      setTop(Math.max(0, Math.round(el.getBoundingClientRect().top + window.scrollY)));
-    };
-    measure();
-    window.addEventListener("resize", measure);
-    return () => window.removeEventListener("resize", measure);
-  }, []);
-
-  useEffect(() => {
-    if (count < 2) return;
-    if (typeof window.matchMedia === "function" && window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-    const timer = window.setInterval(() => {
-      if (!document.hidden) setAt((i) => (i + 1) % count);
-    }, COVER_INTERVAL_MS);
-    return () => window.clearInterval(timer);
-  }, [count]);
-
-  if (count === 0) return null;
-  return (
-    <section
-      ref={boxRef}
-      className="dv-cover"
-      data-single={count < 2 ? "true" : undefined}
-      aria-label="表紙"
-      style={top === null ? undefined : ({ "--dv-cover-top": `${top}px` } as React.CSSProperties)}
-    >
-      <div className="dv-cover__frame">
-        {photos.map((photo, i) => (
-          <div key={photo.id ?? photo.url} className="dv-cover__photo" data-on={i === at ? "true" : undefined}>
-            <Picture
-              url={photo.url}
-              thumbUrl={photo.thumbUrl}
-              mediumUrl={photo.mediumUrl}
-              width={photo.width}
-              height={photo.height}
-              rotationDeg={photo.rotationDeg}
-              alt={i === 0 ? photo.title || `${name}の写真` : ""}
-              preset="hero"
-              sizes="(min-width: 768px) 80vw, 100vw"
-              fallbackW={1920}
-              fallbackQ={82}
-              className="dv-cover__img"
-              style={{ objectPosition: position(photo) }}
-              loading={i === 0 ? "eager" : "lazy"}
-              fetchPriority={i === 0 ? "high" : "auto"}
-              draggable={false}
-            />
-          </div>
-        ))}
-      </div>
-      {count > 1 && (
-        <p className="dv-cover__count font-en" aria-hidden="true">
-          <span>{pad(at + 1)}</span>
-          <span key={at} className="dv-cover__bar" />
-          <span>{pad(count)}</span>
-        </p>
-      )}
-    </section>
-  );
 }
 
 /**
@@ -233,7 +152,6 @@ function Doors({ doors }: { doors: DevelopDoor[] }) {
  */
 export function DevelopHome({
   settings,
-  coverPhotos,
   photos,
   seriesCover,
   showSeries,
@@ -241,14 +159,12 @@ export function DevelopHome({
   after,
 }: {
   settings: Settings;
-  coverPhotos: DevelopPhoto[];
   photos: DevelopPhoto[];
   seriesCover: DevelopPhoto | null;
   showSeries: boolean;
   showGallery: boolean;
   after?: React.ReactNode;
 }) {
-  const name = settings?.siteName || settings?.siteNameEn || settings?.profileName || "";
   const profilePhoto = useMemo<DevelopPhoto | null>(
     () => (settings?.profilePhotoUrl ? { url: settings.profilePhotoUrl } : null),
     [settings?.profilePhotoUrl],
@@ -265,10 +181,8 @@ export function DevelopHome({
     [photos, seriesCover, profilePhoto, showSeries, settings?.developPortraitIds, settings?.developLifeIds],
   );
   return (
-    <div className="dv-home site-page site-page-top">
-      {/* 下の余白は置かない（フッターの上の余白の設定に任せる）。 */}
-      <h1 className="sr-only">{name || "Photographs"}</h1>
-      <Cover photos={coverPhotos} name={name} />
+    <div className="dv-home site-page">
+      {/* 下の余白は置かない（フッターの上の余白の設定に任せる）。見出し（h1）は、上の表紙の名前。 */}
       <Doors doors={doors} />
       {showGallery && (
         <p className="dv-archive">

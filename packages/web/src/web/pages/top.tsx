@@ -1283,6 +1283,8 @@ export default function TopPage() {
   const topWorksMode = settings?.topWorksMode || "auto";
   const isBookDesign = siteDesignFrom(settings?.siteDesign) === "book";
   const isDevelopDesign = siteDesignFrom(settings?.siteDesign) === "develop";
+  // 新しい構成のトップには Works の一覧が無いので、ランダムの束は取りに行かない。
+  const randomWorks = topWorksMode === "random" && !isDevelopDesign;
   const homeGalleryCount = Math.max(
     1,
     parseInt(settings?.homeGalleryCount ?? "12", 10) || 12,
@@ -1300,11 +1302,11 @@ export default function TopPage() {
     refetch: refetchPhotos,
   } = useQuery({
     queryKey:
-      topWorksMode === "random"
+      randomWorks
         ? ["photos", "top-random", topRandomLimit]
         : ["photos"],
     queryFn: async () => {
-      if (topWorksMode === "random") {
+      if (randomWorks) {
         return jsonOrThrow(
           await api.photos.$get({
             query: { limit: String(topRandomLimit), order: "random" },
@@ -1315,8 +1317,8 @@ export default function TopPage() {
     },
     // 写真集の骨格では、トップの写真は章（作品ページと同じ順）から出す。
     // ランダムの束は使わないので取りに行かない。
-    // 新しい構成のトップは、要る物を自分で集める（DevelopTop）。
-    enabled: !settingsLoading && !isBookDesign && !isDevelopDesign,
+    // 新しい構成のトップは、扉が同じ一覧（["photos"]）を読むので、通信は増えない。
+    enabled: !settingsLoading && !isBookDesign,
   });
   const { data: heroData, isLoading: heroLoading } = useQuery({
     queryKey: ["hero-photos"],
@@ -1326,13 +1328,15 @@ export default function TopPage() {
   // Stable reference across renders so the `featured` useMemo doesn't recompute every render.
   const allPhotos = useMemo(
     () =>
-      topWorksMode === "random"
+      randomWorks
         ? (photosData?.photos ?? [])
         : sortPhotosBySetting(
             photosData?.photos ?? [],
-            settings?.gallerySortOrder,
+            // 新しい構成は、管理画面で決めた順（扉・Portrait・Life と同じ）。表紙を選んで
+            // いないときの代わりの写真が、開くたびに変わらないように。
+            isDevelopDesign ? "manual" : settings?.gallerySortOrder,
           ),
-    [photosData, settings?.gallerySortOrder, topWorksMode],
+    [photosData, settings?.gallerySortOrder, randomWorks, isDevelopDesign],
   );
   // The API may return null entries for hero rows whose photo was deleted.
   const heroPhotosPicked = (heroData?.heroPhotos ?? []).filter(
@@ -1544,16 +1548,94 @@ export default function TopPage() {
     </Suspense>
   );
 
+  // 表紙（1枚絵／スライド）。今までの構成のトップと、新しい構成のトップが同じ物を使う：
+  // 名前の重ね方・現れる順と速さ・送ったときの動き・高さなど、管理画面の表紙の設定がどちらでも効く。
+  const heroSection = isSingle ? (
+      /* Hero: single large photo with name overlaid */
+      <section
+        key={heroMotionKey(settings)}
+        ref={heroBoxRef}
+        className={`hero-motion-stage ${heroFullscreen ? "hero-fullscreen" : "pt-6 md:pt-10"}`}
+      >
+        <HeroSingle
+          photo={heroPhotos[0]}
+          titlePosition={heroTitlePosition}
+          fxRef={heroFxRef}
+          photographerName={photographerName}
+        >
+          <ClassicHeroNameBlock
+            settings={settings}
+            tone="over-photo"
+            nameSizeFallback="1.75rem"
+            enSizeFallback="0.9375rem"
+          />
+        </HeroSingle>
+      </section>
+    ) : (
+      /* Hero: Carousel + Name block */
+      <section
+        key={heroMotionKey(settings)}
+        ref={heroBoxRef}
+        className={
+          heroFullscreen
+            ? "hero-motion-stage hero-fullscreen"
+            : "hero-motion-stage max-w-6xl mx-auto px-4 md:px-10 pt-6 md:pt-10"
+        }
+      >
+        <HeroCarousel
+          photos={heroPhotos}
+          fxRef={heroFxRef}
+          photographerName={photographerName}
+          loading={heroLoading || photosLoading}
+          fullscreen={heroFullscreen}
+          titlePosition={heroTitlePosition}
+        >
+          {heroFullscreen &&
+          (heroPhotos.length > 0 || heroLoading || photosLoading) ? (
+            <ClassicHeroNameBlock
+              settings={settings}
+              tone="over-photo"
+              nameSizeFallback="1.75rem"
+              enSizeFallback="0.9375rem"
+            />
+          ) : null}
+        </HeroCarousel>
+
+        {/* Normal carousel: the name intentionally sits on the page below the
+            photo. Fullscreen: it belongs inside the photo viewport above. */}
+        {(!heroFullscreen ||
+          (!heroLoading && !photosLoading && heroPhotos.length === 0)) && (
+          <div
+            className={`mt-12 md:mt-16 mb-10 ${
+              heroTitlePosition.endsWith("-left")
+                ? "text-left"
+                : heroTitlePosition.endsWith("-right")
+                  ? "text-right"
+                  : "text-center"
+            }`}
+          >
+            <ClassicHeroNameBlock
+              settings={settings}
+              tone="on-paper"
+              nameSizeFallback="1.5rem"
+              enSizeFallback="0.875rem"
+            />
+          </div>
+        )}
+      </section>
+    );
+
+  // 新しい構成のトップ：表紙は今までと同じ部品（上）、その下に扉の目次。
+  // 以前は写真だけを置く専用の表紙で、名前も、現れる順も、送ったときの動きも無く、
+  // 管理画面の表紙の設定が1つも効いていなかった（2026-10-12 オーナー
+  // 「スマホで開く時に特に何も無いのはなんで？」）。
   if (isDevelopDesign)
     return (
-      <>
-        <DevelopTop
-          settings={settings}
-          pickedCover={heroPhotosPicked}
-          coverLoading={heroLoading}
-        />
+      <div className="top-page" data-hero-mode={isSingle ? "single" : "carousel"} data-develop-top>
         {experiencePanel}
-      </>
+        {heroSection}
+        <DevelopTop settings={settings} />
+      </div>
     );
   if (isBookDesign)
     return (
@@ -1593,80 +1675,7 @@ export default function TopPage() {
       data-hero-mode={isSingle ? "single" : "carousel"}
     >
       {experiencePanel}
-      {isSingle ? (
-        /* Hero: single large photo with name overlaid */
-        <section
-          key={heroMotionKey(settings)}
-          ref={heroBoxRef}
-          className={`hero-motion-stage ${heroFullscreen ? "hero-fullscreen" : "pt-6 md:pt-10"}`}
-        >
-          <HeroSingle
-            photo={heroPhotos[0]}
-            titlePosition={heroTitlePosition}
-            fxRef={heroFxRef}
-            photographerName={photographerName}
-          >
-            <ClassicHeroNameBlock
-              settings={settings}
-              tone="over-photo"
-              nameSizeFallback="1.75rem"
-              enSizeFallback="0.9375rem"
-            />
-          </HeroSingle>
-        </section>
-      ) : (
-        /* Hero: Carousel + Name block */
-        <section
-          key={heroMotionKey(settings)}
-          ref={heroBoxRef}
-          className={
-            heroFullscreen
-              ? "hero-motion-stage hero-fullscreen"
-              : "hero-motion-stage max-w-6xl mx-auto px-4 md:px-10 pt-6 md:pt-10"
-          }
-        >
-          <HeroCarousel
-            photos={heroPhotos}
-            fxRef={heroFxRef}
-            photographerName={photographerName}
-            loading={heroLoading || photosLoading}
-            fullscreen={heroFullscreen}
-            titlePosition={heroTitlePosition}
-          >
-            {heroFullscreen &&
-            (heroPhotos.length > 0 || heroLoading || photosLoading) ? (
-              <ClassicHeroNameBlock
-                settings={settings}
-                tone="over-photo"
-                nameSizeFallback="1.75rem"
-                enSizeFallback="0.9375rem"
-              />
-            ) : null}
-          </HeroCarousel>
-
-          {/* Normal carousel: the name intentionally sits on the page below the
-              photo. Fullscreen: it belongs inside the photo viewport above. */}
-          {(!heroFullscreen ||
-            (!heroLoading && !photosLoading && heroPhotos.length === 0)) && (
-            <div
-              className={`mt-12 md:mt-16 mb-10 ${
-                heroTitlePosition.endsWith("-left")
-                  ? "text-left"
-                  : heroTitlePosition.endsWith("-right")
-                    ? "text-right"
-                    : "text-center"
-              }`}
-            >
-              <ClassicHeroNameBlock
-                settings={settings}
-                tone="on-paper"
-                nameSizeFallback="1.5rem"
-                enSizeFallback="0.875rem"
-              />
-            </div>
-          )}
-        </section>
-      )}
+      {heroSection}
 
       <TopSeriesStream settings={settings} at="before-works" />
       <TopStatement settings={settings} at="before-works" />

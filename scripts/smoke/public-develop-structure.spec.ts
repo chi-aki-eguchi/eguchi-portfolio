@@ -67,14 +67,15 @@ test("新しい構成 › 下見の住所で、メニュー・表紙・扉の目
   // 下見の間は検索に載せない。
   await expect(page.locator('meta[name="robots"][data-design-preview]')).toHaveAttribute("content", "noindex");
 
-  // 表紙は最初の画面に収まり、写真が出ている。
-  const cover = page.locator(".dv-cover__photo[data-on] img");
+  // 表紙は今までの構成と同じ部品：写真が出て、名前が入る（ページの h1 はその1つ）。
+  const hero = page.locator(".top-page[data-develop-top] .hero-motion-stage");
+  await expect(hero).toBeVisible();
+  const cover = hero.locator("img").first();
   await expect(cover).toBeVisible();
   await expect.poll(() => cover.evaluate((img: HTMLImageElement) => img.complete && img.naturalWidth > 0)).toBe(true);
-  const frame = await page.locator(".dv-cover__frame").boundingBox();
-  const viewport = page.viewportSize()!;
-  expect(frame!.y + frame!.height).toBeLessThanOrEqual(viewport.height + 1);
-  expect(frame!.height).toBeGreaterThan(300);
+  await expect(page.locator("h1")).toHaveCount(1);
+  await expect(hero.locator("h1")).toHaveCount(1);
+  expect((await hero.boundingBox())!.height).toBeGreaterThan(200);
 
   // 扉は Portrait・Life・（Series）・Info の順。
   const doors = await page.locator(".dv-door").evaluateAll((els) => els.map((e) => e.getAttribute("href")));
@@ -167,6 +168,12 @@ test("新しい構成 › 写真は幅を使い切り、余白は区切りにだ
         spacingPageTop: "0.2",
         seriesLayout: "editorial",
         seriesCardStyle: "overlay",
+        // 表紙の設定（オーナーの本番と同じ：1枚・全画面・名前が先・ゆっくり・送ると沈む）。
+        heroMode: "single",
+        heroDisplayMode: "fullscreen",
+        heroRevealOrder: "text-first",
+        heroMotionSpeed: "slow",
+        heroScrollEffect: "sink",
         homeCtaEnabled: "on",
         homeCtaText: "ポートレート撮影 60分 ¥10,000。学生の方は半額です。",
       }),
@@ -214,9 +221,11 @@ test("新しい構成 › 写真は幅を使い切り、余白は区切りにだ
   await expect(page.locator(".dv-home")).toBeVisible();
   const home = await page.evaluate(() => {
     const r = (q: string) => document.querySelector(q)?.getBoundingClientRect() ?? null;
-    const cover = r(".dv-cover")!;
+    const cover = r(".hero-motion-stage")!;
     const doors = r(".dv-doors")!;
-    const frame = r(".dv-cover__frame")!;
+    const frame = r(".hero-single")!;
+    const name = document.querySelector<HTMLElement>(".hero-motion-stage h1");
+    const fx = document.querySelector<HTMLElement>(".hero-fx-layer");
     const archive = r(".dv-archive");
     const note = r(".inquiry-note");
     const list = r(".dv-doors__list")!;
@@ -228,6 +237,14 @@ test("新しい構成 › 写真は幅を使い切り、余白は区切りにだ
       doorsToArchive: archive ? Math.round(archive.top - doors.bottom) : 0,
       frameLeft: Math.round(frame.left),
       frameRight: Math.round(frame.right),
+      frameBottom: Math.round(frame.bottom),
+      vh: innerHeight,
+      // 開いた時の動き：名前と写真は「現れる動き」を持つ（動きを減らす設定でなければ）。
+      nameAnimation: name ? getComputedStyle(name).animationName : "",
+      photoAnimation: getComputedStyle(document.querySelector(".hero-photo-reveal") ?? document.body).animationName,
+      hasFxLayer: Boolean(fx),
+      h1: document.querySelectorAll("h1").length,
+      heroName: name?.textContent?.trim() ?? "",
       archiveLeft: archive ? Math.round(archive.left) : null,
       archiveUnderline: getComputedStyle(document.querySelector(".dv-archive__link") ?? document.body).borderBottomWidth,
       noteLeft: note ? Math.round(note.left) : null,
@@ -249,6 +266,14 @@ test("新しい構成 › 写真は幅を使い切り、余白は区切りにだ
       }),
     };
   });
+  // 表紙は、管理画面の表紙の設定どおり：全画面・名前入り・現れる動きあり（以前の新しい構成は、
+  // 写真だけを置く専用の表紙で、開いても何も起きなかった）。
+  expect(home.h1).toBe(1);
+  expect(home.heroName.length).toBeGreaterThan(0);
+  expect(home.nameAnimation).not.toBe("none");
+  expect(home.photoAnimation).not.toBe("none");
+  expect(home.hasFxLayer).toBe(true);
+  expect(home.frameBottom).toBeLessThanOrEqual(home.vh + 1);
   expect(home.coverToDoors).toBeLessThanOrEqual(24);
   expect(home.doorsToArchive).toBeLessThanOrEqual(40);
   // 「すべての写真」は下線でなく矢印（すぐ下の帯の罫と二重線にしない）。帯は左端をそろえる。
@@ -276,6 +301,87 @@ test("新しい構成 › 写真は幅を使い切り、余白は区切りにだ
   }
   expect(await noSideScroll(page)).toBeLessThanOrEqual(0);
   await page.screenshot({ path: testInfo.outputPath("develop-home-spacing.png"), fullPage: true });
+
+  // 中身が画面より短いページでは、フッターが画面の下端に来る（フッターの下に空きを残さない）。
+  await page.goto("/series", { waitUntil: "networkidle" });
+  await expect(page.locator("footer")).toBeVisible();
+  const tail = await page.evaluate(() => {
+    const footer = document.querySelector("footer")!.getBoundingClientRect();
+    return {
+      belowFooter: Math.round(document.documentElement.scrollHeight - (footer.bottom + scrollY)),
+      footerBottom: Math.round(footer.bottom + scrollY),
+      vh: innerHeight,
+      docH: document.documentElement.scrollHeight,
+    };
+  });
+  // 以前は、短いページでフッターの下に 160px 残っていた。Safari はフッターの下に数 px を足すので、少しだけ許す。
+  expect(tail.belowFooter).toBeLessThanOrEqual(20);
+  expect(tail.footerBottom).toBeGreaterThanOrEqual(tail.vh - 1);
+
+  // 文のページ（About）：区切りの余白は「セクションの間隔」の設定（ここでは 0.2）に従って詰まる。
+  await page.goto("/about", { waitUntil: "networkidle" });
+  await expect(page.locator(".profile-page")).toBeVisible();
+  const gaps = await page.evaluate(() => {
+    const px = (v: string) => Math.round(parseFloat(v));
+    const pick = (cls: string, prop: "marginTop" | "paddingTop") =>
+      [...document.querySelectorAll<HTMLElement>(`.profile-page [class~="${cls}"]`)]
+        .filter((e) => !(cls === "mt-10" && e.classList.contains("pt-6")) && ![...e.classList].some((c) => c.startsWith("md:mt-") || c.startsWith("md:pt-")))
+        .map((e) => px(getComputedStyle(e)[prop]));
+    return { mt8: pick("mt-8", "marginTop"), mt10: pick("mt-10", "marginTop"), mt12: pick("mt-12", "marginTop"), pt8: pick("pt-8", "paddingTop") };
+  });
+  for (const v of gaps.mt8) expect(v).toBe(20);
+  for (const v of gaps.mt10) expect(v).toBe(24);
+  for (const v of gaps.mt12) expect(v).toBe(28);
+  for (const v of gaps.pt8) expect(v).toBe(20);
+  expect(gaps.mt8.length + gaps.mt10.length + gaps.mt12.length + gaps.pt8.length).toBeGreaterThan(0);
+
+  if (!phone) {
+    // PC のシリーズ（editorial）：対は並べる枠の幅を2枚で分け合い、どの写真も窓の高さに収まる。
+    // 対と対の間は、対の中の間と同じ（以前は対の間だけ 62px 以上あり、片方を下へずらした分も足されていた）。
+    const list = ((await (await api.get("/api/series")).json()) as { series: { slug: string }[] }).series;
+    if (list.length > 0) {
+      await page.goto(`/series/${list[0]!.slug}`, { waitUntil: "networkidle" });
+      await expect(page.locator("[data-photo-sequence] img").first()).toBeVisible();
+      const spread = await page.evaluate(() => {
+        const cards = [...document.querySelectorAll<HTMLElement>("[data-photo-sequence] .photo-card")].map((e) => e.getBoundingClientRect());
+        // 縦に重なる写真を1つの組として束ねる。
+        const rows: DOMRect[][] = [];
+        for (const r of cards) {
+          const last = rows[rows.length - 1];
+          const overlaps = last && last.some((o) => Math.min(o.bottom, r.bottom) - Math.max(o.top, r.top) > Math.min(o.height, r.height) * 0.5);
+          if (overlaps) last!.push(r);
+          else rows.push([r]);
+        }
+        const cover = document.querySelector(".series-cover__frame")?.getBoundingClientRect();
+        const box = rows.map((row) => ({
+          n: row.length,
+          left: Math.round(Math.min(...row.map((r) => r.left))),
+          right: Math.round(Math.max(...row.map((r) => r.right))),
+          top: Math.round(Math.min(...row.map((r) => r.top))),
+          bottom: Math.round(Math.max(...row.map((r) => r.bottom))),
+          tallest: Math.round(Math.max(...row.map((r) => r.height))),
+          inner: row.length === 2 ? Math.round(Math.max(...row.map((r) => r.left)) - Math.min(...row.map((r) => r.right))) : null,
+        }));
+        return { box, vh: innerHeight, cover: cover ? [Math.round(cover.left), Math.round(cover.right)] : null };
+      });
+      const pairsOnly = spread.box.filter((b) => b.n === 2);
+      expect(pairsOnly.length).toBeGreaterThan(0);
+      for (const b of spread.box) expect(b.tallest).toBeLessThanOrEqual(spread.vh - 160 + 2);
+      for (const b of pairsOnly) {
+        // 2枚とも窓の高さで止まった組だけは、枠より狭くてよい（真ん中に寄せる）。
+        const capped = b.tallest >= spread.vh - 160 - 2;
+        if (spread.cover && !capped) {
+          expect(Math.abs(b.left - spread.cover[0]!)).toBeLessThanOrEqual(2);
+          expect(Math.abs(b.right - spread.cover[1]!)).toBeLessThanOrEqual(2);
+        }
+      }
+      const between = spread.box.slice(1).map((b, i) => b.top - spread.box[i]!.bottom);
+      const inner = pairsOnly.map((b) => b.inner!);
+      for (const g of between) expect(Math.abs(g - inner[0]!)).toBeLessThanOrEqual(2);
+      expect(await noSideScroll(page)).toBeLessThanOrEqual(0);
+      await page.screenshot({ path: testInfo.outputPath("develop-series-desktop.png"), fullPage: true });
+    }
+  }
 
   if (phone) {
     // シリーズの一覧：表紙も端から端まで（題名を表紙に重ねる札）。

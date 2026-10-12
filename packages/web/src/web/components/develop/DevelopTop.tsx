@@ -10,18 +10,10 @@ import { DevelopHome, type DevelopPhoto } from "./DevelopHome";
 type Settings = Record<string, string | null | undefined> | undefined;
 
 /**
- * 新しい構成のトップに要る物を集める。表紙は「トップに出す」で選んだ写真
- * （今までの構成と同じ登録）。1枚も選んでいなければ、並びの先頭の1枚。
+ * 新しい構成のトップの、表紙より下に要る物を集める（扉の目次・すべての写真への入口・撮影依頼の案内）。
+ * 表紙は今までの構成と同じ部品（pages/top.tsx の heroSection）が、この上に置く。
  */
-export function DevelopTop({
-  settings,
-  pickedCover,
-  coverLoading,
-}: {
-  settings: Settings;
-  pickedCover: DevelopPhoto[];
-  coverLoading: boolean;
-}) {
+export function DevelopTop({ settings }: { settings: Settings }) {
   const photosQ = useQuery({
     queryKey: ["photos"],
     queryFn: async () => jsonOrThrow(await api.photos.$get()),
@@ -45,8 +37,6 @@ export function DevelopTop({
     () => sortPhotosBySetting(photosQ.data?.photos ?? [], "manual") as DevelopPhoto[],
     [photosQ.data],
   );
-  // 選んだ表紙がまだ届いていない間は、代わりの写真を一瞬出さない。
-  const coverPhotos = pickedCover.length > 0 ? pickedCover : coverLoading ? [] : photos.slice(0, 1);
   const shelves = [...(seriesQ.data?.series ?? []), ...(worksQ.data?.series ?? [])];
   const first = shelves.find((s) => s.coverUrl);
   const seriesCover = useMemo<DevelopPhoto | null>(
@@ -59,7 +49,6 @@ export function DevelopTop({
   return (
     <DevelopHome
       settings={settings}
-      coverPhotos={coverPhotos}
       photos={photos}
       seriesCover={seriesCover}
       showSeries={shelves.length > 0}

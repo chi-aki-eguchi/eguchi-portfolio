@@ -1,8 +1,9 @@
-/* 新しい構成（siteDesign = "develop"、2026-10-10）のトップと Portrait／Life。
+/* 新しい構成（siteDesign = "develop"、2026-10-10）のトップの扉と Portrait／Life。
    色・書体・文字の大きさは、今までの設定（--foreground・--background・.font-en など）を
    そのまま使う。ここで決めるのは並べ方と、濃さの切り替えだけ。
-   動きは濃淡が基本（表紙の入れ替え・扉の写真の入れ替え）。動かすのは、触れた扉の
-   言葉だけ（見る人の操作に応える動き）。
+   トップの表紙は、今までの構成と同じ部品（pages/top.tsx の heroSection）。名前の重ね方・現れる順と
+   速さ・送ったときの動き・高さは、管理画面の表紙の設定がそのまま効く（ここには書かない）。
+   動かすのは、触れた扉の言葉と、隣の写真の入れ替えだけ（見る人の操作に応える動き）。
 
    余白の決まり（2026-10-12、オーナー「無駄な余白だったり謎の余白が多い」）:
    ・区切りの余白は、管理画面の余白の設定（表紙の下 --spacing-hero-bottom、セクションの間
@@ -14,72 +15,6 @@
 .dv-list {
   --dv-after-cover: max(0.75rem, calc(4rem * var(--spacing-hero-bottom, 1)));
   --dv-section: max(1.5rem, calc(4.5rem * var(--spacing-section-gap, 1)));
-}
-
-/* ── 表紙：写真だけ。名前は重ねない ───────────────────── */
-.dv-cover {
-  --dv-cover-foot: 3.25rem;
-}
-/* 表紙が1枚だけのときは、下の「01 ― 03」の行が無い。その分も写真に使う。 */
-.dv-cover[data-single] {
-  --dv-cover-foot: 0.75rem;
-}
-.dv-cover__frame {
-  position: relative;
-  /* 画面の高さ − ここまでの高さ（上の帯など、描いてから測る）− 下の1行。 */
-  height: max(320px, calc(100svh - var(--dv-cover-top, 96px) - var(--dv-cover-foot) - 0.75rem));
-  overflow: hidden;
-  background: rgba(var(--foreground-rgb), 0.04);
-}
-.dv-cover__photo {
-  position: absolute;
-  inset: 0;
-  opacity: 0;
-  transition: opacity 1.6s ease;
-}
-.dv-cover__photo[data-on] {
-  opacity: 1;
-}
-.dv-cover__photo picture,
-.dv-cover__img {
-  display: block;
-  width: 100%;
-  height: 100%;
-}
-.dv-cover__img {
-  object-fit: cover;
-}
-.dv-cover__count {
-  display: flex;
-  align-items: center;
-  gap: 0.9rem;
-  height: var(--dv-cover-foot);
-  margin: 0;
-  font-size: 0.8125rem;
-  letter-spacing: 0.16em;
-  font-variant-numeric: lining-nums;
-  color: rgba(var(--foreground-rgb), 0.6);
-}
-.dv-cover__bar {
-  position: relative;
-  width: 4.5rem;
-  height: 1px;
-  background: rgba(var(--foreground-rgb), 0.18);
-  overflow: hidden;
-}
-.dv-cover__bar::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: var(--foreground);
-  transform: scaleX(0);
-  transform-origin: left;
-  animation: dv-fill 6.4s linear forwards;
-}
-@keyframes dv-fill {
-  to {
-    transform: scaleX(1);
-  }
 }
 
 /* ── 扉の目次：大きな言葉が入口。触れた扉の写真が隣に出る ───── */
@@ -254,7 +189,6 @@
 
 @media (max-width: 767px) {
   /* 写真は画面の端から端まで。 */
-  .dv-cover__frame,
   .dv-door__photo,
   .dv-list .ps-stream {
     width: auto;
@@ -328,14 +262,10 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .dv-cover__photo,
   .dv-stage__photo,
   .dv-door,
   .dv-door__title,
   .dv-archive__arrow {
     transition: none;
-  }
-  .dv-cover__bar::after {
-    animation: none;
   }
 }

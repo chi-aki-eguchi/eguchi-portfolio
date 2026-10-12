@@ -4530,6 +4530,61 @@ body[data-texture="mist"]::before {
   }
 }
 
+/* ─── 現像（新しい構成の表紙の現れ方、2026-10-12）───
+   オーナー「なんで入れてない？」。試作の開き方は「写真が現像されるように出る」だった：
+   ぼけて色の無い像が先に浮かび、色と輪郭があとから定まる。試作はぼかし・明るさ・彩度を
+   毎コマ変えていたが、このサイトではそれを全画面の表紙でやるとコマが落ちる（上の
+   「全画面のヒーローには、毎コマの変形を掛けない」の実測。今回も Chrome 系・PC で、
+   開いてから3秒のうち 32ms を超えるコマが 31〜37 あった）。
+
+   同じ見え方を、**濃さだけ**で作る。本物の写真の下に、同じ写真のぼけた単色の像
+   （`.hero-latent`。小さな絵として最初に1回だけ作る。lib/latent-image.ts）を敷く:
+     1. 下地の像が濃くなる（長さの 3割）
+     2. 少し遅れて、本物が上から濃くなる（今までの `hero-photo-in`）
+     3. 本物が出きったら、下地は消す（スライドの写真は上下左右に余白を持つことがあり、
+        残すと次の写真の余白から見える）
+   順番と速さは今までどおり、管理画面の表紙の設定（--hero-photo-delay・--top-motion-duration）。
+   暗い下地（hero-ground-in）と、名前の現れ方は変えない。
+   **filter は使わない。**下地の像に blur を掛けると、Safari 系は約0.1秒の引っかかりが4回、
+   それを自分の層に載せると今度は Chrome 系で 32ms 超のコマが 19〜31 出た。 */
+.hero-latent {
+  opacity: 0;
+  pointer-events: none;
+}
+/* 像が描けてから現し始める。 */
+.hero-latent[data-ready] {
+  animation: hero-latent-in calc(var(--top-motion-duration) * 1.5) linear var(--hero-photo-delay) both;
+}
+.hero-latent canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.hero-latent ~ .hero-photo-reveal {
+  animation-delay: calc(var(--hero-photo-delay) + var(--top-motion-duration) * 0.4);
+}
+@keyframes hero-latent-in {
+  0% {
+    opacity: 0;
+  }
+  30% {
+    opacity: 1;
+  }
+  78% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+/* 「写真の現れ方」を「なし」にしたサイトでは、現像もしない（本物だけが今までどおり現れる）。 */
+body[data-reveal="none"] .hero-latent {
+  display: none;
+}
+body[data-reveal="none"] .hero-latent ~ .hero-photo-reveal {
+  animation-delay: var(--hero-photo-delay);
+}
+
 /* ─── ヒーロー写真の寄り引き（2026-08-31）───
    **サイト中でここだけ動きが無かった。**グリッドの写真はぼけが晴れて原寸へ
    落ち着くのに、いちばん大きいヒーローは `opacity 0→1` だけ——最初から原寸・
@@ -5245,6 +5300,13 @@ dialog.lightbox-morph[data-morph-closing] > :not(.lb-content):not(.lb-ghost) {
   /* 中の写真の寄り引きは移動なので止める（親の濃淡だけが残る）。 */
   .hero-photo-reveal img {
     animation: none !important;
+  }
+  /* 現像の下地（ぼけた像）は出さない。本物だけを、今までどおりの時刻に濃くする。 */
+  .hero-latent {
+    display: none !important;
+  }
+  .hero-latent ~ .hero-photo-reveal {
+    animation-delay: var(--hero-photo-delay) !important;
   }
   /* 表紙の暗い下地も、濃淡だけで出す（`hero-ground-in` は移動を含まない）。
      止めたままだと、この設定の人にだけ黒い箱が1コマで出る

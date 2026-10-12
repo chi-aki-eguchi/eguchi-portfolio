@@ -26,6 +26,8 @@ import {
   clampSettingRounded,
 } from "../../shared/setting-ranges";
 import { HeroPicture } from "../components/HeroPicture";
+import { objectPositionFromFocal } from "../lib/picture";
+import { paintLatent } from "../lib/latent-image";
 export { HeroPicture } from "../components/HeroPicture";
 import { sortPhotosBySetting } from "../lib/photo-sort";
 import { photoAltText } from "../../shared/photo-alt";
@@ -194,7 +196,10 @@ function HeroCarousel({
   fullscreen = false,
   children,
   titlePosition = "center",
+  develop = false,
 }: {
+  /** 現像されるように現す（新しい構成）。HeroSingle の説明を参照。 */
+  develop?: boolean;
   photos: HomeHeroPhoto[];
   fxRef?: React.Ref<HTMLDivElement>;
   photographerName?: string;
@@ -419,6 +424,8 @@ function HeroCarousel({
         >
           {/* AA3: scroll-effect layer — transform/opacity only, clipped by the box */}
           <div ref={fxRef} className="hero-fx-layer absolute inset-0">
+            {/* 現像の下地は、最初に現れる1枚にだけ（入れ替えは今までどおり）。 */}
+            {develop && photos[0] && <HeroLatent photo={photos[0]} className="w-full h-full object-contain" />}
             <div className="hero-photo-reveal absolute inset-0">
               {/* Main photo layer — contain, no crop */}
               {photos.map((p, i) => (
@@ -522,6 +529,40 @@ function HeroCarousel({
   );
 }
 
+/**
+ * 現像の下地：同じ写真の、ぼけた単色の像（飾りなので読み上げない）。
+ * 小さな版（サムネイル）を読んで、小さな絵として1回だけ作る（lib/latent-image.ts）。
+ * 描けてから現し始めるので、遅い回線でも途中からぱっと出ることはない。
+ */
+function HeroLatent({ photo, className }: { photo: HomeHeroPhoto; className: string }) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [ready, setReady] = useState(false);
+  const src = photo.thumbUrl || photo.mediumUrl || photo.url;
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas || !src) return;
+    let alive = true;
+    const image = new Image();
+    image.decoding = "async";
+    image.onload = () => {
+      if (alive && paintLatent(canvas, image)) setReady(true);
+    };
+    image.src = src;
+    return () => {
+      alive = false;
+    };
+  }, [src]);
+  return (
+    <div className="hero-latent absolute inset-0" aria-hidden="true" data-ready={ready ? "" : undefined}>
+      <canvas
+        ref={canvasRef}
+        className={className}
+        style={{ objectPosition: objectPositionFromFocal(photo.focalX, photo.focalY) }}
+      />
+    </div>
+  );
+}
+
 /** E1: single hero — one large photo with the name overlaid.
  *  AA2: titlePosition places the caption; AA3: fxRef is the scroll-effect layer
  *  (photo + overlay move/fade together, the caption stays put). */
@@ -531,7 +572,15 @@ function HeroSingle({
   titlePosition = "center",
   fxRef,
   photographerName,
+  develop = false,
 }: {
+  /**
+   * 現像されるように現す（新しい構成）。本物の写真の下に、同じ写真のぼけた単色の像を敷き、
+   * 先にそれを浮かべてから本物を濃くする。**毎コマ変えるのは濃さだけ**（ぼかしは最初に1回だけ
+   * 掛ける）。全画面の写真のぼかしや拡大を毎コマ変えるとコマが落ちる（styles.css の
+   * 「全画面のヒーローには、毎コマの変形を掛けない」の実測）。
+   */
+  develop?: boolean;
   /**
    * まだ届いていない間は undefined。**枠だけ先に置く。**
    *
@@ -563,6 +612,7 @@ function HeroSingle({
   return (
     <div className="hero-single" style={stageStyle}>
       <div ref={fxRef} className="hero-fx-layer absolute inset-0">
+        {photo && develop && <HeroLatent photo={photo} className="hero-single-img" />}
         {photo && (
         <div className="hero-photo-reveal absolute inset-0">
           <HeroPicture
@@ -1562,6 +1612,7 @@ export default function TopPage() {
           titlePosition={heroTitlePosition}
           fxRef={heroFxRef}
           photographerName={photographerName}
+          develop={isDevelopDesign}
         >
           <ClassicHeroNameBlock
             settings={settings}
@@ -1589,6 +1640,7 @@ export default function TopPage() {
           loading={heroLoading || photosLoading}
           fullscreen={heroFullscreen}
           titlePosition={heroTitlePosition}
+          develop={isDevelopDesign}
         >
           {heroFullscreen &&
           (heroPhotos.length > 0 || heroLoading || photosLoading) ? (

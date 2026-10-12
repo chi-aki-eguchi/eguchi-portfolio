@@ -50,6 +50,9 @@ test("新しい構成 › 何もしなければ今までの構成のまま", asy
   expect(hrefs).not.toContain("/portrait");
   expect(hrefs).not.toContain("/info");
   await expect(page.locator(".dv-home")).toHaveCount(0);
+  // 現像の現れ方は新しい構成だけ。今までの構成の表紙は今までどおり（下地の像を置かない）。
+  await expect(page.locator(".hero-motion-stage").first()).toBeVisible();
+  await expect(page.locator(".hero-latent")).toHaveCount(0);
   for (const path of ["/portrait", "/life", "/info"]) {
     await page.goto(path, { waitUntil: "networkidle" });
     await expect(page.getByRole("heading", { name: "ページが見つかりませんでした" })).toBeVisible();
@@ -209,6 +212,21 @@ test("新しい構成 › 写真は幅を使い切り、余白は区切りにだ
     expect(Math.max(...list.perRow)).toBeLessThanOrEqual(2);
     expect(list.firstTop).toBeLessThanOrEqual(16);
   }
+  // 一覧の写真は現像されるように現れる：届く前は色の無い薄い像、届いたら色が乗って filter は無くなる。
+  const tileFilter = await page.evaluate(() => {
+    const probe = document.createElement("img");
+    probe.className = "ps-tile__img";
+    document.querySelector(".ps-stream")!.appendChild(probe);
+    const before = getComputedStyle(probe).filter;
+    probe.remove();
+    return before;
+  });
+  expect(tileFilter).toContain("grayscale");
+  expect(tileFilter).not.toContain("blur");
+  await expect
+    .poll(() => page.locator(".ps-tile__img[data-loaded]").first().evaluate((img) => getComputedStyle(img).filter))
+    .toBe("none");
+
   // 撮影依頼の文：金額は途中で折れない（「¥10,／000。」になっていた）。
   const price = page.locator(".inquiry-note .ja-phrase", { hasText: "¥10,000" });
   await expect(price).toHaveCount(1);
@@ -274,6 +292,33 @@ test("新しい構成 › 写真は幅を使い切り、余白は区切りにだ
   expect(home.photoAnimation).not.toBe("none");
   expect(home.hasFxLayer).toBe(true);
   expect(home.frameBottom).toBeLessThanOrEqual(home.vh + 1);
+  // 現像：本物の写真の下に、同じ写真のぼけた単色の像（小さな絵。filter は使わない）が描かれ、
+  // 本物はそれより後から濃くなる（表紙の設定「文字が先」の 0.62秒 より後）。
+  await expect(page.locator(".hero-latent[data-ready] canvas")).toHaveCount(1);
+  const latent = await page.evaluate(() => {
+    const canvas = document.querySelector<HTMLCanvasElement>(".hero-latent canvas")!;
+    const box = canvas.getBoundingClientRect();
+    const sharp = document.querySelector<HTMLElement>(".hero-photo-reveal img")!.getBoundingClientRect();
+    const px = canvas.getContext("2d")!.getImageData(0, 0, canvas.width, canvas.height).data;
+    let colour = 0;
+    for (let i = 0; i < px.length; i += 4) colour = Math.max(colour, Math.abs(px[i]! - px[i + 2]!));
+    return {
+      w: canvas.width,
+      h: canvas.height,
+      filter: getComputedStyle(canvas).filter,
+      sameBox: Math.abs(box.width - sharp.width) < 1 && Math.abs(box.height - sharp.height) < 1 && Math.abs(box.left - sharp.left) < 1,
+      colour,
+      sharpDelay: parseFloat(getComputedStyle(document.querySelector(".hero-photo-reveal")!).animationDelay),
+      order: Boolean(document.querySelector(".hero-latent ~ .hero-photo-reveal")),
+    };
+  });
+  expect(Math.max(latent.w, latent.h)).toBeGreaterThanOrEqual(32);
+  expect(Math.max(latent.w, latent.h)).toBeLessThanOrEqual(128);
+  expect(latent.filter).toBe("none");
+  expect(latent.sameBox).toBe(true);
+  expect(latent.colour).toBeLessThan(48);
+  expect(latent.order).toBe(true);
+  expect(latent.sharpDelay).toBeGreaterThan(0.62);
   expect(home.coverToDoors).toBeLessThanOrEqual(24);
   expect(home.doorsToArchive).toBeLessThanOrEqual(40);
   // 「すべての写真」は下線でなく矢印（すぐ下の帯の罫と二重線にしない）。帯は左端をそろえる。
@@ -448,6 +493,49 @@ test("新しい構成 › 写真は幅を使い切り、余白は区切りにだ
     expect(await noSideScroll(page)).toBeLessThanOrEqual(0);
     await page.screenshot({ path: testInfo.outputPath("develop-menu.png") });
   }
+});
+
+test("新しい構成 › 現像は「動きを減らす」と「写真の現れ方：なし」では出さない", async ({ page, api }) => {
+  await withCategories(page, api);
+  const settings = (await (await api.get("/api/settings")).json()) as Record<string, unknown>;
+  const state = { photoRevealEffect: "fade" };
+  await page.route("**/api/settings**", (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ ...settings, heroMode: "single", heroDisplayMode: "fullscreen", ...state }),
+    }),
+  );
+  const look = () =>
+    page.evaluate(() => {
+      const latent = document.querySelector<HTMLElement>(".hero-latent");
+      const reveal = document.querySelector<HTMLElement>(".hero-photo-reveal")!;
+      const probe = document.createElement("img");
+      probe.className = "ps-tile__img";
+      (document.querySelector(".dv-home") ?? document.body).appendChild(probe);
+      const tile = getComputedStyle(probe).filter;
+      probe.remove();
+      return { latent: latent ? getComputedStyle(latent).display : "(無し)", sharp: getComputedStyle(reveal).opacity, tile };
+    });
+
+  // 動きを減らす設定：下地の像は出さない。本物の写真は、今までどおり濃さだけで現れて見える。
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.goto("/?design=develop", { waitUntil: "networkidle" });
+  await expect(page.locator(".hero-photo-reveal")).toBeVisible();
+  await expect.poll(async () => (await look()).sharp).toBe("1");
+  const reduced = await look();
+  expect(reduced.latent).toBe("none");
+  expect(reduced.tile).toBe("none");
+
+  // 写真の現れ方「なし」：動きを減らしていなくても、現像はしない。
+  await page.emulateMedia({ reducedMotion: "no-preference" });
+  state.photoRevealEffect = "none";
+  await page.goto("/", { waitUntil: "networkidle" });
+  await expect(page.locator(".hero-photo-reveal")).toBeVisible();
+  await expect.poll(async () => (await look()).sharp).toBe("1");
+  const off = await look();
+  expect(off.latent).toBe("none");
+  expect(off.tile).toBe("none");
 });
 
 test("新しい構成 › Info は自己紹介と依頼。今までのページも同じ住所で開ける", async ({ page, api }, testInfo) => {

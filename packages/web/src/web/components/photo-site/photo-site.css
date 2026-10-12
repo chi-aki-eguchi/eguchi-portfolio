@@ -476,8 +476,27 @@ html[data-ps-cover] .ps-header__bar[data-ready] > .ps-name {
     transition-duration: 0.25s;
   }
 }
+/* 新しい構成：一覧の写真も、現像されるように現れる（2026-10-12）。色の無い薄い像が先に浮かび、
+   色と濃さがあとから乗る。**ぼかしは使わない**——一覧は何枚も同時に現れ、スマホでは1枚が画面の幅
+   いっぱいになるので、ぼかしを毎コマ変えると表紙と同じ重さになる。色の変換だけなら軽い。
+   「写真の現れ方」を「なし」にしたサイトでは、この動きも付けない。 */
+[data-site-design="develop"] .ps-tile__img {
+  filter: grayscale(1) sepia(0.32) contrast(0.78) brightness(1.18);
+  transition:
+    opacity 0.6s ease,
+    filter 1.35s var(--ease-reveal) 0.12s;
+}
+[data-site-design="develop"] .ps-tile__img[data-loaded] {
+  filter: none;
+}
+body[data-reveal="none"] [data-site-design="develop"] .ps-tile__img {
+  filter: none;
+  transition: opacity 0.7s ease;
+}
 @media (prefers-reduced-motion: reduce) {
-  .ps-tile__img {
+  .ps-tile__img,
+  [data-site-design="develop"] .ps-tile__img {
+    filter: none;
     transition: none;
   }
 }

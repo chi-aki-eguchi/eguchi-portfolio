@@ -308,15 +308,26 @@ test("新しい構成 › 写真は幅を使い切り、余白は区切りにだ
       filter: getComputedStyle(canvas).filter,
       sameBox: Math.abs(box.width - sharp.width) < 1 && Math.abs(box.height - sharp.height) < 1 && Math.abs(box.left - sharp.left) < 1,
       colour,
+      // 隣どうしの点の明るさの差（ぼけていれば小さい。マス目に見えた粗い像では大きかった）。
+      step: (() => {
+        let worst = 0;
+        for (let y = 0; y < canvas.height; y++)
+          for (let x = 1; x < canvas.width; x++) {
+            const i = (y * canvas.width + x) * 4;
+            worst = Math.max(worst, Math.abs(px[i]! - px[i - 4]!));
+          }
+        return worst;
+      })(),
       sharpDelay: parseFloat(getComputedStyle(document.querySelector(".hero-photo-reveal")!).animationDelay),
       order: Boolean(document.querySelector(".hero-latent ~ .hero-photo-reveal")),
     };
   });
-  expect(Math.max(latent.w, latent.h)).toBeGreaterThanOrEqual(32);
-  expect(Math.max(latent.w, latent.h)).toBeLessThanOrEqual(128);
+  expect(Math.max(latent.w, latent.h)).toBeGreaterThanOrEqual(64);
+  expect(Math.max(latent.w, latent.h)).toBeLessThanOrEqual(200);
   expect(latent.filter).toBe("none");
   expect(latent.sameBox).toBe(true);
   expect(latent.colour).toBeLessThan(48);
+  expect(latent.step).toBeLessThan(40);
   expect(latent.order).toBe(true);
   expect(latent.sharpDelay).toBeGreaterThan(0.62);
   expect(home.coverToDoors).toBeLessThanOrEqual(24);

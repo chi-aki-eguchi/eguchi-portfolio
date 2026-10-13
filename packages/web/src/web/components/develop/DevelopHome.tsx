@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { Link } from "wouter";
 import { Picture } from "../Picture";
 import { useScrollFadeIn } from "../../hooks/useScrollFadeIn";
-import { DEVELOP_DOOR_NOTES, developListPhotos } from "../../../shared/develop-structure";
+import { developDoorCopy, developListPhotos } from "../../../shared/develop-structure";
 import "./develop.css";
 
 type Settings = Record<string, string | null | undefined> | undefined;
@@ -42,7 +42,10 @@ export function developDoors({
   profilePhoto,
   showSeries,
   picked,
+  names,
 }: {
+  /** 扉の名前と添え書き（設定 developDoors の文字列。無ければ初めの値）。 */
+  names?: string | null;
   photos: DevelopPhoto[];
   seriesCover: DevelopPhoto | null;
   profilePhoto: DevelopPhoto | null;
@@ -52,13 +55,14 @@ export function developDoors({
 }): DevelopDoor[] {
   const portrait = developListPhotos("portrait", photos, picked?.portrait);
   const life = developListPhotos("life", photos, picked?.life);
+  const copy = developDoorCopy(names);
   return [
-    { key: "portrait" as const, href: "/portrait", title: "Portrait", note: DEVELOP_DOOR_NOTES.portrait, photo: portrait[0] ?? null },
-    { key: "life" as const, href: "/life", title: "Life", note: DEVELOP_DOOR_NOTES.life, photo: life[0] ?? null },
+    { key: "portrait" as const, href: "/portrait", title: copy.portrait.label, note: copy.portrait.note, photo: portrait[0] ?? null },
+    { key: "life" as const, href: "/life", title: copy.life.label, note: copy.life.note, photo: life[0] ?? null },
     ...(showSeries
-      ? [{ key: "series" as const, href: "/series", title: "Series", note: DEVELOP_DOOR_NOTES.series, photo: seriesCover }]
+      ? [{ key: "series" as const, href: "/series", title: copy.series.label, note: copy.series.note, photo: seriesCover }]
       : []),
-    { key: "info" as const, href: "/info", title: "Info", note: DEVELOP_DOOR_NOTES.info, photo: profilePhoto },
+    { key: "info" as const, href: "/info", title: copy.info.label, note: copy.info.note, photo: profilePhoto },
   ];
 }
 
@@ -180,8 +184,17 @@ export function DevelopHome({
         profilePhoto,
         showSeries,
         picked: { portrait: settings?.developPortraitIds, life: settings?.developLifeIds },
+        names: settings?.developDoors,
       }),
-    [photos, seriesCover, profilePhoto, showSeries, settings?.developPortraitIds, settings?.developLifeIds],
+    [
+      photos,
+      seriesCover,
+      profilePhoto,
+      showSeries,
+      settings?.developPortraitIds,
+      settings?.developLifeIds,
+      settings?.developDoors,
+    ],
   );
   return (
     <div className="dv-home site-page">

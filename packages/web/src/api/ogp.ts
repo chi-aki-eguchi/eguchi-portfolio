@@ -1,5 +1,5 @@
 import { OWNER_SERVICE_TITLE } from "../shared/site-title";
-import { isDevelopDesignValue, isDevelopOnlyPath } from "../shared/develop-structure";
+import { developDoorCopy, isDevelopDesignValue, isDevelopOnlyPath } from "../shared/develop-structure";
 import { portfolioPlans } from "../shared/portfolio-product";
 import {
   DEFAULT_SITE_URL as SITE_URL_DEFAULT,
@@ -97,6 +97,15 @@ export function siteUrlFrom(
     fallbackOrigin ||
     DEFAULT_SITE_URL
   ).replace(/\/+$/, "");
+}
+/**
+ * ページの名前（題名の前半）。新しい構成の扉（/portrait・/life・/info）は、管理画面で付けた名前を使う
+ * （設定 developDoors。無ければ下の表の初めの値と同じ）。画面の見出し・メニューと同じ言葉にする。
+ */
+function pageTitleFor(settings: Record<string, string>, pathname: string): string | undefined {
+  const door = pathname === "/portrait" ? "portrait" : pathname === "/life" ? "life" : pathname === "/info" ? "info" : null;
+  if (door) return developDoorCopy(settings.developDoors)[door].label;
+  return PAGE_TITLES[pathname];
 }
 // Per-route titles so each page is distinct for search/social, not all "home".
 const PAGE_TITLES: Record<string, string> = {
@@ -362,7 +371,7 @@ export function publicPageFallbackText(
     };
   }
   const description = pageDescriptionFor(settings, pathname, name);
-  const page = PAGE_TITLES[pathname];
+  const page = pageTitleFor(settings, pathname);
   // 英語ページの見出しに日本語の表記名を出さない（説明文と同じ理由）。
   const headingName = ENGLISH_PUBLIC_PATHS.has(pathname)
     ? displayNameEnFrom(settings)
@@ -558,7 +567,7 @@ export function injectOgp(
     : isEnglishServicePath
       ? SERVICE_OG_EN
       : SERVICE_OG;
-  const page = PAGE_TITLES[pathname];
+  const page = pageTitleFor(settings, pathname);
   const KNOWN_ROUTES = [
     "/",
     "/gallery",

@@ -436,6 +436,109 @@ body.pp-dragging * {
   margin: 8px 0 0;
 }
 
+/* ── 扉の名前（ふだんは畳んでおく）────────────────────── */
+.pp-doors {
+  margin: 28px 0 0;
+  max-width: 760px;
+  font-size: 13.5px;
+}
+.pp-doors summary {
+  display: inline-flex;
+  align-items: center;
+  min-height: 40px;
+  cursor: pointer;
+  list-style: none;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  border-bottom: 1px solid var(--admin-line-strong);
+}
+.pp-doors summary::-webkit-details-marker {
+  display: none;
+}
+.pp-doors summary::after {
+  content: "＋";
+  margin-left: 10px;
+  font-weight: 400;
+  color: var(--admin-muted);
+}
+.pp-doors[open] summary::after {
+  content: "−";
+}
+.pp-doors > p {
+  margin: 10px 0 14px;
+  color: var(--admin-muted);
+}
+.pp-doors__rows {
+  display: grid;
+  gap: 10px;
+}
+.pp-doors__row {
+  display: grid;
+  grid-template-columns: 12.5em minmax(0, 1fr) minmax(0, 1.4fr);
+  gap: 12px;
+  align-items: end;
+}
+.pp-doors__role {
+  padding-bottom: 9px;
+  color: var(--admin-muted);
+  white-space: nowrap;
+}
+/* PC では欄が表のように縦に揃うので、「名前」「添え書き」の見出しは1段目だけ見せる
+   （2段目からは読み上げ用に残して、目には出さない）。スマホは1件ずつ積むので毎回出す。 */
+@media (min-width: 768px) {
+  .pp-doors__row:not(:first-child) label > span {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+}
+.pp-doors label {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.pp-doors label > span {
+  font-size: 12px;
+  color: var(--admin-muted);
+}
+.pp-doors input {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 40px;
+  padding: 6px 10px;
+  border: 1px solid var(--admin-line-strong);
+  border-radius: 0;
+  background: #fff;
+  color: var(--admin-ink);
+  font: inherit;
+  font-size: 15px;
+}
+.pp-doors input:focus-visible {
+  outline: 2px solid var(--admin-ink);
+  outline-offset: 1px;
+}
+.pp-doors__reset {
+  all: unset;
+  box-sizing: border-box;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  min-height: 40px;
+  margin-top: 10px;
+  font-size: 13px;
+  color: var(--admin-muted);
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+.pp-doors__reset:focus-visible {
+  outline: 2px solid var(--admin-ink);
+  outline-offset: 2px;
+}
+
 /* 選んでいる間だけ、下に出る帯 */
 .pp-selbar {
   position: fixed;
@@ -905,6 +1008,24 @@ body.pp-dragging * {
   }
   .pp-cover-mode {
     margin-top: 8px;
+  }
+  /* 扉の名前：スマホは「どのページか」を1行、その下に名前と添え書きを横に並べる。
+     入力欄の字は 16px（それより小さいと、iPhone は押した瞬間に画面を拡大する）。 */
+  .pp-doors__row {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr);
+    gap: 4px 10px;
+  }
+  .pp-doors__role {
+    grid-column: 1 / -1;
+    padding: 6px 0 0;
+  }
+  .pp-doors input {
+    min-height: 44px;
+    font-size: 16px;
+  }
+  .pp-doors summary,
+  .pp-doors__reset {
+    min-height: 44px;
   }
   .pp-cover-mode button {
     min-height: 44px;

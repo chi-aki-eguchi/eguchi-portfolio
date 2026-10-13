@@ -172,6 +172,7 @@ export const SETTINGS_PREVIEW_KEYS = [
   // 空なら写真の分類から出す。
   "developPortraitIds",
   "developLifeIds",
+  "developDoors",
   "seriesGridColumns",
   "seriesGridColumnsMobile",
   "heroRandom",

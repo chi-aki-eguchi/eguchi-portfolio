@@ -4,6 +4,9 @@ import {
   isDevelopDesignValue,
   isDevelopOnlyPath,
   parsePhotoIdList,
+  DEVELOP_DOOR_DEFAULTS,
+  developDoorCopy,
+  serializeDevelopDoors,
 } from "./develop-structure";
 
 describe("新しい構成（develop）の決まり", () => {
@@ -52,5 +55,49 @@ describe("新しい構成（develop）の決まり", () => {
     expect(parsePhotoIdList("12, 7,12 ,x")).toEqual([12, 7]);
     expect(parsePhotoIdList("")).toEqual([]);
     expect(parsePhotoIdList(undefined)).toEqual([]);
+  });
+});
+
+describe("扉の名前と添え書き", () => {
+  test("設定が無い・壊れているときは、初めの値", () => {
+    expect(developDoorCopy(undefined)).toEqual(DEVELOP_DOOR_DEFAULTS);
+    expect(developDoorCopy("")).toEqual(DEVELOP_DOOR_DEFAULTS);
+    expect(developDoorCopy("{こわれた")).toEqual(DEVELOP_DOOR_DEFAULTS);
+    expect(developDoorCopy("[1,2]")).toEqual(DEVELOP_DOOR_DEFAULTS);
+    expect(developDoorCopy('{"portrait":"文字だけ"}')).toEqual(DEVELOP_DOOR_DEFAULTS);
+    // 読んだ結果を書き換えても、初めの値は変わらない。
+    developDoorCopy("").portrait.label = "x";
+    expect(DEVELOP_DOOR_DEFAULTS.portrait.label).toBe("Portrait");
+  });
+
+  test("変えた扉だけが変わり、ほかは初めの値のまま", () => {
+    const copy = developDoorCopy('{"portrait":["人","ポートレート撮影"],"info":["依頼",""]}');
+    expect(copy.portrait).toEqual({ label: "人", note: "ポートレート撮影" });
+    expect(copy.life).toEqual(DEVELOP_DOOR_DEFAULTS.life);
+    // 添え書きは空にできる。
+    expect(copy.info).toEqual({ label: "依頼", note: "" });
+  });
+
+  test("空の名前は初めの値で補い、改行や長すぎる値は整える", () => {
+    const copy = developDoorCopy(
+      JSON.stringify({ life: ["   ", "  毎日の\n写真  "], series: ["あ".repeat(60), "い".repeat(60)], info: [12, null] }),
+    );
+    expect(copy.life).toEqual({ label: "Life", note: "毎日の 写真" });
+    expect(Array.from(copy.series.label).length).toBe(24);
+    expect(Array.from(copy.series.note).length).toBe(30);
+    expect(copy.info).toEqual(DEVELOP_DOOR_DEFAULTS.info);
+  });
+
+  test("保存する文字列：初めの値のままなら空。変えた扉だけを入れ、読み戻すと同じ", () => {
+    expect(serializeDevelopDoors(developDoorCopy(""))).toBe("");
+    const copy = developDoorCopy("");
+    copy.portrait = { label: " People ", note: "" };
+    const saved = serializeDevelopDoors(copy);
+    expect(JSON.parse(saved)).toEqual({ portrait: ["People", ""] });
+    expect(developDoorCopy(saved).portrait).toEqual({ label: "People", note: "" });
+    expect(developDoorCopy(saved).life).toEqual(DEVELOP_DOOR_DEFAULTS.life);
+    // 名前を空にして保存しようとしても、初めの名前に戻る（＝変えていないので入らない）。
+    copy.portrait = { label: "", note: "人を撮る" };
+    expect(serializeDevelopDoors(copy)).toBe("");
   });
 });

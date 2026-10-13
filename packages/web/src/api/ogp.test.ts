@@ -203,6 +203,12 @@ describe("injectOgp robots policy", () => {
       expect(robotsOf(develop)).toBe("index, follow");
       expect(titleOf(develop)).toStartWith(`${name} |`);
     }
+    // 扉の名前を変えたサイトでは、題名もその名前（メニュー・見出しと同じ言葉）。変えていない扉は初めの名前。
+    const renamed = { siteDesign: "develop", developDoors: JSON.stringify({ portrait: ["People", "人を撮る"] }) };
+    expect(titleOf(injectOgp(page, renamed, "/portrait"))).toStartWith("People |");
+    expect(titleOf(injectOgp(page, renamed, "/life"))).toStartWith("Life |");
+    // 壊れた値でも、題名は初めの名前で出る。
+    expect(titleOf(injectOgp(page, { siteDesign: "develop", developDoors: "{こわれた" }, "/info"))).toStartWith("Info |");
     // 今までのページは、どちらの構成でも変わらない。
     expect(robotsOf(injectOgp(page, { siteDesign: "develop" }, "/gallery"))).toBe("index, follow");
     expect(robotsOf(injectOgp(page, { siteDesign: "develop" }, "/no-such-page"))).toBe("noindex, nofollow");

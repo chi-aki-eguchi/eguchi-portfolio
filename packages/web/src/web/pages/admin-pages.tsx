@@ -4,11 +4,13 @@ import { adminApi, api, jsonOrThrow } from "../lib/api";
 import { sortPhotosBySetting } from "../lib/photo-sort";
 import { planCoverSave, type PagePhoto } from "../lib/page-photos";
 import {
+  developDoorCopy,
   developListPhotos,
   isDevelopDesignValue,
   parsePhotoIdList,
   type DevelopListKind,
 } from "../../shared/develop-structure";
+import { DoorNames } from "../components/page-photos/DoorNames";
 import { PagePhotoEditor } from "../components/page-photos/PagePhotoEditor";
 import {
   assertOk,
@@ -23,11 +25,12 @@ async function loadCoverRows(): Promise<{ heroPhotos: HeroPhotoRow[] }> {
 }
 
 const LIST_KEY = { portrait: "developPortraitIds", life: "developLifeIds" } as const;
-const PAGE_NAME = { cover: "表紙", portrait: "Portrait", life: "Life" } as const;
+/** 表紙のタブの名前。Portrait／Life は扉の名前（設定 developDoors）から。 */
+const COVER_NAME = "表紙";
 /** 表紙（トップの最初の写真）と、写真を選んで並べる2つのページ。 */
 type Tab = "cover" | DevelopListKind;
 const TABS: readonly Tab[] = ["cover", "portrait", "life"];
-type SavedKey = (typeof LIST_KEY)[DevelopListKind] | "siteDesign" | "heroMode";
+type SavedKey = (typeof LIST_KEY)[DevelopListKind] | "siteDesign" | "heroMode" | "developDoors";
 type Toast = { text: string; undo?: () => void };
 
 /**
@@ -211,6 +214,9 @@ export default function AdminPagesPage() {
   const heroMode = savedValue("heroMode") || "carousel";
   const coverSingle = heroMode === "single";
   const counts = { cover: coverIds.length, portrait: lists.portrait.length, life: lists.life.length };
+  // タブの名前は、扉の名前に合わせる（名前を変えたら、ここも変わる）。
+  const doorCopy = developDoorCopy(savedValue("developDoors"));
+  const pageName = { cover: COVER_NAME, portrait: doorCopy.portrait.label, life: doorCopy.life.label };
   const design = savedValue("siteDesign");
   const isDevelop = isDevelopDesignValue(design);
 
@@ -249,7 +255,7 @@ export default function AdminPagesPage() {
             data-pp-tab={kind}
             onClick={() => setTab(kind)}
           >
-            {PAGE_NAME[kind]}
+            {pageName[kind]}
             <small>{counts[kind]}</small>
           </button>
         ))}
@@ -299,7 +305,7 @@ export default function AdminPagesPage() {
             value={coverIds}
             used={usedOnCover}
             series={series}
-            name={PAGE_NAME.cover}
+            name={COVER_NAME}
             onChange={(next, message) => saveCover(next, message, coverIds)}
           />
         </>
@@ -316,11 +322,16 @@ export default function AdminPagesPage() {
             value={lists[tab]}
             used={used}
             series={series}
-            name={PAGE_NAME[tab]}
+            name={pageName[tab]}
             onChange={(next, message) => save(LIST_KEY[tab], next.join(","), message, savedValue(LIST_KEY[tab]))}
           />
         </>
       )}
+
+      <DoorNames
+        value={savedValue("developDoors")}
+        onSave={(next, message) => save("developDoors", next, message, savedValue("developDoors"))}
+      />
 
       <section className="pp-design" aria-label="サイトの構成">
         <h2>サイトの構成</h2>

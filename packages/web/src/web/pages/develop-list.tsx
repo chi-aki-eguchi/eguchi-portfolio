@@ -13,12 +13,13 @@ import { PageTitle } from "../components/PageTitle";
 import type { GalleryPhoto } from "../components/PhotoGallery";
 import { PhotoStream } from "../components/photo-site/PhotoStream";
 import { useSeriesLinks } from "../hooks/useSeriesLinks";
-import { developListPhotos, type DevelopListKind } from "../../shared/develop-structure";
+import { developDoorCopy, developListPhotos, type DevelopListKind } from "../../shared/develop-structure";
 import "../components/develop/develop.css";
 
-const COPY: Record<DevelopListKind, { title: string; label: string }> = {
-  portrait: { title: "Portrait", label: "人を撮った写真" },
-  life: { title: "Life", label: "日常の写真" },
+/** 写真の並びの名前（読み上げ用）。ページの見出しは扉の名前（設定 developDoors）から。 */
+const STREAM_LABEL: Record<DevelopListKind, string> = {
+  portrait: "人を撮った写真",
+  life: "日常の写真",
 };
 
 /**
@@ -65,7 +66,8 @@ export default function DevelopListPage({ kind }: { kind: DevelopListKind }) {
   const photographerName = settings?.siteName || settings?.siteNameEn || settings?.profileName || "";
   const works = kind === "portrait" ? (worksQ.data?.series ?? []) : [];
   const showGallery = galleryHasPhotos(photoCounts, galleryExcludesSeries(settings));
-  const { title, label } = COPY[kind];
+  const title = developDoorCopy(settings?.developDoors)[kind].label;
+  const label = STREAM_LABEL[kind];
 
   const foot = (
     <div className="dv-list__foot">

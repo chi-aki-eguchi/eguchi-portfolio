@@ -22,7 +22,7 @@ import { lockPageScroll } from "../lib/scroll-lock";
 import { PAGE_EXIT_MS } from "./PageTransition";
 import { useDarkModeContext, useServiceVisibility } from "./provider";
 import { hasPublicEnglishContent } from "../../shared/public-english";
-import { DEVELOP_DOOR_NOTES } from "../../shared/develop-structure";
+import { developDoorCopy, type DevelopDoorKey } from "../../shared/develop-structure";
 import {
   isAboutRoute,
   isServiceOwnerSite,
@@ -359,15 +359,19 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   ];
   // 新しい構成の4つは「扉」。スマホのメニューでは、トップの扉の目次と同じ形（番号・名前・
   // 添え書き）で画面いっぱいに並べる。添え書きは日本語のページを読んでいる人にだけ出す。
-  const doorNote = (key: keyof typeof DEVELOP_DOOR_NOTES) => (isEnglishChrome ? undefined : DEVELOP_DOOR_NOTES[key]);
+  // 名前と添え書きは、管理画面の「扉の名前」で変えられる（設定 developDoors。無ければ初めの値）。
+  const doorCopy = developDoorCopy(data?.developDoors);
+  const doorNote = (key: DevelopDoorKey) => (isEnglishChrome ? undefined : doorCopy[key].note || undefined);
   const navItems: { href: string; label: string; door?: boolean; note?: string }[] = [
     ...(developStructure
       ? [
-          { href: "/portrait", label: "Portrait", door: true, note: doorNote("portrait") },
-          { href: "/life", label: "Life", door: true, note: doorNote("life") },
-          ...(showSeries || showWork ? [{ href: "/series", label: "Series", door: true, note: doorNote("series") }] : []),
+          { href: "/portrait", label: doorCopy.portrait.label, door: true, note: doorNote("portrait") },
+          { href: "/life", label: doorCopy.life.label, door: true, note: doorNote("life") },
+          ...(showSeries || showWork
+            ? [{ href: "/series", label: doorCopy.series.label, door: true, note: doorNote("series") }]
+            : []),
           // 英語のページを読んでいる人は、英語の Contact へ（Info の英語版は次の段階）。
-          { href: isEnglishChrome ? "/en/contact" : "/info", label: "Info", door: true, note: doorNote("info") },
+          { href: isEnglishChrome ? "/en/contact" : "/info", label: doorCopy.info.label, door: true, note: doorNote("info") },
         ]
       : [
           ...shelfItems,

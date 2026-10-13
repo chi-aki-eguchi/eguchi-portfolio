@@ -1507,6 +1507,8 @@ const app = new Hono()
         // 新しい構成の Portrait／Life に出す写真（選んだ順）。空なら分類から出す（shared/develop-structure.ts）。
         developPortraitIds: settings.developPortraitIds ?? "",
         developLifeIds: settings.developLifeIds ?? "",
+        // 扉の名前と添え書き（JSON。空なら初めの値）。読み方は shared/develop-structure.ts。
+        developDoors: settings.developDoors ?? "",
         // ── O6: smart albums (admin-only) — JSON array of saved photo filters ──
         smartAlbums: settings.smartAlbums ?? "[]",
         // ── I: series navigation toggle (JS-driven, like gallery) ──

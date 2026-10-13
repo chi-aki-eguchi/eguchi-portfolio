@@ -658,6 +658,51 @@ test("新しい構成 › Info は、短い自己紹介 → 料金と依頼 → 
   await expect(page.locator("main [data-profile-part]")).toHaveCount(0);
 });
 
+test("新しい構成 › 扉の名前を変えると、メニュー・トップの扉・ページの見出しが同じ名前になる", async ({ page, api }) => {
+  await withCategories(page, api);
+  const settings = (await (await api.get("/api/settings")).json()) as Record<string, unknown>;
+  await page.route("**/api/settings**", (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        ...settings,
+        pageTitleStyle: "default",
+        developDoors: JSON.stringify({ portrait: ["People", "ポートレート撮影"], info: ["依頼", ""] }),
+      }),
+    }),
+  );
+  const phone = page.viewportSize()!.width < 768;
+  await page.goto("/?design=develop", { waitUntil: "networkidle" });
+  // トップの扉：名前と添え書き。変えていない Life は初めの値。添え書きを空にした扉は、添え書きを出さない。
+  const doors = await page.locator(".dv-door").evaluateAll((els) =>
+    els.map((el) => ({
+      href: el.getAttribute("href"),
+      title: el.querySelector(".dv-door__title")?.textContent?.trim(),
+      note: el.querySelector(".dv-door__note")?.textContent?.trim(),
+    })),
+  );
+  expect(doors.find((d) => d.href === "/portrait")).toEqual({ href: "/portrait", title: "People", note: "ポートレート撮影" });
+  expect(doors.find((d) => d.href === "/life")).toEqual({ href: "/life", title: "Life", note: "日常の写真" });
+  expect(doors.find((d) => d.href === "/info")).toEqual({ href: "/info", title: "依頼", note: "" });
+  // メニュー（PC は並んでいる項目、スマホは開いたメニュー）。
+  if (phone) {
+    await page.locator('button[aria-controls="mobile-menu"]:visible').first().click();
+    const menu = page.locator("#mobile-menu");
+    await expect(menu.locator('a[href="/portrait"] .public-mobile-menu__label')).toHaveText("People");
+    await expect(menu.locator('a[href="/portrait"] .public-mobile-menu__note')).toHaveText("ポートレート撮影");
+    await expect(menu.locator('a[href="/info"] .public-mobile-menu__label')).toHaveText("依頼");
+    await expect(menu.locator('a[href="/info"] .public-mobile-menu__note')).toHaveCount(0);
+  } else {
+    await expect(page.locator('header a[href="/portrait"]:visible').first()).toHaveText("People");
+    await expect(page.locator('header a[href="/info"]:visible').first()).toHaveText("依頼");
+  }
+  // ページの見出しも同じ名前。
+  await page.goto("/portrait", { waitUntil: "networkidle" });
+  await expect(page.locator("main h1")).toHaveText("People");
+  expect(await noSideScroll(page)).toBeLessThanOrEqual(0);
+});
+
 test("新しい構成 › ?design=classic で下見をやめられる", async ({ page, api }) => {
   await withCategories(page, api);
   await page.goto("/?design=develop", { waitUntil: "networkidle" });

@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { Link } from "wouter";
 import { Picture } from "../Picture";
+import { useScrollFadeIn } from "../../hooks/useScrollFadeIn";
 import { DEVELOP_DOOR_NOTES, developListPhotos } from "../../../shared/develop-structure";
 import "./develop.css";
 
@@ -73,8 +74,10 @@ function position(photo: DevelopPhoto): string | undefined {
 function Doors({ doors }: { doors: DevelopDoor[] }) {
   const [active, setActive] = useState(0);
   const staged = doors.filter((d) => d.photo);
+  // スマホの扉の写真は、画面に入ってきたときに現れる（今までの「写真が現れる」仕組みをそのまま使う）。
+  const fadeRef = useScrollFadeIn([doors.length]);
   return (
-    <section className="dv-doors" aria-label="目次">
+    <section className="dv-doors" aria-label="目次" ref={fadeRef}>
       <ul className="dv-doors__list">
         {doors.map((door, i) => (
           <li key={door.key}>
@@ -86,7 +89,7 @@ function Doors({ doors }: { doors: DevelopDoor[] }) {
               onFocus={() => setActive(i)}
             >
               {door.photo && (
-                <span className="dv-door__photo">
+                <span className="dv-door__photo fade-in-item">
                   <Picture
                     url={door.photo.url}
                     thumbUrl={door.photo.thumbUrl}

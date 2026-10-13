@@ -154,3 +154,27 @@ export function groupByPeriod(photos: readonly PagePhoto[], coarse: boolean): Ph
     .sort(([a], [b]) => (a === b ? 0 : a === "" ? 1 : b === "" ? -1 : a < b ? 1 : -1))
     .map(([key, list]) => ({ key, label: periodLabel(key), photos: list }));
 }
+
+/**
+ * 表紙の並びを保存する段取り（2026-10-13、「ページの写真」の表紙のタブ）。
+ *
+ * 表紙の登録（hero_photos）は、今までの管理画面と同じ API を使う：外す・足す・並べ替えの3つ。
+ * 画面に出しているのは公開中の写真だけなので、**画面に無い登録（非公開にした写真など）には
+ * 触らない**——外さず、並びの後ろへ置いておく（公開に戻したとき、表紙の登録が残っている）。
+ * 並べ替えの API は「いまの並びが expectedIds と同じとき」だけ受け付けるので、外す・足すを
+ * 済ませた後の並び（足した物は最後に入る）を渡す。
+ */
+export function planCoverSave(
+  server: readonly number[],
+  visible: ReadonlySet<number>,
+  next: readonly number[],
+): { remove: number[]; add: number[]; reorder: { photoIds: number[]; expectedIds: number[] } | null } {
+  const wanted = new Set(next);
+  const onServer = new Set(server);
+  const remove = server.filter((id) => visible.has(id) && !wanted.has(id));
+  const add = next.filter((id) => !onServer.has(id));
+  const gone = new Set(remove);
+  const after = [...server.filter((id) => !gone.has(id)), ...add];
+  const target = [...next, ...after.filter((id) => !visible.has(id))];
+  return { remove, add, reorder: sameOrder(after, target) ? null : { photoIds: target, expectedIds: after } };
+}

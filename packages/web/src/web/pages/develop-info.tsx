@@ -4,20 +4,21 @@ import ContactPage from "./contact";
 import "../components/develop/develop.css";
 
 /**
- * 新しい構成の Info（2026-10-10、第1段階）。
+ * 新しい構成の Info（2026-10-10 第1段階、2026-10-13 に並びを組み直し）。
  *
- * 自己紹介（今までの About）と、料金・依頼（今までの Contact）を1ページに続けて出す。
- * 中身は今までのページそのもの：設定・料金・よくある質問・送信・計測は何も変えていない。
- * 続けて出すための調整は2つだけ：自己紹介の末尾の「お問い合わせ」への案内を出さない
- * （すぐ下にフォームがある）、依頼の見出しを h2 にする（1ページに h1 は1つ）。
- * `/about` と `/contact` も今までどおり開ける（外からのリンク先を無くさない）。
- * 1つのページとして組み直すのは次の段階。
+ * 扉の添え書きは「料金と依頼」。それに合わせて、短い自己紹介 → 料金と依頼 → note の記事・プリント
+ * の順に出す（以前は自己紹介のすぐ後に note の記事が入り、料金まで スマホで3画面ぶん送る必要が
+ * あった）。中身は今までのページそのもの：設定・料金・よくある質問・送信・計測は何も変えていない。
+ * 続けて出すための調整：自己紹介の末尾の「お問い合わせ」への案内を出さない（すぐ下にフォームが
+ * ある）、依頼の見出しを h2 にする（1ページに h1 は1つ）。
+ * `/about` と `/contact` も今までどおり開ける（外からのリンク先を無くさない。並びも今までどおり）。
  */
 export default function DevelopInfoPage() {
   return (
     <div className="dv-info">
-      <ProfilePage embedded />
+      <ProfilePage embedded part="intro" />
       <ContactPage embedded />
+      <ProfilePage embedded part="more" />
     </div>
   );
 }

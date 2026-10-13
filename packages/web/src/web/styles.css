@@ -4577,6 +4577,26 @@ body[data-texture="mist"]::before {
     opacity: 0;
   }
 }
+/* 名前は、にじんで現れる（新しい構成、2026-10-13）。試作の開き方の、もう半分。
+   今までの「12px 下から上がってくる」動きの代わりに、ぼけた字がくっきりする。
+   字は面積が小さいので、ぼかしを毎コマ変えても軽い（全画面の写真とは違う）。
+   順番と間隔は今までどおり（--hero-text-delay-*）。動きを減らす設定では、下の一括指定が
+   今までどおり濃さだけにする（filter を消し、hero-photo-in に差し替える）。 */
+[data-site-design="develop"] .hero-text-reveal {
+  transform: none;
+  animation-name: hero-text-ink;
+}
+@keyframes hero-text-ink {
+  from {
+    opacity: 0;
+    filter: blur(9px);
+  }
+  to {
+    opacity: 1;
+    filter: blur(0);
+  }
+}
+
 /* 「写真の現れ方」を「なし」にしたサイトでは、現像もしない（本物だけが今までどおり現れる）。 */
 body[data-reveal="none"] .hero-latent {
   display: none;

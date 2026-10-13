@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { planRows, rowOptionsFor, showcaseOptionsFor, leadCount } from "./photo-rows";
+import { planRows, rowOptionsFor, showcaseOptionsFor, stackGap, leadCount } from "./photo-rows";
 
 // 縦(0.667)・横(1.5)・正方形・パノラマを混ぜた、現実に近い並び。
 const mix = [1.5, 0.667, 1.5, 1.5, 0.667, 0.667, 1, 1.5, 2.4, 0.8, 1.5, 0.667, 1.5, 1.33, 0.667, 1.5, 1.5, 0.75, 1.5, 0.667];
@@ -203,5 +203,27 @@ describe("選んだ写真を見せるページの段（showcase）", () => {
     const showcase = planRows(mixed, showcaseOptionsFor(1216, 900));
     const wall = planRows(mixed, rowOptionsFor(1216, 900));
     expect(showcase.rows.length).toBeGreaterThanOrEqual(wall.rows.length);
+  });
+
+  test("写真の間は「写真の間隔」の設定に従う（倍率 0.6 は、設定に結ぶ前の固定値と同じ）", () => {
+    expect(showcaseOptionsFor(390, 664).gap).toBe(6);
+    expect(showcaseOptionsFor(390, 664, 0.6).gap).toBe(6);
+    expect(showcaseOptionsFor(800, 1000, 0.6).gap).toBe(8);
+    expect(showcaseOptionsFor(1216, 900, 0.6).gap).toBe(12);
+    // 広げる・詰める
+    expect(showcaseOptionsFor(390, 664, 1).gap).toBe(10);
+    expect(showcaseOptionsFor(1216, 900, 1).gap).toBe(20);
+    expect(showcaseOptionsFor(390, 664, 0).gap).toBe(2);
+    expect(showcaseOptionsFor(1216, 900, 0).gap).toBe(2);
+    expect(stackGap(0.6)).toBe(6);
+    expect(stackGap(Number.NaN)).toBe(6);
+    // 間を変えても、どの段も幅いっぱいのまま。
+    for (const scale of [0, 0.6, 1.5]) {
+      const opts = showcaseOptionsFor(390, 664, scale);
+      for (const row of planRows(mixed, opts).rows) {
+        const last = row.items[row.items.length - 1]!;
+        expect(Math.abs(last.x + last.width - 390)).toBeLessThan(1);
+      }
+    }
   });
 });

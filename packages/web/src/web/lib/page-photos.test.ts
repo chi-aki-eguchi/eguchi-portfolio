@@ -13,6 +13,7 @@ import {
   zoomForColumns,
   zoomFromTile,
   type PagePhoto,
+  planCoverSave,
 } from "./page-photos";
 
 describe("写真の大きさ（つまみ）", () => {
@@ -119,5 +120,47 @@ describe("足す画面", () => {
     expect(ids(filterPhotos(photos, { ...base, filter: "all", series: 6 }))).toEqual([1, 3]);
     expect(ids(filterPhotos(photos, { ...base, filter: "all", series: "none" }))).toEqual([2, 4, 5]);
     expect(ids(filterPhotos(photos, { ...base, filter: "picked", series: 4 }))).toEqual([3]);
+  });
+});
+
+describe("表紙の並びを保存する段取り", () => {
+  const visible = new Set([1, 2, 3, 4, 5]);
+
+  test("並べ替えだけ：外す・足すは無く、いまの並びを添えて並べ替える", () => {
+    expect(planCoverSave([1, 2, 3], visible, [3, 1, 2])).toEqual({
+      remove: [],
+      add: [],
+      reorder: { photoIds: [3, 1, 2], expectedIds: [1, 2, 3] },
+    });
+  });
+
+  test("足す：最後に入るので、並べ替えは要らない", () => {
+    expect(planCoverSave([1, 2], visible, [1, 2, 4])).toEqual({ remove: [], add: [4], reorder: null });
+  });
+
+  test("外す：並びが変わらなければ、並べ替えは要らない", () => {
+    expect(planCoverSave([1, 2, 3], visible, [1, 3])).toEqual({ remove: [2], add: [], reorder: null });
+  });
+
+  test("足して前へ：足した後の並びを添えて並べ替える", () => {
+    expect(planCoverSave([1, 2], visible, [4, 1, 2])).toEqual({
+      remove: [],
+      add: [4],
+      reorder: { photoIds: [4, 1, 2], expectedIds: [1, 2, 4] },
+    });
+  });
+
+  test("画面に無い登録（非公開の写真）は外さず、後ろへ置く", () => {
+    // 9 は公開していない写真。画面には 1・2 だけが見えている。
+    expect(planCoverSave([9, 1, 2], visible, [2, 1])).toEqual({
+      remove: [],
+      add: [],
+      reorder: { photoIds: [2, 1, 9], expectedIds: [9, 1, 2] },
+    });
+    expect(planCoverSave([1, 9], visible, [])).toEqual({ remove: [1], add: [], reorder: null });
+  });
+
+  test("変わっていなければ、何もしない", () => {
+    expect(planCoverSave([1, 2, 9], visible, [1, 2])).toEqual({ remove: [], add: [], reorder: null });
   });
 });

@@ -50,7 +50,10 @@ const PNG = Buffer.from(
   "base64",
 );
 
-async function installMocks(page: Page, options: { authenticated?: boolean; failSave?: boolean } = {}) {
+async function installMocks(
+  page: Page,
+  options: { authenticated?: boolean; failSave?: boolean; cover?: number[]; heroMode?: string } = {},
+) {
   const settings: Record<string, string> = {
     setupCompleted: "true",
     siteName: "Page photos fixture",
@@ -59,7 +62,11 @@ async function installMocks(page: Page, options: { authenticated?: boolean; fail
     developPortraitIds: "",
     developLifeIds: "",
     servicePageMode: "off",
+    heroMode: options.heroMode ?? "single",
   };
+  // 表紙の登録（今までの管理画面の「トップに出す」と同じ API）。呼ばれた順に記録する。
+  const row = (photoId: number, i: number) => ({ id: i + 1, photoId, sortOrder: i, focalX: null, focalY: null });
+  const hero = { rows: (options.cover ?? []).map(row), calls: [] as string[] };
   const saved: Record<string, string>[] = [];
   const state = { failSave: options.failSave ?? false };
   const json = (value: unknown) => (route: Route) =>
@@ -77,6 +84,34 @@ async function installMocks(page: Page, options: { authenticated?: boolean; fail
     json({ series: new URL(route.request().url()).searchParams.get("kind") === "work" ? [] : [{ id: 1, title: "港の記録", slug: "harbor" }] })(route),
   );
   await page.route("**/api/hero-photos**", json({ heroPhotos: [] }));
+  await page.route("**/api/admin/hero-photos**", async (route) => {
+    const request = route.request();
+    const path = new URL(request.url()).pathname;
+    if (request.method() === "GET") return json({ heroPhotos: hero.rows })(route);
+    if (state.failSave) return route.fulfill({ status: 500, contentType: "application/json", body: "{}" });
+    if (request.method() === "POST" && path.endsWith("/reorder")) {
+      const body = request.postDataJSON() as { photoIds: number[]; expectedIds: number[] };
+      hero.calls.push(`並べ替え ${body.photoIds.join(",")} ← ${body.expectedIds.join(",")}`);
+      // 本物と同じく、いまの並びと違う前提で来たら受け付けない。
+      if (hero.rows.map((r) => r.photoId).join(",") !== body.expectedIds.join(","))
+        return route.fulfill({ status: 409, contentType: "application/json", body: JSON.stringify({ ok: false }) });
+      hero.rows = body.photoIds.map(row);
+      return json({ ok: true })(route);
+    }
+    if (request.method() === "POST") {
+      const { photoId } = request.postDataJSON() as { photoId: number };
+      hero.calls.push(`足す ${photoId}`);
+      hero.rows = [...hero.rows.map((r) => r.photoId), photoId].map(row);
+      return route.fulfill({ status: 201, contentType: "application/json", body: JSON.stringify({ ok: true }) });
+    }
+    if (request.method() === "DELETE") {
+      const photoId = Number(path.split("/").pop());
+      hero.calls.push(`外す ${photoId}`);
+      hero.rows = hero.rows.map((r) => r.photoId).filter((id) => id !== photoId).map(row);
+      return json({ ok: true })(route);
+    }
+    return route.fulfill({ status: 405, contentType: "application/json", body: "{}" });
+  });
   await page.route("**/api/settings**", (route) => json(settings)(route));
   await page.route("**/api/admin/settings**", async (route) => {
     const request = route.request();
@@ -87,7 +122,7 @@ async function installMocks(page: Page, options: { authenticated?: boolean; fail
     Object.assign(settings, body);
     await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ ok: true, ignoredKeys: [] }) });
   });
-  return { saved, settings, state };
+  return { saved, settings, state, hero };
 }
 
 const shownIds = (page: Page) =>
@@ -239,6 +274,78 @@ test.describe("admin — ページの写真（選んで並べる）", () => {
     await page.keyboard.press("Escape");
     await expect(page.locator(".pp-sheet")).toHaveCount(0);
     expect(await shownIds(page)).toEqual([...PORTRAIT, added]);
+  });
+
+  test("表紙：選んだ写真を並べ替え・外す・足すと今までの登録へ保存され、出し方を切り替えられる", async ({ page }) => {
+    // 9_999_999 は公開していない写真の登録（画面には出ない）。外さず、並びの後ろへ置いておく。
+    const hidden = 9_999_999;
+    const [a, b] = [PHOTOS[20]!.id, PHOTOS[3]!.id];
+    const mocks = await installMocks(page, { cover: [hidden, a, b] });
+    await open(page);
+    await page.locator('[data-pp-tab="cover"]').click();
+    await expect(page.locator('[data-pp-tab="cover"] small')).toHaveText("2");
+    await expect.poll(() => shownIds(page)).toEqual([a, b]);
+    await expect(page.locator(".pp-note")).toContainText("先頭の写真だけが出ます");
+    await expect(page.getByRole("link", { name: "サイトで見る ↗" })).toHaveAttribute("href", "/?design=develop");
+    expect(await noSideScroll(page)).toBeLessThanOrEqual(0);
+
+    // 並べ替え：先頭を最後へ。いまの並び（画面に無い登録も含む）を添えて送る。
+    await page.locator(".pp-grid .pp-tile").nth(0).click();
+    await page.getByRole("button", { name: "最後へ" }).click();
+    await expect.poll(() => mocks.hero.calls).toEqual([`並べ替え ${b},${a},${hidden} ← ${hidden},${a},${b}`]);
+    await expect.poll(() => shownIds(page)).toEqual([b, a]);
+    await expect(page.locator(".pp-toast[data-show]")).toContainText("並べ替えました");
+
+    // 元に戻す。
+    await page.locator(".pp-toast").getByRole("button", { name: "元に戻す" }).click();
+    await expect.poll(() => mocks.hero.calls.length).toBe(2);
+    await expect.poll(() => shownIds(page)).toEqual([a, b]);
+
+    // 外す：その写真の登録だけを消す（画面に無い登録は残る）。
+    await page.getByRole("button", { name: "選択をやめる" }).click();
+    await page.locator(".pp-grid .pp-tile").nth(0).click();
+    await page.getByRole("button", { name: "外す" }).click();
+    await expect.poll(() => mocks.hero.calls.at(-1)).toBe(`外す ${a}`);
+    await expect.poll(() => shownIds(page)).toEqual([b]);
+    expect(mocks.hero.rows.map((r) => r.photoId)).toContain(hidden);
+    await expect(page.locator(".pp-note")).toContainText("この写真が、トップを開いたときの表紙です");
+
+    // 足す：選んだ写真が最後に入る。
+    await page.getByRole("button", { name: "写真を足す" }).click();
+    const sheet = page.locator(".pp-sheet");
+    await sheet.locator('[data-filter="unused"]').click();
+    const added = Number(await sheet.locator(".pp-pick").first().getAttribute("data-photo"));
+    await sheet.locator(".pp-pick").first().click();
+    await sheet.locator("[data-pp-done]").click();
+    // 足した写真は登録の最後に入るので、画面に無い登録の前へ来るよう、続けて並べ替える。
+    await expect
+      .poll(() => mocks.hero.calls.slice(-2))
+      .toEqual([`足す ${added}`, `並べ替え ${b},${added},${hidden} ← ${b},${hidden},${added}`]);
+    await expect.poll(() => shownIds(page)).toEqual([b, added]);
+
+    // 出し方：1枚 → スライド（今までの設定 heroMode を保存する）。
+    await expect(page.locator('[data-pp-cover-mode="single"]')).toHaveAttribute("aria-pressed", "true");
+    await page.locator('[data-pp-cover-mode="carousel"]').click();
+    await expect.poll(() => mocks.saved.at(-1)).toEqual({ heroMode: "carousel" });
+    await expect(page.locator('[data-pp-cover-mode="carousel"]')).toHaveAttribute("aria-pressed", "true");
+    await expect(page.locator(".pp-note")).toContainText("この順に入れ替わります");
+    // ページの写真（Portrait）は変わっていない。
+    await page.locator('[data-pp-tab="portrait"]').click();
+    await expect.poll(() => shownIds(page)).toEqual(PORTRAIT);
+    expect(mocks.saved.some((body) => "developPortraitIds" in body)).toBe(false);
+  });
+
+  test("表紙：保存に失敗したら、実際の登録どおりに戻して画面で知らせる", async ({ page }) => {
+    const [a, b] = [PHOTOS[20]!.id, PHOTOS[3]!.id];
+    const mocks = await installMocks(page, { cover: [a, b], failSave: true });
+    await open(page);
+    await page.locator('[data-pp-tab="cover"]').click();
+    await expect.poll(() => shownIds(page)).toEqual([a, b]);
+    await page.locator(".pp-grid .pp-tile").nth(0).click();
+    await page.getByRole("button", { name: "最後へ" }).click();
+    await expect(page.locator(".pp-error")).toContainText("保存できませんでした");
+    await expect.poll(() => shownIds(page)).toEqual([a, b]);
+    expect(mocks.hero.rows.map((r) => r.photoId)).toEqual([a, b]);
   });
 
   test("保存に失敗したら、並びを元へ戻して画面で知らせる", async ({ page }) => {

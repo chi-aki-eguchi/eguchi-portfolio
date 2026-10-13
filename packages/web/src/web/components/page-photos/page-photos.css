@@ -158,6 +158,46 @@
   font-size: 13px;
   color: var(--admin-muted);
 }
+/* ── 表紙の出し方（1枚／スライド）─────────────────────── */
+.pp-cover-mode {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  margin: 12px 0 0;
+  /* fieldset の既定の枠と余白を消す。 */
+  padding: 0;
+  border: 0;
+  min-inline-size: 0;
+}
+.pp-cover-mode__label {
+  margin-right: 12px;
+  font-size: 13px;
+  color: var(--admin-muted);
+}
+.pp-cover-mode button {
+  all: unset;
+  box-sizing: border-box;
+  cursor: pointer;
+  min-height: 36px;
+  padding: 0 16px;
+  border: 1px solid var(--admin-line-strong);
+  font-size: 13.5px;
+  color: var(--admin-muted);
+  transition: color 0.25s, background 0.25s, border-color 0.25s;
+}
+.pp-cover-mode button + button {
+  margin-left: -1px;
+}
+.pp-cover-mode button[aria-pressed="true"] {
+  position: relative;
+  border-color: var(--admin-ink);
+  background: var(--admin-ink);
+  color: var(--admin-paper);
+}
+.pp-cover-mode button:focus-visible {
+  outline: 2px solid var(--admin-ink);
+  outline-offset: 2px;
+}
 .pp-note {
   margin: 12px 0 0;
   padding: 10px 14px;
@@ -862,6 +902,18 @@ body.pp-dragging * {
     padding: 7px 10px;
     font-size: 12.5px;
     line-height: 1.6;
+  }
+  .pp-cover-mode {
+    margin-top: 8px;
+  }
+  .pp-cover-mode button {
+    min-height: 44px;
+    padding: 0 18px;
+    font-size: 14px;
+  }
+  /* タブが3つ（表紙・Portrait・Life）になったので、狭い画面でも1行に入るよう少し詰める。 */
+  .pp-tabs button {
+    padding: 0 10px;
   }
   .pp-tools {
     margin: 6px 0;

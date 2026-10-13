@@ -3,6 +3,8 @@ import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { api, jsonOrThrow } from "../lib/api";
 import { sortPhotosBySetting } from "../lib/photo-sort";
+import { clampSetting } from "../../shared/setting-ranges";
+import { num } from "../lib/utils";
 import { galleryExcludesSeries } from "../lib/book";
 import { galleryHasPhotos } from "../lib/work-entries";
 import { ContentStatus } from "../components/ContentStatus";
@@ -119,6 +121,7 @@ export default function DevelopListPage({ kind }: { kind: DevelopListKind }) {
           seriesLinkById={seriesLinkById}
           label={label}
           presentation="showcase"
+          gapScale={clampSetting("galleryGapScale", num(settings?.galleryGapScale, 1))}
           after={foot}
         />
       )}

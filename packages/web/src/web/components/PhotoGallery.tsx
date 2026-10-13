@@ -12,6 +12,7 @@ import { api, jsonOrThrow } from "../lib/api";
 import { buildGalleryLayout, tileWidth } from "../lib/gallery-layout";
 import { computeJustifiedRows } from "../lib/justified-layout";
 import { useBreakoutRoom } from "../hooks/useBreakoutRoom";
+import { stackGap } from "../lib/photo-rows";
 import { num, clamp } from "../lib/utils";
 import {
   clampSetting,
@@ -176,8 +177,7 @@ const DENSITY_RATIO_EPSILON = 0.01;
  * bottom edges are both in view at once.
  */
 const EDITORIAL_WINDOW_RESERVE = 160;
-/** スマホで写真を幅いっぱいに積むときの間（px）。写真の一覧（PhotoStream の段の間）と同じ。 */
-const MOBILE_STACK_GAP = 6;
+
 
 /**
  * Columns never outnumber the photos that go in them.
@@ -1406,7 +1406,7 @@ export function PhotoGallery({
           // 幅いっぱいに積むスマホでは、対の区別を見せる物（右へ寄せた小さい2枚目）が無い。
           // 間だけ 11px と 38px が交互になると、理由の分からない空きに見える。写真の一覧と同じ 6px でそろえる。
           gap: fillWidth
-            ? `${isMobile ? MOBILE_STACK_GAP : pairGap}px`
+            ? `${isMobile ? stackGap(gapScale) : pairGap}px`
             : `${(isMobile ? 64 : 104) * gapScale}px`,
         }}
       >
@@ -1437,7 +1437,7 @@ export function PhotoGallery({
               style={{
                 display: "flex",
                 flexDirection: "column",
-                gap: fillWidth ? `${MOBILE_STACK_GAP}px` : `${Math.max(10, Math.round(18 * gapScale))}px`,
+                gap: fillWidth ? `${stackGap(gapScale)}px` : `${Math.max(10, Math.round(18 * gapScale))}px`,
               }}
             >
               <div>

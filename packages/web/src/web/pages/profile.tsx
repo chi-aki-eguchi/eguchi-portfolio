@@ -51,7 +51,15 @@ const readableBodyStyle = {
 export default function ProfilePage({
   language = "ja",
   embedded = false,
+  part = "all",
 }: {
+  /**
+   * 新しい構成の Info で、料金と依頼を間に挟むために2つに分けて出す（2026-10-13）。
+   * intro＝写真・名前・自己紹介・SNS、more＝note の記事とプリント。all（既定）は今までどおり全部。
+   * 以前は自己紹介 → note の記事 → 料金 → 依頼の順で、扉に「料金と依頼」と書いてあるのに、
+   * 料金まで スマホで3画面ぶん送る必要があった。
+   */
+  part?: "all" | "intro" | "more";
   language?: "ja" | "en";
   /** 依頼のページを続けて出すとき（新しい構成の Info）。すぐ下にフォームがあるので「お問い合わせ」への案内は出さない。 */
   embedded?: boolean;
@@ -198,6 +206,8 @@ export default function ProfilePage({
   // 1画面ぶん場所だけ取って待つ（`.site-page-hold`）。フックはすべてこの上に
   // あるので、ここで返しても呼び出し順は変わらない。
   if (settingsLoading) {
+    // 続きの部分（more）は、場所を取って待たない（上に依頼のフォームがあり、押し下げる物が無い）。
+    if (part === "more") return null;
     return (
       <section
         className="profile-page max-w-3xl mx-auto site-page site-page-top site-page-hold"
@@ -205,6 +215,10 @@ export default function ProfilePage({
       />
     );
   }
+  const showJournal = (part === "more" || !holdBio) && noteOn && notePosts.length > 0;
+  const showPrint = (part === "more" || !holdBio) && printOn;
+  // 続きの部分に出す物が無ければ、何も置かない（空の箱が余白になる）。
+  if (part === "more" && !showJournal && !showPrint) return null;
 
   return (
     <section
@@ -214,13 +228,19 @@ export default function ProfilePage({
          帯が y=537 から画面外へ飛び、ズレ 0.063）。基準内ではあるが、読んで
          いる最中に動くことに変わりはない。届くまで1画面ぶん場所を取り、
          帯を最初から画面の外に置く（`.site-page-hold`）。 */
-      className={`profile-page max-w-3xl mx-auto site-page site-page-top pb-12 md:pb-20 min-h-[60vh] ${
-        (noteOn && noteData === undefined) || holdBio ? "site-page-hold" : ""
-      }`}
+      className={
+        part === "more"
+          ? "profile-page max-w-3xl mx-auto site-page pb-12 md:pb-20"
+          : `profile-page max-w-3xl mx-auto site-page site-page-top pb-12 md:pb-20 min-h-[60vh] ${
+              (part === "all" && noteOn && noteData === undefined) || holdBio ? "site-page-hold" : ""
+            }`
+      }
+      data-profile-part={part === "all" ? undefined : part}
       ref={entranceRef}
     >
-      <PageTitle className="mb-8">{pageLabel}</PageTitle>
+      {part !== "more" && <PageTitle className="mb-8">{pageLabel}</PageTitle>}
 
+      {part !== "more" && (
       <div
         className={
           layout === "side"
@@ -377,9 +397,11 @@ export default function ProfilePage({
         )}
       </div>
 
+      )}
+
       {/* J1: Journal — latest note posts as cards (thumbnail + date + title + excerpt).
           Hidden if disabled or fetch returned nothing. */}
-      {!holdBio && noteOn && notePosts.length > 0 && (
+      {part !== "intro" && showJournal && (
         <div className="profile-journal mt-12 md:mt-16 pt-8 border-t border-[rgba(var(--foreground-rgb),0.06)] page-entrance">
           <h3 className="profile-label font-en uppercase text-[length:var(--text-note)] tracking-[0.14em] text-[color:var(--text-quiet)] mb-8">
             Journal
@@ -458,7 +480,7 @@ export default function ProfilePage({
       )}
 
       {/* K1: Prints — quiet external store link. Hidden unless enabled + URL set. */}
-      {!holdBio && printOn && (
+      {part !== "intro" && showPrint && (
         <div data-about-print className="mt-16 md:mt-20 pt-12 border-t border-[rgba(var(--foreground-rgb),0.06)] page-entrance">
           <h3 className="profile-label font-en uppercase text-[length:var(--text-note)] tracking-[0.14em] text-[color:var(--text-quiet)] mb-4">
             Prints

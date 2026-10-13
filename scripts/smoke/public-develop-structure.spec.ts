@@ -53,6 +53,10 @@ test("新しい構成 › 何もしなければ今までの構成のまま", asy
   // 現像の現れ方は新しい構成だけ。今までの構成の表紙は今までどおり（下地の像を置かない）。
   await expect(page.locator(".hero-motion-stage").first()).toBeVisible();
   await expect(page.locator(".hero-latent")).toHaveCount(0);
+  // 名前の現れ方も今までどおり（にじませない）。
+  expect(
+    await page.locator(".hero-motion-stage .hero-text-reveal").first().evaluate((el) => getComputedStyle(el).animationName),
+  ).toBe("hero-text-in");
   for (const path of ["/portrait", "/life", "/info"]) {
     await page.goto(path, { waitUntil: "networkidle" });
     await expect(page.getByRole("heading", { name: "ページが見つかりませんでした" })).toBeVisible();
@@ -171,6 +175,8 @@ test("新しい構成 › 写真は幅を使い切り、余白は区切りにだ
         spacingPageTop: "0.2",
         seriesLayout: "editorial",
         seriesCardStyle: "overlay",
+        // 写真の間隔（オーナーの本番と同じ 0.6）。新しいページの写真の間もこの設定に従う。
+        galleryGapScale: "0.6",
         // 表紙の設定（オーナーの本番と同じ：1枚・全画面・名前が先・ゆっくり・送ると沈む）。
         heroMode: "single",
         heroDisplayMode: "fullscreen",
@@ -204,7 +210,8 @@ test("新しい構成 › 写真は幅を使い切り、余白は区切りにだ
   });
   // どの段も、並べる幅の右端までそろう（横に空きを残さない）。段の間は写真の間と同じ狭さ。
   for (const right of list.rights) expect(Math.abs(right - list.boxRight)).toBeLessThanOrEqual(1);
-  for (const gap of list.gaps) expect(gap).toBeLessThanOrEqual(12);
+  // 間の広さは「写真の間隔」の設定どおり（0.6 で、スマホ 6px・PC 12px）。
+  for (const gap of list.gaps) expect(gap).toBe(phone ? 6 : 12);
   if (phone) {
     // スマホ：写真は画面の端から端まで。見出しを出さない設定なら、写真は上の帯のすぐ下から。
     expect(list.boxLeft).toBe(0);
@@ -288,10 +295,41 @@ test("新しい構成 › 写真は幅を使い切り、余白は区切りにだ
   // 写真だけを置く専用の表紙で、開いても何も起きなかった）。
   expect(home.h1).toBe(1);
   expect(home.heroName.length).toBeGreaterThan(0);
-  expect(home.nameAnimation).not.toBe("none");
+  // 名前は、にじんで現れる（新しい構成）。
+  expect(home.nameAnimation).toBe("hero-text-ink");
   expect(home.photoAnimation).not.toBe("none");
   expect(home.hasFxLayer).toBe(true);
   expect(home.frameBottom).toBeLessThanOrEqual(home.vh + 1);
+  // 扉の写真も現像されるように現れる：スマホは画面に入ったとき、PC は隣の写真が入れ替わるとき。
+  const doorDevelop = await page.evaluate(async () => {
+    const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
+    const stage = [...document.querySelectorAll<HTMLElement>(".dv-stage__photo")];
+    const on = stage.find((el) => el.hasAttribute("data-on"));
+    const off = stage.find((el) => !el.hasAttribute("data-on"));
+    const doorPhoto = document.querySelector<HTMLElement>(".dv-door__photo");
+    if (doorPhoto && getComputedStyle(doorPhoto).display !== "none") {
+      doorPhoto.scrollIntoView({ block: "center" });
+      await wait(2200);
+    }
+    const filter = (el: Element | null | undefined) => (el ? getComputedStyle(el).filter : null);
+    return {
+      stageOn: filter(on?.querySelector("img")),
+      stageOff: filter(off?.querySelector("img")),
+      doorShown: doorPhoto ? getComputedStyle(doorPhoto).display !== "none" : false,
+      doorVisible: doorPhoto?.classList.contains("visible") ?? false,
+      doorFilter: filter(doorPhoto?.querySelector("img")),
+    };
+  });
+  if (phone) {
+    expect(doorDevelop.doorShown).toBe(true);
+    expect(doorDevelop.doorVisible).toBe(true);
+    expect(doorDevelop.doorFilter).toBe("none");
+  } else if (doorDevelop.stageOff !== null) {
+    expect(doorDevelop.stageOn).toBe("none");
+    expect(doorDevelop.stageOff).toContain("grayscale");
+  }
+  await page.evaluate(() => scrollTo(0, 0));
+
   // 現像：本物の写真の下に、同じ写真のぼけた単色の像（小さな絵。filter は使わない）が描かれ、
   // 本物はそれより後から濃くなる（表紙の設定「文字が先」の 0.62秒 より後）。
   await expect(page.locator(".hero-latent[data-ready] canvas")).toHaveCount(1);
@@ -466,7 +504,7 @@ test("新しい構成 › 写真は幅を使い切り、余白は区切りにだ
       });
       expect(seq.widths.length).toBeGreaterThan(0);
       for (const w of seq.widths) expect(w).toBeGreaterThanOrEqual(home.vw - 1);
-      for (const gap of seq.gaps) expect(gap).toBeLessThanOrEqual(8);
+      for (const gap of seq.gaps) expect(gap).toBe(6);
       expect(await noSideScroll(page)).toBeLessThanOrEqual(0);
     }
 
@@ -552,7 +590,7 @@ test("新しい構成 › 現像は「動きを減らす」と「写真の現れ
 test("新しい構成 › Info は自己紹介と依頼。今までのページも同じ住所で開ける", async ({ page, api }, testInfo) => {
   await withCategories(page, api);
   await page.goto("/info?design=develop", { waitUntil: "networkidle" });
-  await expect(page.locator(".dv-info .profile-page")).toBeVisible();
+  await expect(page.locator('.dv-info .profile-page[data-profile-part="intro"]')).toBeVisible();
   // 依頼の部分は今までの Contact そのもの（フォームを出すかどうかは今までの設定に従う）。
   await expect(page.locator(".dv-info .contact-page")).toBeVisible();
   // 1ページとして読めること：h1 は1つだけ。すぐ下に依頼の欄があるので、自己紹介の末尾の案内は出さない。
@@ -574,6 +612,50 @@ test("新しい構成 › Info は自己紹介と依頼。今までのページ�
     expect(await menuHrefs(page), path).toContain("/portrait");
     await expect(page.getByRole("heading", { name: "ページが見つかりませんでした" }), path).toHaveCount(0);
   }
+});
+
+test("新しい構成 › Info は、短い自己紹介 → 料金と依頼 → 続き（note の記事・プリント）の順", async ({ page, api }) => {
+  await withCategories(page, api);
+  // プリントの案内を出す設定にして、自己紹介の「続き」があるサイトを作る。
+  const settings = (await (await api.get("/api/settings")).json()) as Record<string, unknown>;
+  await page.route("**/api/settings**", (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ ...settings, printEnabled: "on", printStoreUrl: "https://example.com/prints" }),
+    }),
+  );
+  await page.goto("/info?design=develop", { waitUntil: "networkidle" });
+  await expect(page.locator(".dv-info .contact-page")).toBeVisible();
+  await expect(page.locator(".dv-info [data-about-print]")).toBeVisible();
+  const order = await page.evaluate(() => {
+    const top = (q: string) => {
+      const el = document.querySelector(q);
+      return el ? Math.round(el.getBoundingClientRect().top + scrollY) : null;
+    };
+    return {
+      intro: top('.dv-info [data-profile-part="intro"]'),
+      contact: top(".dv-info .contact-page"),
+      more: top('.dv-info [data-profile-part="more"]'),
+      printInIntro: Boolean(document.querySelector('[data-profile-part="intro"] [data-about-print]')),
+      printInMore: Boolean(document.querySelector('[data-profile-part="more"] [data-about-print]')),
+      h1: document.querySelectorAll("main h1").length,
+    };
+  });
+  // 扉の添え書きは「料金と依頼」。自己紹介のすぐ後に依頼が来て、プリントの案内はその後。
+  expect(order.intro).not.toBeNull();
+  expect(order.contact!).toBeGreaterThan(order.intro!);
+  expect(order.more!).toBeGreaterThan(order.contact!);
+  expect(order.printInIntro).toBe(false);
+  expect(order.printInMore).toBe(true);
+  expect(order.h1).toBe(1);
+  expect(await noSideScroll(page)).toBeLessThanOrEqual(0);
+
+  // 単独の /about は今までどおり、1つのページに全部（分けない）。
+  await page.goto("/about", { waitUntil: "networkidle" });
+  await expect(page.locator("main .profile-page")).toHaveCount(1);
+  await expect(page.locator("main .profile-page [data-about-print]")).toBeVisible();
+  await expect(page.locator("main [data-profile-part]")).toHaveCount(0);
 });
 
 test("新しい構成 › ?design=classic で下見をやめられる", async ({ page, api }) => {

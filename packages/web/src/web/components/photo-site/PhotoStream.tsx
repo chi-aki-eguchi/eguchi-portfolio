@@ -29,7 +29,10 @@ export function PhotoStream({
   lead,
   maxRows,
   presentation = "rows",
+  gapScale,
 }: {
+  /** showcase のときの写真の間（「写真の間隔」の設定の倍率）。渡さなければ 0.6。 */
+  gapScale?: number;
   /** showcase: 選んだ写真を大きく、幅いっぱいの段で見せる（新しい構成の Portrait／Life）。 */
   presentation?: "rows" | "selection" | "contact-sheet" | "showcase";
   photos: GalleryPhoto[];
@@ -89,7 +92,7 @@ export function PhotoStream({
     if (presentation === "selection") {
       return planSelection(maxRows === 1 ? ratios.slice(0, 1) : ratios, width, viewportHeight, leadReserve ?? 220);
     }
-    if (presentation === "showcase") return planRows(ratios, showcaseOptionsFor(width, viewportHeight));
+    if (presentation === "showcase") return planRows(ratios, showcaseOptionsFor(width, viewportHeight, gapScale));
     const opts = rowOptionsFor(width, viewportHeight);
     if (leadReserve === undefined) return planRows(ratios, opts);
     const full = planRows(ratios, {
@@ -103,7 +106,7 @@ export function PhotoStream({
     const rows = full.rows.slice(0, maxRows);
     const last = rows[rows.length - 1]!;
     return { rows, height: last.top + last.height };
-  }, [ratios, width, viewportHeight, leadReserve, maxRows, presentation]);
+  }, [ratios, width, viewportHeight, leadReserve, maxRows, presentation, gapScale]);
   // 段の数を絞ったときは、並んだ写真だけをビューアで送る。
   const shownPhotos = useMemo(() => {
     if (!plan || !maxRows) return photos;

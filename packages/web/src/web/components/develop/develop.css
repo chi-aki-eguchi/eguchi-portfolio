@@ -113,6 +113,30 @@
   object-fit: cover;
 }
 
+/* ── 扉の写真も、現像されるように現れる（2026-10-13）──────────
+   一覧の写真（photo-site.css の .ps-tile__img）と同じ：色の無い薄い像から、色と濃さが乗る。
+   ぼかしは使わない。スマホは画面に入ってきたとき（.fade-in-item が .visible になる）、
+   PC は隣の写真が入れ替わるとき（data-on）。 */
+.dv-door__photo.fade-in-item .dv-door__img {
+  filter: grayscale(1) sepia(0.32) contrast(0.78) brightness(1.18);
+  transition: filter 1.35s var(--ease-reveal) 0.12s;
+}
+.dv-door__photo.fade-in-item.visible .dv-door__img {
+  filter: none;
+}
+.dv-stage__img {
+  filter: grayscale(1) sepia(0.32) contrast(0.8);
+  transition: filter 1.1s var(--ease-reveal);
+}
+.dv-stage__photo[data-on] .dv-stage__img {
+  filter: none;
+}
+body[data-reveal="none"] .dv-door__photo.fade-in-item .dv-door__img,
+body[data-reveal="none"] .dv-stage__img {
+  filter: none;
+  transition: none;
+}
+
 /* ── すべての写真（Gallery）への入口 ─────────────────────── */
 .dv-archive {
   margin: var(--dv-section) 0 0;
@@ -259,6 +283,14 @@
   .dv-info .contact-page {
     padding-bottom: 1.5rem;
   }
+  /* note の記事・プリント（依頼の後に続く部分）は Info の最後なので、下を少し空ける。 */
+  .dv-info .profile-page[data-profile-part="more"] {
+    padding-bottom: 1.5rem;
+  }
+}
+/* 依頼の後に続く部分は、上の区切りの罫から始める（1つ目の段の上の余白は要らない）。 */
+.dv-info .profile-page[data-profile-part="more"] > :first-child {
+  margin-top: 0;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -266,6 +298,11 @@
   .dv-door,
   .dv-door__title,
   .dv-archive__arrow {
+    transition: none;
+  }
+  .dv-door__photo.fade-in-item .dv-door__img,
+  .dv-stage__img {
+    filter: none;
     transition: none;
   }
 }

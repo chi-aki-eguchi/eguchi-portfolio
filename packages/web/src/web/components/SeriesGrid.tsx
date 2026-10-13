@@ -10,6 +10,7 @@ import {
 } from "../../shared/setting-ranges";
 import { useScrollFadeIn } from "../hooks/useScrollFadeIn";
 import { useBreakoutRoom } from "../hooks/useBreakoutRoom";
+import { stackGap } from "../lib/photo-rows";
 import { formatPeriodRange } from "../lib/series-colophon";
 import { objectPositionFromFocal, srcFor, srcSetFor } from "../lib/picture";
 
@@ -127,8 +128,8 @@ export function SeriesGrid({
     num(settings?.galleryGapScale, 1),
   );
   const bleed = isMobile && edgeToEdgeOnMobile && cardStyle === "overlay";
-  // 端から端まで並べるときは、写真の一覧（PhotoStream）と同じ 6px。
-  const gap = bleed ? 6 : (isMobile ? 18 : 32) * gapScale;
+  // 端から端まで並べるときは、写真の一覧（PhotoStream）と同じ間（「写真の間隔」の設定に従う）。
+  const gap = bleed ? stackGap(gapScale) : (isMobile ? 18 : 32) * gapScale;
 
   // Tiles are `.page-entrance` (opacity:0 until observed). Own the observer here
   // instead of relying on the parent page's — tiles that mount after the parent's

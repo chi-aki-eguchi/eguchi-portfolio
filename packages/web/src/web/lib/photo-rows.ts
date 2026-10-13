@@ -223,6 +223,18 @@ export function planRows(
   return { rows, height: rows.length ? top - gap : 0 };
 }
 
+/** 「写真の間隔」の設定（galleryGapScale）を渡さなかったときの倍率。本番の設定と同じ 0.6。 */
+const SHOWCASE_GAP_SCALE = 0.6;
+
+/**
+ * 写真を幅いっぱいに積む・並べるときの間（px、スマホ）。「写真の間隔」の設定に従う。
+ * 倍率 0.6 で 6px（設定に結ぶ前の固定値と同じ）、1 で 10px、いちばん狭くしても 2px は空ける。
+ * 新しい構成の一覧・シリーズ・シリーズ一覧の表紙が同じ値を使う。
+ */
+export function stackGap(gapScale: number): number {
+  return Math.max(2, Math.round(10 * (Number.isFinite(gapScale) ? gapScale : SHOWCASE_GAP_SCALE)));
+}
+
 /**
  * 選んだ写真を見せるページ（新しい構成の Portrait／Life、2026-10-12）の段。
  *
@@ -231,16 +243,18 @@ export function planRows(
  * 170px ずつの小さな段になり、段の間が毎回 48px 空いていた（実測：5.5画面のうち空きの帯 853px）。
  *
  * - どの段も横幅いっぱい（`planRows`）。段の間は写真どうしの間と同じ狭さ
+ * - 間の広さは「写真の間隔」の設定（galleryGapScale）に従う（2026-10-13。それまでは固定で、
+ *   設定を変えてもこのページだけ変わらなかった）。倍率 0.6 でスマホ 6px・PC 12px
  * - スマホ: 1枚で幅いっぱい／縦の写真2枚、を交互に。横の写真は必ず1枚（並べると小さい）。
  *   画面の高さは使わない——実機の iPhone は開いた直後の高さが 664px（検査用の画面は 844px）で、
  *   高さを基準にすると 2:3 の縦写真が1枚で出なくなり、検査で見た並びと実機の並びが食い違う
  * - 広い画面: 一覧（Gallery）より大きく見せる。1段は3枚まで、高さは画面の半分〜8割
  */
-export function showcaseOptionsFor(width: number, viewportHeight: number): RowPlanOptions {
+export function showcaseOptionsFor(width: number, viewportHeight: number, gapScale = SHOWCASE_GAP_SCALE): RowPlanOptions {
   if (width < 640) {
     return {
       width,
-      gap: 6,
+      gap: stackGap(gapScale),
       targets: [1.25, 0.72].map((f) => f * width),
       // 1枚の段は、縦に細長い写真（9:16 など）でも幅いっぱいに出す。上限を 1.6 倍にしていると、
       // その写真だけ高さで止まって左右が 20px ずつ空くか、横の写真と並んで切手の大きさになる。
@@ -252,7 +266,7 @@ export function showcaseOptionsFor(width: number, viewportHeight: number): RowPl
   const vh = Math.max(480, viewportHeight);
   return {
     width,
-    gap: width < 1024 ? 8 : 12,
+    gap: Math.max(2, Math.round((width < 1024 ? 13 : 20) * gapScale)),
     targets: [0.78, 0.56, 0.66, 0.5].map((f) => Math.min(860, Math.max(260, f * vh))),
     maxHeight: Math.min(vh * 0.86, 900),
     maxPerRow: 3,

@@ -41,6 +41,20 @@ const menuHrefs = (page: Page) =>
     ),
   ]);
 
+// 開いた瞬間の見せ場（写真集の扉）は、そのタブで最初にトップを開いたときだけ流れ、その回は表紙の
+// 「現れる動き」を省く。表紙そのものを確かめる検査は、2度目以降に開いた状態（＝いつもの表紙）で見る。
+// 見せ場は、名前に「見せ場」を含む検査で確かめる。
+test.beforeEach(async ({ page }, testInfo) => {
+  if (testInfo.title.includes("見せ場")) return;
+  await page.addInitScript(() => {
+    try {
+      sessionStorage.setItem("dv-intro-seen", "1");
+    } catch {
+      // 覚えを書けない環境は対象外
+    }
+  });
+});
+
 test("新しい構成 › 何もしなければ今までの構成のまま", async ({ page, api }) => {
   await withCategories(page, api);
   await page.goto("/", { waitUntil: "networkidle" });
@@ -711,6 +725,148 @@ test("新しい構成 › 1枚表示の現像も「動きを減らす」と「�
   state.photoRevealEffect = "none";
   await page.goto("/", { waitUntil: "networkidle" });
   await neverLatent();
+});
+
+/**
+ * 開いた瞬間の見せ場：写真集の扉（2026-10-14）。紙の上に、表紙の写真の小さな図版と名前が現れ、
+ * 図版が表紙いっぱいに引き伸ばされて、片づく。表紙の部品には触らない（上に重ねるだけ）。
+ */
+async function withCover(page: Page, api: SmokeApi, extra: Record<string, unknown> = {}) {
+  await withCategories(page, api);
+  const settings = (await (await api.get("/api/settings")).json()) as Record<string, unknown>;
+  const merged = { ...settings, heroMode: "single", heroDisplayMode: "fullscreen", ...extra };
+  await page.route("**/api/settings**", (route) =>
+    route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(merged) }),
+  );
+  return merged as Record<string, string>;
+}
+/** 見せ場のいまの段取りと、図版・名前・表紙の写真の箱。until を渡すと、その段取りになった瞬間に測る。 */
+const introState = (page: Page, until?: string) =>
+  page.evaluate(
+    (until) =>
+      new Promise<{
+        phase: string | null;
+        stage: { x: number; y: number; w: number; h: number };
+        plate: { x: number; y: number; w: number; h: number } | null;
+        name: { x: number; y: number; w: number; h: number } | null;
+        text: string;
+        frame: { x: number; y: number; w: number; h: number } | null;
+      } | null>((resolve) => {
+        const intro = document.querySelector<HTMLElement>(".dv-intro");
+        if (!intro) return resolve(null);
+        const box = (el: Element | null) => {
+          if (!el) return null;
+          const r = el.getBoundingClientRect();
+          return { x: r.left, y: r.top, w: r.width, h: r.height };
+        };
+        const read = () => ({
+          phase: intro.getAttribute("data-phase"),
+          stage: box(intro)!,
+          plate: box(intro.querySelector(".dv-intro__plate")),
+          name: box(intro.querySelector(".dv-intro__name")),
+          text: intro.querySelector(".dv-intro__name")?.textContent ?? "",
+          frame: box(document.querySelector(".dv-intro-host .hero-fx-layer")),
+        });
+        if (!until || intro.getAttribute("data-phase") === until) return resolve(read());
+        const observer = new MutationObserver(() => {
+          if (intro.getAttribute("data-phase") !== until) return;
+          observer.disconnect();
+          resolve(read());
+        });
+        observer.observe(intro, { attributes: true, attributeFilter: ["data-phase"] });
+        // 片づいてしまったら（段取りを見逃した）、空で返す。
+        setTimeout(() => resolve(null), 9000);
+      }),
+    until,
+  );
+
+test("新しい構成 › 見せ場：最初に開いたときだけ流れ、図版が表紙の写真の場所まで引き伸ばされて片づく", async ({
+  page,
+  api,
+}) => {
+  const settings = await withCover(page, api);
+  await page.goto("/?design=develop", { waitUntil: "commit" });
+  const intro = page.locator(".dv-intro");
+  await expect(intro).toHaveCount(1);
+  // 見せ場の回は、表紙の「現れる動き」を省く印が付く。
+  await expect(page.locator(".dv-intro-host")).toHaveAttribute("data-dv-intro", "");
+
+  // 図版が出た時点：名前はサイトの名前、図版は表紙より小さく、図版と名前のまとまりが箱の中にある。
+  const shown = (await introState(page, "plate"))!;
+  expect(shown, "図版が出る段取りまで進む").not.toBeNull();
+  expect(shown.text.replace(/\u00a0/g, " ")).toBe(String(settings.siteName ?? "Photographer Name"));
+  expect(shown.plate!.w).toBeLessThan(shown.frame!.w * 0.5);
+  expect(shown.plate!.x).toBeGreaterThanOrEqual(shown.stage.x);
+  expect(shown.plate!.x + shown.plate!.w).toBeLessThanOrEqual(shown.stage.x + shown.stage.w);
+  expect(shown.name!.x + shown.name!.w).toBeLessThanOrEqual(shown.stage.x + shown.stage.w);
+  expect(shown.name!.y).toBeGreaterThanOrEqual(shown.stage.y);
+
+  // 引き伸ばしの終わり：図版は表紙の写真の箱と同じ場所・同じ大きさ（そこで下の表紙に替わる）。
+  const grown = (await introState(page, "out"))!;
+  expect(grown, "引き伸ばしが終わって退く段取りまで進む").not.toBeNull();
+  expect(Math.abs(grown.plate!.x - grown.frame!.x)).toBeLessThanOrEqual(1);
+  expect(Math.abs(grown.plate!.y - grown.frame!.y)).toBeLessThanOrEqual(1);
+  expect(Math.abs(grown.plate!.w - grown.frame!.w)).toBeLessThanOrEqual(1);
+  expect(Math.abs(grown.plate!.h - grown.frame!.h)).toBeLessThanOrEqual(1);
+  // 片づいたあと、下にはいつもの表紙がもう出きっている。
+  await expect(intro).toHaveCount(0);
+  expect(await page.locator(".hero-photo-reveal").first().evaluate((el) => getComputedStyle(el).opacity)).toBe("1");
+  await expect(page.locator(".hero-motion-stage h1")).toBeVisible();
+  expect(await page.evaluate(() => sessionStorage.getItem("dv-intro-seen"))).toBe("1");
+  expect(await noSideScroll(page)).toBeLessThanOrEqual(0);
+
+  // 同じタブでもう一度開いても流れない（いつもの表紙の現れ方）。?intro を付けると、もう一度流れる。
+  await page.goto("/", { waitUntil: "networkidle" });
+  await expect(page.locator(".hero-motion-stage")).toBeVisible();
+  await expect(intro).toHaveCount(0);
+  await expect(page.locator(".dv-intro-host")).not.toHaveAttribute("data-dv-intro", "");
+  await page.goto("/?intro", { waitUntil: "commit" });
+  await expect(intro).toHaveCount(1);
+});
+
+test("新しい構成 › 見せ場：触ったらすぐ退く。動きを減らす設定・写真の現れ方「なし」・今までの構成では流さない", async ({
+  page,
+  api,
+}) => {
+  const state = { photoRevealEffect: "fade" };
+  await withCategories(page, api);
+  const settings = (await (await api.get("/api/settings")).json()) as Record<string, unknown>;
+  await page.route("**/api/settings**", (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ ...settings, heroMode: "single", heroDisplayMode: "fullscreen", ...state }),
+    }),
+  );
+  const intro = page.locator(".dv-intro");
+
+  // 流れている途中でキーを押す＝待たせない。0.3 秒ほどで片づく。
+  await page.goto("/?design=develop&intro", { waitUntil: "commit" });
+  await expect(intro).toHaveCount(1);
+  await expect.poll(async () => (await introState(page))?.phase, { timeout: 10_000 }).toMatch(/on|plate/);
+  await page.keyboard.press("Shift");
+  await expect(intro).toHaveCount(0, { timeout: 2_000 });
+  await expect(page.locator(".hero-motion-stage")).toBeVisible();
+
+  // 動きを減らす設定。
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.goto("/?intro", { waitUntil: "networkidle" });
+  await expect(page.locator(".hero-motion-stage")).toBeVisible();
+  await expect(intro).toHaveCount(0);
+
+  // 写真の現れ方「なし」。
+  await page.emulateMedia({ reducedMotion: "no-preference" });
+  state.photoRevealEffect = "none";
+  await page.goto("/?intro", { waitUntil: "networkidle" });
+  await expect(page.locator(".hero-motion-stage")).toBeVisible();
+  await expect(intro).toHaveCount(0);
+
+  // 今までの構成（下見をやめる）。
+  state.photoRevealEffect = "fade";
+  await page.goto("/?design=classic&intro", { waitUntil: "networkidle" });
+  await expect(page.locator(".hero-motion-stage").first()).toBeVisible();
+  await expect(intro).toHaveCount(0);
+  await expect(page.locator(".dv-intro-host")).toHaveCount(0);
 });
 
 test("新しい構成 › Info は自己紹介と依頼。今までのページも同じ住所で開ける", async ({ page, api }, testInfo) => {

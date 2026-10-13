@@ -36,6 +36,8 @@ import { isServiceOwnerSite } from "../../shared/service-visibility";
 import { PhotoHome } from "../components/photo-site/PhotoHome";
 import { siteDesignFrom } from "../lib/book";
 import { DevelopTop } from "../components/develop/DevelopTop";
+import { DevelopIntro } from "../components/develop/DevelopIntro";
+import { INTRO_SEEN_KEY, shouldPlayIntro } from "../lib/develop-intro";
 import { isDarkTextColor, textShadowOverPhoto } from "../lib/color-contrast";
 import { JaPhrases } from "../components/JaPhrases";
 
@@ -1333,6 +1335,44 @@ export default function TopPage() {
   const topWorksMode = settings?.topWorksMode || "auto";
   const isBookDesign = siteDesignFrom(settings?.siteDesign) === "book";
   const isDevelopDesign = siteDesignFrom(settings?.siteDesign) === "develop";
+  // 開いた瞬間の見せ場（写真集の扉。components/develop/DevelopIntro.tsx）を流すか。
+  // **最初の描画で決める**——あとから被せると、表紙が一度見えてから紙で隠れる。
+  // 流す回は、このページを開いている間ずっと、表紙の「現れる動き」を省いたままにする
+  //（途中で戻すと、終わっていた動きが長さを取り戻して、もう一度動くことがある）。
+  const [introPlanned] = useState(() => {
+    if (typeof window === "undefined") return false;
+    let seen = false;
+    try {
+      seen = sessionStorage.getItem(INTRO_SEEN_KEY) === "1";
+    } catch {
+      // 覚えを読めない環境では、まだ流していない扱いにする。
+    }
+    // サイトへ入ってきた最初の住所（ページを移っても変わらない）。読めない環境では、トップから
+    // 入ってきた扱いにする。
+    let landedOnTop = true;
+    try {
+      const landing = performance.getEntriesByType?.("navigation")[0]?.name;
+      if (landing) landedOnTop = new URL(landing).pathname === "/";
+    } catch {
+      // 上の扱いのまま
+    }
+    return shouldPlayIntro({
+      developTop: isDevelopDesign,
+      pathname: window.location.pathname,
+      search: window.location.search,
+      seen,
+      landedOnTop,
+      reducedMotion:
+        typeof window.matchMedia === "function" &&
+        window.matchMedia("(prefers-reduced-motion: reduce)").matches,
+      reveal: settings?.photoRevealEffect,
+      framed: window.self !== window.top,
+      scrolled: window.scrollY > 8,
+      capable: typeof ResizeObserver !== "undefined",
+    });
+  });
+  const [introPlaying, setIntroPlaying] = useState(introPlanned);
+  const endIntro = useCallback(() => setIntroPlaying(false), []);
   // 新しい構成のトップには Works の一覧が無いので、ランダムの束は取りに行かない。
   const randomWorks = topWorksMode === "random" && !isDevelopDesign;
   const homeGalleryCount = Math.max(
@@ -1685,7 +1725,17 @@ export default function TopPage() {
     return (
       <div className="top-page" data-hero-mode={isSingle ? "single" : "carousel"} data-develop-top>
         {experiencePanel}
-        {heroSection}
+        <div className="dv-intro-host" data-dv-intro={introPlanned ? "" : undefined}>
+          {heroSection}
+          {introPlaying && (
+            <DevelopIntro
+              name={settings?.siteName ?? CLIENT_SITE_FALLBACKS.siteName}
+              caption={settings?.heroSubtitle ?? CLIENT_SITE_FALLBACKS.heroSubtitle}
+              expectPhoto={heroPhotos.length > 0 || heroLoading || photosLoading}
+              onDone={endIntro}
+            />
+          )}
+        </div>
         <DevelopTop settings={settings} />
       </div>
     );

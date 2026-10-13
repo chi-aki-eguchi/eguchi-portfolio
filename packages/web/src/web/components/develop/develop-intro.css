@@ -1,0 +1,134 @@
+/* ─── 開いた瞬間の見せ場：写真集の扉（新しい構成のトップ、2026-10-14）───
+   紙の上に、表紙の写真の小さな図版と名前。図版が現像されて、表紙いっぱいに引き伸ばされる。
+   段取り（data-phase）と置き場所は DevelopIntro.tsx、長さは lib/develop-intro.ts と揃える。
+
+   - 表紙の上に重ねるだけで、表紙の部品には触らない。終わると自分を片づける。
+   - 動かすのは、濃さ・図版の拡大（変形）・名前のにじみ（小さい字のぼかし）だけ。
+     全画面の写真に色の変換やぼかしを毎コマ掛ける作りにはしない（実測で重かった。
+     styles.css の表紙の註・Lightbox.tsx の現像の註）。 */
+.dv-intro-host {
+  position: relative;
+}
+/* 見せ場を流す回は、表紙の「現れる動き」を省く（終わりの姿で下に待たせる）。見せ場が退いた
+   ときに、表紙がまだ現れている途中だと、濃くなった写真が一度薄くなって見える。
+   当てるのは現れる動きを持つ部品だけ（スライドの送りなど、ほかの動きは止めない）。 */
+.dv-intro-host[data-dv-intro]
+  :is(.hero-motion-stage, .hero-single, .hero-carousel-contain, .hero-photo-reveal, .hero-text-reveal, .hero-latent) {
+  animation-duration: 0.01ms !important;
+  animation-delay: 0s !important;
+}
+
+.dv-intro {
+  position: absolute;
+  inset: 0;
+  z-index: 6;
+  overflow: hidden;
+  background: var(--background);
+  pointer-events: none;
+  opacity: 1;
+  transition: opacity 0.3s ease;
+}
+.dv-intro[data-phase="out"] {
+  opacity: 0;
+}
+
+/* 図版。箱は表紙の写真と同じ場所・同じ大きさで、最初は小さく縮めて置いてある（変形は
+   DevelopIntro.tsx が書く）。引き伸ばすときは、その変形を外すだけ。 */
+.dv-intro__plate {
+  position: absolute;
+  overflow: hidden;
+  opacity: 0;
+  transform-origin: 0 0;
+  will-change: transform, opacity;
+  transition:
+    opacity 0.6s ease,
+    transform 1.15s cubic-bezier(0.7, 0, 0.2, 1);
+}
+.dv-intro__plate > * {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.dv-intro:is([data-phase="plate"], [data-phase="grow"], [data-phase="out"]) .dv-intro__plate {
+  opacity: 1;
+}
+/* 像（色の無いぼけた絵）が先に見え、薄れて写真になる。 */
+.dv-intro__latent {
+  opacity: 1;
+  transition: opacity 0.95s var(--ease-reveal) 0.55s;
+}
+.dv-intro:is([data-phase="plate"], [data-phase="grow"], [data-phase="out"]) .dv-intro__latent {
+  opacity: 0;
+}
+
+/* 名前。漢字・かなの名前は縦に組み、図版の右肩に置く。英字の名前は図版の下に横で組む。 */
+.dv-intro__name,
+.dv-intro__caption {
+  position: absolute;
+  margin: 0;
+  white-space: nowrap;
+  color: var(--foreground);
+  opacity: 1;
+  transition: opacity 0.35s ease;
+}
+.dv-intro__name {
+  font-family: var(--font-en), var(--font-ja);
+  font-weight: 400;
+  line-height: 1;
+  letter-spacing: 0.18em;
+}
+.dv-intro__name[data-vertical] {
+  font-family: var(--font-ja);
+  writing-mode: vertical-rl;
+  text-orientation: upright;
+  letter-spacing: 0.42em;
+}
+.dv-intro__caption {
+  font-family: var(--font-en), var(--font-ja);
+  font-size: 11px;
+  line-height: 1.4;
+  letter-spacing: 0.32em;
+}
+@media (min-width: 640px) {
+  .dv-intro__caption {
+    font-size: 12px;
+  }
+}
+.dv-intro__name span,
+.dv-intro__caption span {
+  display: inline-block;
+  opacity: 0;
+}
+/* 字は1字ずつ、にじんで定まる（濃さとぼけを別々に動かす）。遅れは字ごとに DevelopIntro.tsx が書く。 */
+.dv-intro:not([data-phase="wait"]) .dv-intro__name span {
+  animation:
+    dv-intro-in 0.9s cubic-bezier(0.3, 0.3, 0.3, 1) forwards,
+    dv-intro-ink 1.4s cubic-bezier(0.25, 0.6, 0.3, 1) backwards;
+}
+.dv-intro:not([data-phase="wait"]) .dv-intro__caption span {
+  animation: dv-intro-quiet 0.9s ease 0.95s forwards;
+}
+/* 引き伸ばしが始まったら、名前と添え書きは退く。 */
+.dv-intro:is([data-phase="grow"], [data-phase="out"]) :is(.dv-intro__name, .dv-intro__caption) {
+  opacity: 0;
+}
+@keyframes dv-intro-in {
+  to {
+    opacity: 1;
+  }
+}
+@keyframes dv-intro-ink {
+  from {
+    filter: blur(11px);
+  }
+  to {
+    filter: blur(0);
+  }
+}
+@keyframes dv-intro-quiet {
+  to {
+    opacity: 0.62;
+  }
+}

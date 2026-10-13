@@ -7,7 +7,7 @@ import {
   useMemo,
 } from "react";
 import { createPortal } from "react-dom";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import {
   photoSrcFor,
   photoSrcSetFor,
@@ -18,7 +18,15 @@ import { useQuery } from "@tanstack/react-query";
 import { api, jsonOrThrow } from "../lib/api";
 import { photoAltText } from "../../shared/photo-alt";
 import { historyBridge } from "../lib/scroll-memory";
+import { siteDesignFrom, usesDevelopStructure } from "../lib/book";
+import { paintLatent } from "../lib/latent-image";
 import {
+  DEVELOP_CALM_MS,
+  DEVELOP_CLEAR_EASE,
+  DEVELOP_CLEAR_MS,
+  DEVELOP_HOLD_MS,
+  DEVELOP_LATENT_DEADLINE,
+  DEVELOP_OPEN_HOLD_MS,
   MORPH_CLOSE_MS,
   MORPH_OPEN_MS,
   SWAP_LEAVE_EASE,
@@ -29,6 +37,7 @@ import {
   prefersReducedMotion,
   rectOf,
   sourceImageFor,
+  veilGhost,
   type Ghost,
   type Rect,
 } from "../lib/viewer-morph";
@@ -238,6 +247,18 @@ export function Lightbox({
   const palette = viewerPalette(viewerSettings?.viewerStyle);
   const mat = viewerMat(viewerSettings?.viewerMat);
   const ink = (alpha: number) => `rgba(${palette.ink},${alpha})`;
+  // 新しい構成（develop）では、送った先の写真も表紙や一覧と同じく、現像されるように
+  // 現れる（下の developPhase）。開いている途中で切り替わると、見えている写真が急に
+  // 像へ戻るので、開いた時点で決める。
+  const [location] = useLocation();
+  const [developDesign] = useState(() =>
+    usesDevelopStructure(siteDesignFrom(viewerSettings?.siteDesign), location),
+  );
+  // 動きを減らす設定の人と、「写真の現れ方」を「なし」にしたサイトでは現像しない。
+  const developAllowed = () =>
+    developDesign &&
+    !prefersReducedMotion() &&
+    document.body.dataset.reveal !== "none";
   const veil = (alpha: number) => `rgba(${palette.veil},${alpha})`;
 
   const [imgError, setImgError] = useState(false);
@@ -530,6 +551,78 @@ export function Lightbox({
     return true;
   });
   const [morphFlying, setMorphFlying] = useState(morphUsed);
+  // 写真を現像して出すか。色の無いぼけた像を写真の上に載せて出し（"latent"）、下の写真が
+  // 描ける状態になったら、像を薄めて写真を見せる（"clearing"）。
+  // - 頁から運んで開いた1枚は、もう頁で見えていた写真なので現像しない（鮮明な写真が
+  //   一度像に戻ると、後戻りして見える）。
+  // - 続けて速く送っている間も挟まない（探しているときに、像ばかりが続く）。
+  const [developPhase, setDevelopPhase] = useState<"off" | "latent" | "clearing">(
+    () => (!morphUsed && developAllowed() ? "latent" : "off"),
+  );
+  const developOn = developPhase !== "off";
+  // 頁の画像が手元に無い写真で、下敷き（一覧用の大きさの画像）が読めたか。
+  const [underReady, setUnderReady] = useState(false);
+  const developFromRef = useRef({
+    index,
+    at: performance.now(),
+    hold: DEVELOP_OPEN_HOLD_MS,
+  });
+  // 像は表紙と同じ作り（lib/latent-image.ts）: 小さく描いて色を抜き、絵の中でぼかした1枚。
+  // 元は小さい画像（640px ほど。前後 3 枚ぶんは先に読んである）。**頁に出ている大きい
+  // 画像からは描かない**——絵にするには大きい画像をもう一度読み解くことになり、送った
+  // 瞬間に 20〜80ms 止まる（2026-10-13 実測 Chromium）。
+  // 間に合わない・描けないときは、その写真は今までどおりの現れ方へ戻す。
+  const latentRef = useRef<HTMLCanvasElement>(null);
+  const latentPaintedRef = useRef(false);
+  useLayoutEffect(() => {
+    latentPaintedRef.current = false;
+    const canvas = latentRef.current;
+    if (!developOn || !canvas) return;
+    const src = photos[index]?.lqipSrc;
+    const giveUp = () => setDevelopPhase("off");
+    if (!src) {
+      giveUp();
+      return;
+    }
+    let alive = true;
+    const image = new Image();
+    image.decoding = "async";
+    image.src = src;
+    // 読み解くのは別の場所に任せ、描ける状態になってから絵にする（読み解きまでここで
+    // やると、送った直後のコマがそのぶん止まる）。decode の無い環境では読み込みを待つ。
+    const drawable: Promise<unknown> =
+      typeof image.decode === "function"
+        ? image.decode()
+        : new Promise((resolve, reject) => {
+            image.onload = resolve;
+            image.onerror = reject;
+          });
+    drawable.then(
+      () => {
+        if (!alive) return;
+        const from = developFromRef.current;
+        const late =
+          performance.now() - from.at > from.hold * DEVELOP_LATENT_DEADLINE;
+        if (late || !paintLatent(canvas, image)) giveUp();
+        else latentPaintedRef.current = true;
+      },
+      () => {
+        if (alive) giveUp();
+      },
+    );
+    return () => {
+      alive = false;
+    };
+    // 写真が替わったときと、現像する・しないが替わったときだけ。
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [index, developOn]);
+  // 像がまだ見えている間（現像の途中）なら、その像といまの濃さ。影を作るときに使う。
+  const latentVeil = () => {
+    const latent = latentRef.current;
+    if (!latent) return null;
+    const opacity = Number(getComputedStyle(latent).opacity);
+    return opacity > 0.02 ? { latent, opacity } : null;
+  };
   const [morphIndex] = useState(index);
   const [morphClosing, setMorphClosing] = useState(false);
   const ghostRef = useRef<Ghost | null>(null);
@@ -628,7 +721,9 @@ export function Lightbox({
     const shown = loaded(fitImgRef.current) ?? loaded(placeImgRef.current);
     const from = visibleImageRect();
     if (!shown || !from) return;
+    const veil = latentVeil();
     const ghost = createGhost(dlg, shown, from);
+    if (veil) veilGhost(ghost, veil.latent, veil.opacity);
     leaveGhostRef.current = ghost;
     void ghost.fadeOut(SWAP_LEAVE_MS, SWAP_LEAVE_EASE).then(() => {
       ghost.remove();
@@ -657,6 +752,22 @@ export function Lightbox({
   bringSourceIntoViewRef.current = () => {
     const src = sourceImageFor(photos[index]?.id);
     if (!src) return null;
+    // 着く先の頁の写真が、まだ「現れる動き」を始めていないことがある（開いている間に
+    // 先へ送り、画面の外にあった写真へ戻るとき）。そのままだと、運んだ影が着いて
+    // 消えたあとに薄い写真が残り、そこから濃くなる（2026-10-13 実測 /series/sicf:
+    // 着いた 0.1 秒後に写真が白っぽくなり、0.5 秒かけて戻る）。着く先の1枚だけは、
+    // 動かさずに先に現しておく。まわりの写真は今までどおり順に現れる。
+    const item = src.closest<HTMLElement>(".fade-in-item:not(.visible)");
+    if (item) {
+      item.style.transition = "none";
+      item.style.willChange = "auto";
+      item.classList.add("visible");
+      requestAnimationFrame(() =>
+        requestAnimationFrame(() => {
+          item.style.transition = "";
+        }),
+      );
+    }
     if (!isMostlyInView(rectOf(src), 0.6)) {
       const page = src.closest<HTMLElement>("[data-book-page]");
       if (page) page.scrollIntoView({ block: "start" });
@@ -683,12 +794,14 @@ export function Lightbox({
     const from = visibleImageRect();
     if (!shown || !from) return false;
     ghostRef.current?.remove();
+    const veil = latentVeil();
     const ghost = createGhost(
       dlg,
       shown,
       { x: from.x, y: from.y, w: from.w, h: from.h },
       getComputedStyle(src).objectPosition || "50% 50%",
     );
+    if (veil) veilGhost(ghost, veil.latent, veil.opacity, MORPH_CLOSE_MS);
     ghostRef.current = ghost;
     setMorphFlying(false);
     setMorphClosing(true);
@@ -913,12 +1026,22 @@ export function Lightbox({
     setZoomSrcReady(false);
     resetZoom(false);
     lbOpenTimeRef.current = performance.now();
+    setUnderReady(false);
     if (onRequestMore && photos.length - index <= 5) onRequestMore();
     // Crossfade on navigation only — skip the initial open (hasNavigatedRef is false).
     // 動きを減らす設定では入れ替えるだけ。ここで一度消すと、濃くなる動きが
     // 0.01ms に縮むので、1コマだけ壁の色になって光る。
     if (hasNavigatedRef.current && !prefersReducedMotion()) setSwapPhase("out");
     hasNavigatedRef.current = true;
+    // 送った先を現像して出すか。前に送ってから間が空いているときだけ。
+    const last = developFromRef.current;
+    if (last.index !== index) {
+      const now = performance.now();
+      setDevelopPhase(
+        developAllowed() && now - last.at >= DEVELOP_CALM_MS ? "latent" : "off",
+      );
+      developFromRef.current = { index, at: now, hold: DEVELOP_HOLD_MS };
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [index]);
 
@@ -1164,6 +1287,51 @@ export function Lightbox({
     return img.currentSrc || img.src || null;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [photo.id, photo.url, index]);
+  // 現像の像を薄め始める。**下の写真が描ける状態になってから**——頁の画像が手元に
+  // あれば最初から描けている。無ければ、下敷きか大きい写真のどちらかが読めて描ける
+  // ようになるまで像のまま待つ（先に薄めると、像の下に何も無く、壁の色が透ける）。
+  // 待ち時間（HOLD。viewer-morph.ts）の間は、どちらの場合も像のまま。
+  useEffect(() => {
+    if (developPhase !== "latent") return;
+    if (!pageSrc && loadStage === "thumb" && !underReady) return;
+    let alive = true;
+    const from = developFromRef.current;
+    const since = performance.now() - from.at;
+    const timer = setTimeout(
+      () => {
+        // 像がまだ描けていない（小さい画像が届いていない）なら、この写真は現像しない。
+        if (!latentPaintedRef.current) {
+          setDevelopPhase("off");
+          return;
+        }
+        const under = pageSrc
+          ? null
+          : loadStage === "full"
+            ? fitImgRef.current
+            : loadStage === "thumb"
+              ? placeImgRef.current
+              : null;
+        const drawn = under?.decode
+          ? under.decode().catch(() => {})
+          : Promise.resolve();
+        void drawn.then(() => {
+          if (alive) setDevelopPhase("clearing");
+        });
+      },
+      Math.max(0, from.hold - since),
+    );
+    return () => {
+      alive = false;
+      clearTimeout(timer);
+    };
+  }, [developPhase, index, loadStage, pageSrc, underReady]);
+  // 大きい写真が現れるときの濃くなり方。像がまだ上を覆っている間に読めた写真は、
+  // その下で一度に出す（見せるのは像の側。ここでも時間をかけると、像が薄れる速さに
+  // 写真が追いつかず、壁の色が透ける）。
+  const sharpIn =
+    developPhase === "latent" && !pageSrc
+      ? "opacity 0ms"
+      : "opacity var(--dur-reveal) var(--ease-reveal)";
   const alt = photoAltText(photo, {
     photographerName,
     seriesName:
@@ -1540,7 +1708,14 @@ export function Lightbox({
                   transition が走らないから。**写真を切り替えたときは
                   0ms で戻す（そこで薄れさせると、新しい写真の上へ
                   ぼけが後から乗ってくる）。 */}
-                {photo.lqipSrc && (
+                {/* 現像して出す写真（新しい構成）には出さない。色の無い像が代わりを務める
+                  （この箱の最後の canvas）。
+                  **頁の画像が手元にある写真にも出さない**（2026-10-13）。下敷きが最初の
+                  コマから写真の場所を覆うので、見えるのは縁の外へにじんだ分だけだった。
+                  送るたびに、写真のまわりへぼけた枠が出て消えていた（動きを減らす設定
+                  では消えるのが一瞬で、画面全体の明るさが 1 コマだけ 199 → 190 → 199 と
+                  沈む。Chromium 1440×900 で実測）。 */}
+                {!developOn && !pageSrc && photo.lqipSrc && (
                   <img
                     src={photo.lqipSrc}
                     alt=""
@@ -1605,6 +1780,7 @@ export function Lightbox({
                       draggable={false}
                       fetchPriority="low"
                       decoding="async"
+                      onLoad={() => setUnderReady(true)}
                       style={placeStyle}
                     />
                   </picture>
@@ -1647,9 +1823,7 @@ export function Lightbox({
                         // 写真を切り替えたときは 0ms で戻す**（薄れさせると
                         // 前の写真が次の写真の上に残る）。
                         transition:
-                          loadStage !== "thumb"
-                            ? "opacity var(--dur-reveal) var(--ease-reveal)"
-                            : "opacity 0ms",
+                          loadStage !== "thumb" ? sharpIn : "opacity 0ms",
                       }}
                     />
                   </picture>
@@ -1675,9 +1849,7 @@ export function Lightbox({
                       opacity: loadStage === "full" ? 1 : 0,
                       // 上と同じ扱い。濃くなる側だけ時間をかける。
                       transition:
-                        loadStage === "full"
-                          ? "opacity var(--dur-reveal) var(--ease-reveal)"
-                          : "opacity 0ms",
+                        loadStage === "full" ? sharpIn : "opacity 0ms",
                     }}
                     draggable={false}
                   />
@@ -1727,9 +1899,7 @@ export function Lightbox({
                         opacity: loadStage === "full" ? 1 : 0,
                         // 上と同じ扱い。濃くなる側だけ時間をかける。
                         transition:
-                          loadStage === "full"
-                            ? "opacity var(--dur-reveal) var(--ease-reveal)"
-                            : "opacity 0ms",
+                          loadStage === "full" ? sharpIn : "opacity 0ms",
                       }}
                       draggable={false}
                     />
@@ -1768,6 +1938,33 @@ export function Lightbox({
                       }}
                     />
                   </picture>
+                )}
+                {/* 現像の像（新しい構成、2026-10-13）。写真の上に載せて出し、下の写真が
+                  描けるようになったら薄めていく。写真の側は動かさない。
+                  **色の変換を毎コマ変える作りにはしない。**試したところ、送るたびに
+                  コマが落ちた（Chromium 1440×900 で実測。送ってから 1 秒間の 25ms 超が、
+                  現像なし 1 コマに対して 13 コマ。ぼけた仮の画像を色の変換の外へ出しても
+                  3 コマ）。1枚の絵の濃さだけなら、今までの送り方と同じ重さ。
+                  絵としてぼかしてあるので、写真の縁の外へにじまない。 */}
+                {developOn && (
+                  <canvas
+                    ref={latentRef}
+                    aria-hidden="true"
+                    data-lb-latent={developPhase}
+                    style={{
+                      position: "absolute",
+                      inset: 0,
+                      width: "100%",
+                      height: "100%",
+                      objectFit: "contain",
+                      pointerEvents: "none",
+                      opacity: developPhase === "latent" ? 1 : 0,
+                      transition:
+                        developPhase === "latent"
+                          ? "none"
+                          : `opacity ${DEVELOP_CLEAR_MS}ms ${DEVELOP_CLEAR_EASE}`,
+                    }}
+                  />
                 )}
               </button>
             </div>

@@ -587,6 +587,132 @@ test("新しい構成 › 現像は「動きを減らす」と「写真の現れ
   expect(off.tile).toBe("none");
 });
 
+/**
+ * 1枚表示（ビューア）の現像（2026-10-13）。送った先の写真は、色の無いぼけた像が上に載って出て、
+ * 像が薄れて写真が見えてくる。写真の側は動かさない（像の濃さだけを動かす）。
+ *
+ * 送ってから 1.8 秒ぶん、コマごとに像の状態を書き出す: 「状態:濃さ:絵の幅」（像が無ければ none）。
+ * 絵の幅が 300 のままなら、まだ描けていない（canvas の初期の大きさ）。
+ */
+const stepAndWatch = (page: Page, key: "ArrowRight" | "ArrowLeft") =>
+  page.evaluate(async (key) => {
+    window.dispatchEvent(new KeyboardEvent("keydown", { key, bubbles: true }));
+    const log: string[] = [];
+    const from = performance.now();
+    while (performance.now() - from < 1800) {
+      await new Promise((r) => requestAnimationFrame(r));
+      const latent = document.querySelector<HTMLCanvasElement>("dialog[open] canvas[data-lb-latent]");
+      log.push(
+        latent
+          ? `${latent.getAttribute("data-lb-latent")}:${Number(getComputedStyle(latent).opacity).toFixed(2)}:${latent.width}`
+          : "none",
+      );
+    }
+    return log;
+  }, key);
+
+/** 像が描かれた状態で載り、途中で消されずに、濃さ 0 まで薄れたか。 */
+function developed(log: string[]): boolean {
+  const start = log.findIndex((row) => row.startsWith("latent:1.00:") && !row.endsWith(":300"));
+  if (start < 0) return false;
+  const rest = log.slice(start);
+  if (rest.includes("none")) return false;
+  const opacities = rest.map((row) => Number(row.split(":")[1]));
+  const rising = opacities.some((value, i) => i > 0 && value > opacities[i - 1]! + 0.01);
+  return !rising && rest[rest.length - 1]!.startsWith("clearing:0.00");
+}
+
+async function openPortraitViewer(page: Page) {
+  await page.locator('.dv-door[href="/portrait"]').click();
+  await expect(page).toHaveURL(/\/portrait$/);
+  await expect(page.locator(".ps-tile")).toHaveCount(5);
+  // 送った先の写真も頁に出ている（下敷きにできる）状態から始める。
+  await expect
+    .poll(() =>
+      page.locator(".ps-tile__img").evaluateAll(
+        (imgs) => imgs.filter((img) => (img as HTMLImageElement).complete && (img as HTMLImageElement).naturalWidth > 0).length,
+      ),
+    )
+    .toBeGreaterThanOrEqual(3);
+  await page.locator(".ps-tile__button").first().click();
+  const viewer = page.locator('dialog[aria-label="写真ビューア"]');
+  await expect(viewer).toBeVisible();
+  await expect(viewer.locator(".lb-ghost")).toHaveCount(0);
+  return viewer;
+}
+
+test("新しい構成 › 1枚表示：ゆっくり送ると現像して出る。押して開いた1枚と、続けて速く送る間は現像しない", async ({
+  page,
+  api,
+}) => {
+  await withCategories(page, api);
+  await page.goto("/?design=develop", { waitUntil: "networkidle" });
+  const viewer = await openPortraitViewer(page);
+  const latent = viewer.locator("canvas[data-lb-latent]");
+  // 頁から運んで開いた1枚は、もう見えていた写真。像へ戻さない。
+  await expect(latent).toHaveCount(0);
+
+  // 間を空けて送る。像が間に合わない回（小さい画像が遅れた回）は現像しない作りなので、3 回まで試す。
+  const logs: string[][] = [];
+  for (const key of ["ArrowRight", "ArrowLeft", "ArrowRight"] as const) {
+    await page.waitForTimeout(1000);
+    logs.push(await stepAndWatch(page, key));
+    if (developed(logs[logs.length - 1]!)) break;
+  }
+  expect(
+    developed(logs[logs.length - 1]!),
+    `ゆっくり送ったら、像が載って薄れる: ${logs.map((log) => [...new Set(log)].join(" ")).join(" ｜ ")}`,
+  ).toBe(true);
+  // 現像して出した写真には、ぼけた仮の画像を重ねない（像が代わりを務める）。
+  await expect(viewer.locator('.lb-content button img[style*="blur"]')).toHaveCount(0);
+
+  // 間を空けて送った直後に、もう一度送る＝探している最中。色の付いた写真をそのまま出す。
+  await page.waitForTimeout(1000);
+  const quick = await page.evaluate(async () => {
+    const press = () => window.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowRight", bubbles: true }));
+    const frame = () => new Promise((r) => requestAnimationFrame(r));
+    press();
+    await frame();
+    await frame();
+    const first = document.querySelectorAll("dialog[open] canvas[data-lb-latent]").length;
+    press();
+    await frame();
+    await frame();
+    return { first, second: document.querySelectorAll("dialog[open] canvas[data-lb-latent]").length };
+  });
+  expect(quick.first, "間を空けて送った写真には像が載る").toBe(1);
+  expect(quick.second, "続けて送った写真には像を載せない").toBe(0);
+
+  await page.keyboard.press("Escape");
+  await expect(viewer).toHaveCount(0);
+});
+
+test("新しい構成 › 1枚表示の現像も「動きを減らす」と「写真の現れ方：なし」では出さない", async ({ page, api }) => {
+  await withCategories(page, api);
+  const settings = (await (await api.get("/api/settings")).json()) as Record<string, unknown>;
+  const state = { photoRevealEffect: "fade" };
+  await page.route("**/api/settings**", (route) =>
+    route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ ...settings, ...state }) }),
+  );
+  const neverLatent = async () => {
+    const viewer = await openPortraitViewer(page);
+    await page.waitForTimeout(1000);
+    const log = await stepAndWatch(page, "ArrowRight");
+    expect([...new Set(log)]).toEqual(["none"]);
+    await page.keyboard.press("Escape");
+    await expect(viewer).toHaveCount(0);
+  };
+
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.goto("/?design=develop", { waitUntil: "networkidle" });
+  await neverLatent();
+
+  await page.emulateMedia({ reducedMotion: "no-preference" });
+  state.photoRevealEffect = "none";
+  await page.goto("/", { waitUntil: "networkidle" });
+  await neverLatent();
+});
+
 test("新しい構成 › Info は自己紹介と依頼。今までのページも同じ住所で開ける", async ({ page, api }, testInfo) => {
   await withCategories(page, api);
   await page.goto("/info?design=develop", { waitUntil: "networkidle" });

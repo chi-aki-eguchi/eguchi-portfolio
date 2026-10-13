@@ -1654,6 +1654,27 @@ test.describe("public-site — Galleryライトボックス", () => {
     expect(ghostsRightAfter, "送った瞬間に前の写真が残っている").toBe(1);
     await expect(counter).not.toHaveText(before ?? "");
     await expect(lightbox.locator(".lb-ghost")).toHaveCount(0);
+    // 今までの構成では、現像の像を載せない（新しい構成だけ）。
+    await expect(lightbox.locator("canvas[data-lb-latent]")).toHaveCount(0);
+
+    // 押した写真へ送り戻す。頁の画像が手元にある写真（＝それが下敷きになる写真）には、
+    // ぼけた仮の画像を重ねない。下敷きが最初のコマから写真の場所を覆うので、見えるのは
+    // 縁の外へにじんだ分だけで、送るたびに写真のまわりへぼけた枠が出て消えていた
+    //（2026-10-13）。人工データの画像は幅 64px で「手元にある」扱いにならないので、
+    // 必ず手元にある1枚（押して開いた写真）で確かめる。
+    await page.keyboard.press("ArrowLeft");
+    await expect(counter).toHaveText(before ?? "");
+    await expect(lightbox.locator(".lb-ghost")).toHaveCount(0);
+    const backOnOpened = await lightbox.evaluate((dlg) => {
+      const imgs = [...dlg.querySelectorAll<HTMLImageElement>(".lb-content button img")];
+      const under = imgs.find((img) => !img.style.filter);
+      return {
+        under: under ? under.currentSrc || under.src : null,
+        blurred: imgs.filter((img) => img.style.filter.includes("blur")).length,
+      };
+    });
+    expect(backOnOpened.under, "戻った先も頁の画像が下敷き").toBe(tileSrc);
+    expect(backOnOpened.blurred, "下敷きが手元にある写真に、ぼけた仮の画像を重ねない").toBe(0);
 
     await page.keyboard.press("Escape");
     await expect(lightbox).toBeHidden();

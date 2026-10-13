@@ -91,6 +91,30 @@ export const MORPH_EASE = "cubic-bezier(0.22, 0.8, 0.16, 1)";
  */
 export const SWAP_LEAVE_MS = 220;
 export const SWAP_LEAVE_EASE = "cubic-bezier(0.6, 0, 0.9, 0.5)";
+/**
+ * 新しい構成（develop）で、写真を現像して出すときの時間。
+ * 色の無いぼけた像を写真の上に載せておき、しばらく（HOLD）は像のまま、そこから像を
+ * 薄めて写真を見せていく（CLEAR）。**動かすのは像の濃さだけ**（色やぼかしを毎コマ
+ * 変えない。写真の側も動かさない）。
+ * - 送ったとき: 前の写真が薄れ切るまで待つ。
+ * - 頁から運ばずに開いたとき: 壁が濃くなるまで待つ（壁がまだ薄い間に像を薄めても見えない）。
+ */
+export const DEVELOP_HOLD_MS = 140;
+export const DEVELOP_OPEN_HOLD_MS = 380;
+export const DEVELOP_CLEAR_MS = 900;
+/** 写真に関わる動きの共通のカーブ（styles.css の --ease-reveal）。ゆっくり始まり、長く落ち着く。 */
+export const DEVELOP_CLEAR_EASE = "var(--ease-reveal)";
+/**
+ * 像が描けているべき時刻（待ち時間に対する割合）。間に合わなければ、その写真は現像しない。
+ * 前の写真がまだほぼ不透明な間（上の SWAP_LEAVE_EASE は遅れて薄れる。送ってから 120ms で
+ * まだ 8 割）に載せないと、下の鮮明な写真が見え始めてから像が被さり、後戻りして見える。
+ */
+export const DEVELOP_LATENT_DEADLINE = 0.85;
+/**
+ * 現像して出すのに要る「前に送ってからの間」。これより短い間隔で続けて送って
+ * いるときは、探している最中なので、色の付いた写真をそのまま出す。
+ */
+export const DEVELOP_CALM_MS = 900;
 
 export type Ghost = {
   el: HTMLDivElement;
@@ -205,4 +229,40 @@ export function createGhost(
       el.remove();
     },
   };
+}
+
+/**
+ * 影の上に、現像の途中の像を同じ濃さで重ねる（新しい構成）。影は鮮明な写真を写し取った
+ * 絵なので、像がまだ濃い間に作ると、像から色の付いた写真へ1コマで替わって見える。
+ * fadeMs を渡すと、その時間で像だけを薄める（頁へ運んで戻すとき。着いた先の写真には
+ * 色が付いている）。
+ */
+export function veilGhost(
+  ghost: Ghost,
+  latent: HTMLCanvasElement,
+  opacity: number,
+  fadeMs?: number,
+): void {
+  try {
+    const copy = document.createElement("canvas");
+    copy.width = latent.width;
+    copy.height = latent.height;
+    copy.getContext("2d")?.drawImage(latent, 0, 0);
+    Object.assign(copy.style, {
+      position: "absolute",
+      inset: "0",
+      width: "100%",
+      height: "100%",
+      opacity: String(opacity),
+    } satisfies Partial<CSSStyleDeclaration>);
+    ghost.el.appendChild(copy);
+    if (fadeMs)
+      copy.animate([{ opacity }, { opacity: 0 }], {
+        duration: fadeMs,
+        easing: "ease-out",
+        fill: "forwards",
+      });
+  } catch {
+    // 重ねられなくても、影そのものは今までどおり運ばれる。
+  }
 }

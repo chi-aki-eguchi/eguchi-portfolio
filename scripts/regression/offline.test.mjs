@@ -29,7 +29,12 @@ function worker(options = {}) {
     },
     async keys() { return [...entries.keys()]; },
     async delete(r) { deleted.push(key(r)); return entries.delete(key(r)); },
-    async addAll(urls) { added.push(...urls); },
+    async addAll(requests) {
+      for (const request of requests) {
+        assert.equal(request.cache, 'reload');
+        added.push(new URL(request.url).pathname);
+      }
+    },
   };
   const context = {
     self: {
@@ -43,7 +48,7 @@ function worker(options = {}) {
         if (options.openFails) throw new Error('SecurityError');
         return cache;
       },
-      async keys() { return ['static-v2', 'static-v3', 'images-v2']; },
+      async keys() { return ['static-v1', 'static-v2', 'images-v2']; },
       async delete(name) { deleted.push(name); return true; },
     },
     fetch: async (r) => {
@@ -51,7 +56,7 @@ function worker(options = {}) {
       return options.fetch ? options.fetch(r, fetches.length) : new Response('network');
     },
     setTimeout: (fn, ms) => { waits.push(ms); queueMicrotask(fn); return waits.length; },
-    URL, Response, Headers, DOMException,
+    URL, Request, Response, Headers, DOMException,
   };
   vm.runInNewContext(workerSource, context, { filename: 'sw.js' });
   function dispatch(path, init = {}) {
@@ -189,7 +194,7 @@ test('install precaches the recovery page and script before activation, without 
   await w.lifecycle('install'); await w.lifecycle('activate');
   assert.deepEqual(w.added, ['/offline.html', '/offline-recovery.js']);
   assert.equal(w.skips(), 1);
-  assert.deepEqual(w.deleted, ['static-v2']);
+  assert.deepEqual(w.deleted, ['static-v1']);
 });
 
 async function flush() { for (let i = 0; i < 20; i += 1) await Promise.resolve(); await new Promise(setImmediate); }

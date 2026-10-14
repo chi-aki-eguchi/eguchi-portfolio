@@ -1,5 +1,6 @@
-const CACHE_STATIC = "static-v3";
-// Keep existing image entries: their format has not changed.
+// Keep cache names: entry formats have not changed. Existing open tabs may
+// still need their old content-hashed JS chunks after a deployment.
+const CACHE_STATIC = "static-v2";
 const CACHE_IMAGES = "images-v2";
 const OFFLINE_URL = "/offline.html";
 const OFFLINE_SCRIPT = "/offline-recovery.js";
@@ -42,7 +43,9 @@ function keepAlive(event, work) {
 self.addEventListener("install", (event) => {
   event.waitUntil((async () => {
     const cache = await caches.open(CACHE_STATIC);
-    await cache.addAll([OFFLINE_URL, OFFLINE_SCRIPT]);
+    await cache.addAll([OFFLINE_URL, OFFLINE_SCRIPT].map((path) =>
+      new Request(new URL(path, self.location.origin), { cache: "reload" })
+    ));
     await self.skipWaiting();
   })());
 });

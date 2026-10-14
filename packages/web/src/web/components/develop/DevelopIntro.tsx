@@ -97,11 +97,22 @@ export function DevelopIntro({
       timers.add(id);
     };
     const wait = (ms: number) => new Promise<void>((resolve) => later(resolve, ms));
+    // 入力による中断は退場アニメーションと分ける。out は図版を全画面へ
+    // 拡大するため、touchstart から out にするとスワイプ中にも拡大が走る。
+    // 通常の再生だけが leave を使い、触ったら残りのタイマーごと即終了する。
+    const finish = () => {
+      if (!alive) return;
+      alive = false;
+      leaving = true;
+      for (const id of timers) window.clearTimeout(id);
+      timers.clear();
+      doneRef.current();
+    };
     const leave = () => {
       if (!alive || leaving) return;
       leaving = true;
       setPhase("out");
-      later(() => doneRef.current(), INTRO_OUT_MS + 40);
+      later(finish, INTRO_OUT_MS + 40);
     };
     try {
       sessionStorage.setItem(INTRO_SEEN_KEY, "1");
@@ -111,10 +122,10 @@ export function DevelopIntro({
 
     // 触られたら待たせない。すぐ表紙へ替わる。
     const onScroll = () => {
-      if (window.scrollY > 4) leave();
+      if (Math.abs(window.scrollY) > 4) finish();
     };
     const inputs = ["wheel", "touchstart", "keydown", "pointerdown"] as const;
-    for (const type of inputs) window.addEventListener(type, leave, { passive: true });
+    for (const type of inputs) window.addEventListener(type, finish, { passive: true });
     window.addEventListener("scroll", onScroll, { passive: true });
 
     const heroImage = () =>
@@ -173,7 +184,8 @@ export function DevelopIntro({
     return () => {
       alive = false;
       for (const id of timers) window.clearTimeout(id);
-      for (const type of inputs) window.removeEventListener(type, leave);
+      timers.clear();
+      for (const type of inputs) window.removeEventListener(type, finish);
       window.removeEventListener("scroll", onScroll);
     };
   }, []);

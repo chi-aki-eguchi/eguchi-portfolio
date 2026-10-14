@@ -1,89 +1,119 @@
-const CACHE_STATIC = "static-v2";
-// 上限も破棄も無いまま溜め続けた images-v1 は、名前を変えることで activate 時に
-// まとめて捨てる。キャッシュの作り方を変えたら、ここの版を必ず上げること。
+const CACHE_STATIC = "static-v3";
+// Keep existing image entries: their format has not changed.
 const CACHE_IMAGES = "images-v2";
 const OFFLINE_URL = "/offline.html";
-
-// 画像キャッシュの上限（件数）。青天井にすると端末のストレージを圧迫し、
-// ブラウザにオリジンごと丸ごと捨てられる。入れた順に古いものから捨てる。
+const OFFLINE_SCRIPT = "/offline-recovery.js";
 const MAX_IMAGE_ENTRIES = 300;
+const STATIC_PATTERNS = [/\.css(\?|$)/, /\.js(\?|$)/, /fonts\.googleapis\.com/, /fonts\.gstatic\.com/];
 
-async function putImageWithinLimit(cache, request, response) {
+// Cache Storage is optional. A quota/security/storage failure must not turn a
+// healthy network response into a failed image, stylesheet or navigation.
+async function matchCached(name, request) {
+  try {
+    return await (await caches.open(name)).match(request);
+  } catch {
+    return undefined;
+  }
+}
+
+async function storeStatic(request, response) {
+  const ct = response.headers.get("content-type") || "";
+  if (!response.ok || ct.includes("text/html")) return;
+  const cache = await caches.open(CACHE_STATIC);
+  await cache.put(request, response);
+}
+
+async function storeImage(request, response) {
+  const cache = await caches.open(CACHE_IMAGES);
   await cache.put(request, response);
   const keys = await cache.keys();
   const excess = keys.length - MAX_IMAGE_ENTRIES;
-  if (excess <= 0) return;
-  await Promise.all(keys.slice(0, excess).map((key) => cache.delete(key)));
+  if (excess > 0) {
+    await Promise.all(keys.slice(0, excess).map((key) => cache.delete(key)));
+  }
 }
 
-const STATIC_PATTERNS = [/\.css(\?|$)/, /\.js(\?|$)/, /fonts\.googleapis\.com/, /fonts\.gstatic\.com/];
+function keepAlive(event, work) {
+  // Handle background network AND cache-write failures, including the cache-hit
+  // branch. Previously its unused fetch promise could reject unhandled.
+  event.waitUntil(work.catch(() => {}));
+}
 
-self.addEventListener("install", (e) => {
-  e.waitUntil(
-    caches.open(CACHE_STATIC).then((c) => c.add(OFFLINE_URL))
-  );
-  self.skipWaiting();
+self.addEventListener("install", (event) => {
+  event.waitUntil((async () => {
+    const cache = await caches.open(CACHE_STATIC);
+    await cache.addAll([OFFLINE_URL, OFFLINE_SCRIPT]);
+    await self.skipWaiting();
+  })());
 });
 
-self.addEventListener("activate", (e) => {
-  e.waitUntil(
-    caches.keys().then((keys) =>
-      Promise.all(keys.filter((k) => k !== CACHE_STATIC && k !== CACHE_IMAGES).map((k) => caches.delete(k)))
-    )
-  );
-  // clients.claim() は呼ばない（2026-10-04）。呼ぶと、初めて来た人のページを
-  // 読み込みの途中で引き取り、HTML が先読みした写真（トップの表紙 383KB、
-  // About の写真 83KB）を img が使えず、ここでもう一度取り寄せていた
-  // （通信の控えを持たない WebKit で実測: 同じ URL が2回、止めると1回）。
-  // 初回はブラウザに任せ、次に開いたページから受け持つ。更新は skipWaiting で
-  // 今までどおりすぐ切り替わる（既に受け持っているページは新しい版へ移る）。
+self.addEventListener("activate", (event) => {
+  event.waitUntil(caches.keys().then((keys) =>
+    Promise.all(keys.filter((key) => key !== CACHE_STATIC && key !== CACHE_IMAGES)
+      .map((key) => caches.delete(key)))
+  ));
+  // Do not claim the first visit mid-load: WebKit otherwise downloads the
+  // HTML-preloaded HERO image again. New navigations pick up this worker.
 });
 
-self.addEventListener("fetch", (e) => {
-  const url = new URL(e.request.url);
+async function navigate(request) {
+  let received;
+  // Only idempotent document GETs are retried, once. Preserve real HTTP errors
+  // instead of labelling a server error as "no Internet connection".
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    if (request.signal.aborted) throw new DOMException("Aborted", "AbortError");
+    try {
+      received = await fetch(request);
+      if (![502, 503, 504].includes(received.status)) return received;
+    } catch (error) {
+      if (request.signal.aborted) throw error;
+    }
+    if (attempt === 0) await new Promise((resolve) => setTimeout(resolve, 350));
+  }
+  if (received) return received;
+  const cached = await matchCached(CACHE_STATIC, OFFLINE_URL);
+  // respondWith must always receive a Response, even if storage is unavailable.
+  const headers = { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store" };
+  return new Response(cached?.body ??
+    '<!doctype html><html lang="ja"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><title>一時的にページを開けません</title><h1>一時的にページを開けません</h1><p>通信またはサーバーへの接続に問題があります。</p><a href="">再試行</a></html>',
+    { status: 503, headers });
+}
 
-  if (e.request.method !== "GET") return;
-  if (url.pathname.startsWith("/api/") && !url.pathname.startsWith("/api/images/")) return;
+self.addEventListener("fetch", (event) => {
+  const request = event.request;
+  const url = new URL(request.url);
+  if (request.method !== "GET") return;
+  const sameOrigin = url.origin === self.location.origin;
+  if (sameOrigin && url.pathname.startsWith("/api/") && !url.pathname.startsWith("/api/images/")) return;
 
-  if (url.pathname.startsWith("/api/images/")) {
-    e.respondWith(
-      caches.open(CACHE_IMAGES).then((cache) =>
-        cache.match(e.request).then((cached) => {
-          if (cached) return cached;
-          return fetch(e.request).then((res) => {
-            // 206(部分応答)を丸ごと保存すると、次回に欠けた画像を返す。
-            if (res.status === 200) {
-              const stored = putImageWithinLimit(cache, e.request, res.clone());
-              // 保存と間引きで応答を待たせない。失敗しても表示は続ける。
-              if (e.waitUntil) e.waitUntil(stored.catch(() => {}));
-            }
-            return res;
-          });
-        })
-      )
-    );
+  if (sameOrigin && url.pathname.startsWith("/api/images/")) {
+    const result = (async () => {
+      const cached = await matchCached(CACHE_IMAGES, request);
+      if (cached) return { response: cached, fresh: false };
+      return { response: await fetch(request), fresh: true };
+    })();
+    // Register the lifetime extension synchronously. Cache hits do not rewrite
+    // the image or enumerate all 300 keys while the visitor is scrolling.
+    keepAlive(event, result.then(({ response, fresh }) => {
+      if (fresh && response.status === 200) return storeImage(request, response.clone());
+    }));
+    event.respondWith(result.then(({ response }) => response));
     return;
   }
 
-  if (STATIC_PATTERNS.some((p) => p.test(url.pathname) || p.test(url.href))) {
-    e.respondWith(
-      caches.open(CACHE_STATIC).then((cache) =>
-        cache.match(e.request).then((cached) => {
-          const fetched = fetch(e.request).then((res) => {
-            const ct = res.headers.get("content-type") || "";
-            if (res.ok && !ct.includes("text/html")) cache.put(e.request, res.clone());
-            return res;
-          });
-          return cached || fetched;
-        })
-      )
-    );
+  // Navigation comes first; a document path ending in .js must not be cached
+  // as a static asset. API requests above remain outside the offline fallback.
+  if (sameOrigin && request.mode === "navigate") {
+    event.respondWith(navigate(request));
     return;
   }
 
-  if (e.request.mode === "navigate") {
-    e.respondWith(
-      fetch(e.request).catch(() => caches.match(OFFLINE_URL))
-    );
+  if (STATIC_PATTERNS.some((pattern) => pattern.test(url.pathname) || pattern.test(url.href))) {
+    const fetched = fetch(request);
+    keepAlive(event, fetched.then((res) => storeStatic(request, res.clone())));
+    event.respondWith((async () => {
+      const cached = await matchCached(CACHE_STATIC, request);
+      return cached ?? fetched;
+    })());
   }
 });

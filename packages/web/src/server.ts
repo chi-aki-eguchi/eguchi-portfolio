@@ -39,6 +39,8 @@ import {
   heroPreloadAllowed,
 } from "./shared/hero-responsive";
 import { IMAGE_UPLOAD_REQUEST_MAX_BYTES } from "./shared/upload-limits";
+import { SERVER_IDLE_TIMEOUT_SECONDS } from "./api/serve-options";
+import { containerMemoryLimitBytes, toMB } from "./api/process-diagnostics";
 import { hasPublicEnglishContent } from "./shared/public-english";
 import { buildSitemapXml } from "./api/sitemap-xml";
 import {
@@ -737,6 +739,8 @@ const server = Bun.serve({
   port,
   hostname: process.env.HOST || "0.0.0.0",
   maxRequestBodySize: IMAGE_UPLOAD_REQUEST_MAX_BYTES,
+  // 既定の10秒では、写真の取り寄せ・変換の途中で接続が切れて 502 になる（serve-options.ts）。
+  idleTimeout: SERVER_IDLE_TIMEOUT_SECONDS,
   async fetch(request) {
     try {
       const url = new URL(request.url);
@@ -1164,10 +1168,28 @@ async function serveNonApi(request: Request, url: URL): Promise<Response> {
 
 console.log(`Web server listening on http://localhost:${server.port}`);
 
+// 起動と終了の記録（2026-10-14）。配布先で約10分に9回の起動が記録されたが、異常終了か、
+// 再デプロイ・手動の再起動かを、ログから見分けられなかった。
+//  - 起動時: build・pid・メモリの上限を1行
+//  - SIGTERM（Railway の停止・再デプロイ・再起動）: 受けたことを1行残してから終わる。
+//    この行が無いまま次の起動が来たら、強制終了（メモリ超過の SIGKILL など）を疑う。
+const memoryLimit = containerMemoryLimitBytes();
+const memoryLimitLabel = memoryLimit ? `${toMB(memoryLimit)}MB` : "unknown";
+console.log(
+  `[boot] build=${BUILD_ID} pid=${process.pid} memoryLimit=${memoryLimitLabel}`,
+);
+process.once("SIGTERM", () => {
+  console.log(
+    `[shutdown] SIGTERM received after ${Math.round(process.uptime())}s rss=${toMB(process.memoryUsage.rss())}MB`,
+  );
+  // 既定の終わり方（シグナルによる終了＝143）を保つ。再起動の方針の判定を変えない。
+  process.exit(143);
+});
+
 // Log memory usage every 5 minutes so Railway logs capture OOM trends.
 setInterval(() => {
   const rss = process.memoryUsage.rss();
-  console.log(`[mem] rss=${Math.round(rss / 1024 / 1024)}MB`);
+  console.log(`[mem] rss=${toMB(rss)}MB limit=${memoryLimitLabel}`);
 }, 5 * 60_000);
 
 function getStaticFilePath(pathname: string) {

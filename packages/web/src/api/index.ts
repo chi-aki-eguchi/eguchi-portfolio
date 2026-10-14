@@ -128,6 +128,7 @@ async function withSeriesIds<T extends { id: number }>(rows: T[]): Promise<(T & 
 const asBody = (buf: Buffer): BodyInit => buf as unknown as BodyInit;
 import { parseNoteRss, type NotePost } from "./note-rss";
 import { BUILD_ID } from "./ogp";
+import { containerMemoryLimitBytes, toMB } from "./process-diagnostics";
 import {
   SITE_DEFAULTS,
   displayNameEnFrom,
@@ -232,6 +233,9 @@ const PHOTO_LIST_COLUMNS = {
 // budget holds them all instead (thumbnails are small). Map insertion order is
 // the LRU order: get() moves an entry to the back, eviction drops the front.
 const RESIZE_CACHE_BYTES = 128 * 1024 * 1024; // resized thumbnails
+// コンテナのメモリ上限（/api/health に出す。読めないときは null）。
+const memoryLimitBytes = containerMemoryLimitBytes();
+const MEMORY_LIMIT_MB = memoryLimitBytes ? toMB(memoryLimitBytes) : null;
 const resizeCache = new Map<string, { buf: Buffer; type: string }>();
 let resizeBytes = 0;
 type InFlightVariant = {
@@ -395,17 +399,44 @@ export async function getOriginal(
   }
   const pending = origInFlight.get(key);
   if (pending) return pending;
+  // 見出しと本文を合わせて ORIGINAL_FETCH_TIMEOUT_MS で打ち切る。打ち切ったら本文の
+  // 流れも閉じる——Bun では abortSignal も Promise の打ち切りも本文の受信を止めず、
+  // 諦めた後も裏でストレージから受け取り続けていた（2026-10-14 実測: 打ち切りの
+  // 6秒後もつながったまま。本文を destroy すると即座に切れる）。
   const fetchOnce = async () => {
-    const obj = await s3.send(
-      new GetObjectCommand({ Bucket: BUCKET, Key: key }),
-      { abortSignal: AbortSignal.timeout(ORIGINAL_FETCH_TIMEOUT_MS) },
-    );
-    const bytes = await withTimeout(
-      obj.Body!.transformToByteArray(),
-      ORIGINAL_FETCH_TIMEOUT_MS,
-      `R2 body ${key}`,
-    );
-    return { bytes, contentType: obj.ContentType };
+    const controller = new AbortController();
+    let body: { destroy?: (error?: Error) => void } | undefined;
+    let timedOut = false;
+    const timer = setTimeout(() => {
+      timedOut = true;
+      controller.abort();
+      body?.destroy?.();
+    }, ORIGINAL_FETCH_TIMEOUT_MS);
+    try {
+      const obj = await s3.send(
+        new GetObjectCommand({ Bucket: BUCKET, Key: key }),
+        { abortSignal: controller.signal },
+      );
+      body = obj.Body as typeof body;
+      if (timedOut) body?.destroy?.();
+      const bytes = await withTimeout(
+        obj.Body!.transformToByteArray(),
+        ORIGINAL_FETCH_TIMEOUT_MS,
+        `storage body ${key}`,
+      );
+      return { bytes, contentType: obj.ContentType };
+    } catch (err) {
+      if (timedOut) {
+        const timeout = new Error(
+          `storage object ${key} timed out after ${ORIGINAL_FETCH_TIMEOUT_MS}ms`,
+        );
+        timeout.name = "TimeoutError";
+        throw timeout;
+      }
+      throw err;
+    } finally {
+      clearTimeout(timer);
+    }
   };
   const p = (async () => {
     // Lightbox reported intermittent "画像を読み込めませんでした" — a single
@@ -420,9 +451,14 @@ export async function getOriginal(
       // AbortError (client navigated away) and NoSuchKey (the object genuinely
       // isn't in the bucket) are permanent — retrying wastes a round-trip and
       // just delays the 404 the client is going to get either way.
+      // TimeoutError も取り直さない。15秒待った後にもう15秒待つと、写真1枚の
+      // 打ち切り（IMAGE_VARIANT_TIMEOUT_MS = 30秒）を使い切り、遅いストレージへの
+      // 取り寄せを倍に増やすだけになる。
       if (
         err instanceof Error &&
-        (err.name === "AbortError" || err.name === "NoSuchKey")
+        (err.name === "AbortError" ||
+          err.name === "NoSuchKey" ||
+          err.name === "TimeoutError")
       )
         throw err;
       await new Promise((r) => setTimeout(r, 250));
@@ -430,6 +466,15 @@ export async function getOriginal(
     }
     const buf = Buffer.from(result.bytes);
     const entry = { buf, type: result.contentType ?? "image/jpeg", ts: now };
+    // 期限切れは、もう一度見に来られるまで残り続け、48MiB の枠を埋めたままになる。
+    // 入れるたびに捨てる（多くて数百件の見回り）。
+    const stale = Date.now() - ORIG_TTL_MS;
+    for (const [k, v] of origCache) {
+      if (v.ts < stale) {
+        origBytes -= v.buf.length;
+        origCache.delete(k);
+      }
+    }
     const prev = origCache.get(key);
     if (prev) {
       origBytes -= prev.buf.length;
@@ -450,6 +495,15 @@ export async function getOriginal(
   } finally {
     origInFlight.delete(key);
   }
+}
+
+/** ストレージに写真そのものが無い（消えた・鍵が違う）。一時的な失敗とは分ける。 */
+export function isMissingStorageObject(err: unknown): boolean {
+  if (!(err instanceof Error)) return false;
+  if (err.name === "NoSuchKey" || err.name === "NotFound") return true;
+  const status = (err as { $metadata?: { httpStatusCode?: number } }).$metadata
+    ?.httpStatusCode;
+  return status === 404;
 }
 
 // S3-compatible storage client (Cloudflare R2 in current prod; Railway Storage for template experiments).
@@ -963,6 +1017,8 @@ const app = new Hono()
           origCacheMB: Math.round(origBytes / 1024 / 1024),
           origCacheEntries: origCache.size,
           origInFlightEntries: origInFlight.size,
+          // コンテナの上限（読めないときは null）。rss がどれだけ近いかを見るため。
+          limitMB: MEMORY_LIMIT_MB,
         },
       },
       200,
@@ -1080,9 +1136,13 @@ const app = new Hono()
       });
     }
 
+    // 同じ写真を待つ人は、作った人と同じ失敗を受け取る。ログで見分けられるように
+    // 覚えておく（同じ時刻に同じ失敗が2行並ぶのは、変換の二重実行とは限らない）。
+    let joined = false;
     try {
       const pending = resizeInFlight.get(cacheKey);
       if (pending) {
+        joined = true;
         const waited = await joinInFlightVariant(pending, requestSignal);
         return imageResponse(waited.buf, waited.type, {
           ETag: etag,
@@ -1172,11 +1232,19 @@ const app = new Hono()
       if (e instanceof Error && e.name === "AbortError") {
         return new Response(null, { status: 499 });
       }
+      // 本当に無い写真だけを 404 にする。取り寄せの遅れ・一時的な失敗まで 404 に
+      // していたので、ブラウザや中継に「この写真は無い」と覚えられ得た。
+      // 一時的な失敗は 503（保存させない・少し置けば取り直せる）。
+      const missing = isMissingStorageObject(e);
       console.error(
-        "[image] proxy failed:",
+        `[image] proxy failed${joined ? " (waited on a shared request)" : ""}:`,
         e instanceof Error ? e.message : e,
       );
-      return c.json({ error: "Not found" }, 404);
+      if (missing) return c.json({ error: "Not found" }, 404);
+      return c.json({ error: "Temporarily unavailable" }, 503, {
+        "Cache-Control": "no-store",
+        "Retry-After": "5",
+      });
     }
   })
 

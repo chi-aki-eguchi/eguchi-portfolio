@@ -18,5 +18,12 @@ if (
 }
 
 const { default: app } = await import("../index");
-const server = Bun.serve({ hostname: "127.0.0.1", port: 0, fetch: app.fetch });
+const { SERVER_IDLE_TIMEOUT_SECONDS } = await import("../serve-options");
+// 本番（server.ts）と同じく、処理中の接続を10秒で切らない。
+const server = Bun.serve({
+  hostname: "127.0.0.1",
+  port: 0,
+  idleTimeout: SERVER_IDLE_TIMEOUT_SECONDS,
+  fetch: app.fetch,
+});
 console.log(`READY ${server.port}`);

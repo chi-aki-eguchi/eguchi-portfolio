@@ -1556,6 +1556,44 @@ export default function TopPage() {
       el.style.opacity = "";
       return;
     }
+    // スクロールに合わせる動きは、使えるブラウザではスクロールそのものに結ぶ（styles.css の
+    // `[data-scroll-fx]`）。下の書き換えは、スクロールの合図を受けてから毎コマ写真の位置と
+    // 濃さを書くので、指で動かす画面に遅れて付いてくることがある（2026-10-14 オーナー
+    // 「スワイプするときにHEROがカクカクする」。iPhone 実機では未確認）。結んだ版は
+    // スクロール中に何も書かない（Chromium・WebKit で書き換え 0 回、値は同じ）。
+    // 現れる動き（.hero-photo-reveal の animation）を持つ層は、animation を上書きして
+    // しまうので、今までどおり書き換えで動かす。
+    const box = heroBoxRef.current;
+    if (
+      box &&
+      typeof ResizeObserver !== "undefined" &&
+      typeof CSS !== "undefined" &&
+      CSS.supports?.("animation-timeline: scroll()") &&
+      !el.classList.contains("hero-photo-reveal")
+    ) {
+      // 濃さは表紙の高さぶん、位置は表紙の下端が画面の上へ抜けるまで動かす。
+      // 測るのは大きさが変わったときだけ（スクロール中は何も読まない・書かない）。
+      const measure = () => {
+        const h = box.offsetHeight || 1;
+        const end = box.getBoundingClientRect().bottom + window.scrollY;
+        el.style.setProperty("--hero-fx-h", `${h}px`);
+        el.style.setProperty("--hero-fx-end", `${Math.max(h, end)}px`);
+      };
+      measure();
+      el.style.transform = "";
+      el.style.opacity = "";
+      el.dataset.scrollFx = heroScrollEffect;
+      const observer = new ResizeObserver(measure);
+      observer.observe(box);
+      window.addEventListener("resize", measure);
+      return () => {
+        observer.disconnect();
+        window.removeEventListener("resize", measure);
+        delete el.dataset.scrollFx;
+        el.style.removeProperty("--hero-fx-h");
+        el.style.removeProperty("--hero-fx-end");
+      };
+    }
     let raf = 0;
     const apply = () => {
       raf = 0;

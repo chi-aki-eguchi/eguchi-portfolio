@@ -4353,6 +4353,70 @@ body[data-texture="mist"]::before {
 .hero-fx-layer {
   will-change: transform, opacity;
 }
+/* スクロールに結んだ版（2026-10-14、top.tsx の heroScrollEffect が data-scroll-fx と
+   長さを置く）。値は書き換え版と同じ: 沈む＝位置 0.45倍・濃さ 1→0.55、
+   送る＝位置 0.5倍、薄れる＝濃さ 1→0.05（濃さは表紙の高さぶんで動き切る）。
+   長さは 1ms と書く（スクロールに結ぶと、長さは割合として読まれる）。 */
+@supports (animation-timeline: scroll()) {
+  .hero-fx-layer[data-scroll-fx] {
+    animation-duration: 1ms;
+    animation-timing-function: linear;
+    animation-fill-mode: both;
+    animation-timeline: scroll(root block);
+  }
+  .hero-fx-layer[data-scroll-fx="sink"] {
+    animation-name: hero-fx-sink-move, hero-fx-sink-dim;
+    animation-range-start: 0px, 0px;
+    animation-range-end: var(--hero-fx-end), var(--hero-fx-h);
+  }
+  .hero-fx-layer[data-scroll-fx="parallax"] {
+    animation-name: hero-fx-parallax-move;
+    animation-range-start: 0px;
+    animation-range-end: var(--hero-fx-end);
+  }
+  .hero-fx-layer[data-scroll-fx="fade"] {
+    animation-name: hero-fx-fade;
+    animation-range-start: 0px;
+    animation-range-end: var(--hero-fx-h);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hero-fx-layer[data-scroll-fx] {
+    animation: none;
+  }
+}
+@keyframes hero-fx-sink-move {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    transform: translate3d(0, calc(var(--hero-fx-end) * 0.45), 0);
+  }
+}
+@keyframes hero-fx-sink-dim {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0.55;
+  }
+}
+@keyframes hero-fx-parallax-move {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    transform: translate3d(0, calc(var(--hero-fx-end) * 0.5), 0);
+  }
+}
+@keyframes hero-fx-fade {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0.05;
+  }
+}
 
 /* Slide images — crossfade */
 .hero-slide {

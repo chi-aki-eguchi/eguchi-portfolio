@@ -1,35 +1,157 @@
+// キャッシュ名は上げない（2026-10-14）。名前を変えると activate で旧キャッシュごと消え、
+// デプロイ前から開いているタブが後から読む「ハッシュ付きの JS」まで失う（サーバーは前の
+// 版の JS を 404 で返す）。入れ物の形を変えたときだけ版を上げること。
+// （images-v1 は上限も破棄も無いまま溜め続けたので、v2 へ上げて捨てた。）
 const CACHE_STATIC = "static-v2";
-// 上限も破棄も無いまま溜め続けた images-v1 は、名前を変えることで activate 時に
-// まとめて捨てる。キャッシュの作り方を変えたら、ここの版を必ず上げること。
 const CACHE_IMAGES = "images-v2";
 const OFFLINE_URL = "/offline.html";
+const OFFLINE_SCRIPT = "/offline-recovery.js";
+const OFFLINE_FILES = new Set([OFFLINE_URL, OFFLINE_SCRIPT]);
 
 // 画像キャッシュの上限（件数）。青天井にすると端末のストレージを圧迫し、
 // ブラウザにオリジンごと丸ごと捨てられる。入れた順に古いものから捨てる。
 const MAX_IMAGE_ENTRIES = 300;
+// JS/CSS もデプロイのたびに新しいハッシュの物が増える。古い順に捨てる。
+const MAX_STATIC_ENTRIES = 200;
 
-async function putImageWithinLimit(cache, request, response) {
-  await cache.put(request, response);
-  const keys = await cache.keys();
-  const excess = keys.length - MAX_IMAGE_ENTRIES;
-  if (excess <= 0) return;
-  await Promise.all(keys.slice(0, excess).map((key) => cache.delete(key)));
+const FONT_ORIGINS = new Set(["https://fonts.googleapis.com", "https://fonts.gstatic.com"]);
+// 前段（Railway）が返す「つながらなかった」の番号。サイト自身はページでこれを返さない。
+const GATEWAY_STATUSES = new Set([502, 503, 504]);
+// 1回目がこれより速く失敗したときだけ、もう1回だけ取り直す。前段が35秒待って
+// 502 を返した後に、もう一度35秒待たせない。
+const QUICK_FAILURE_MS = 5000;
+
+// Cache Storage は無くても動く。容量・プライベートブラウズ・保存の失敗で、
+// 通信で取れた画像・CSS・ページまで失敗させない。
+async function matchCached(name, request) {
+  try {
+    return await (await caches.open(name)).match(request);
+  } catch {
+    return undefined;
+  }
 }
 
-const STATIC_PATTERNS = [/\.css(\?|$)/, /\.js(\?|$)/, /fonts\.googleapis\.com/, /fonts\.gstatic\.com/];
+async function trimCache(cache, max, keep) {
+  const keys = await cache.keys();
+  const removable = keep ? keys.filter((key) => !keep(key)) : keys;
+  const excess = removable.length - max;
+  if (excess <= 0) return;
+  await Promise.all(removable.slice(0, excess).map((key) => cache.delete(key)));
+}
 
-self.addEventListener("install", (e) => {
-  e.waitUntil(
-    caches.open(CACHE_STATIC).then((c) => c.add(OFFLINE_URL))
+function storable(response, typePattern) {
+  // 206（部分応答）や、前段の HTML のエラーページを写真・JS として残さない。
+  // no-store / private（非公開の写真など）は端末にも残さない。
+  if (response.status !== 200) return false;
+  if (!typePattern.test(response.headers.get("content-type") || "")) return false;
+  return !/no-store|private/i.test(response.headers.get("cache-control") || "");
+}
+
+async function storeImage(request, response) {
+  const cache = await caches.open(CACHE_IMAGES);
+  await cache.put(request, response);
+  await trimCache(cache, MAX_IMAGE_ENTRIES);
+}
+
+async function storeStatic(request, response) {
+  const cache = await caches.open(CACHE_STATIC);
+  await cache.put(request, response);
+  await trimCache(cache, MAX_STATIC_ENTRIES, (key) => OFFLINE_FILES.has(new URL(key.url).pathname));
+}
+
+function keepAlive(event, work) {
+  // 裏での取り直しと保存の失敗は、ここで受け止める（未処理の Promise 拒否にしない）。
+  event.waitUntil(work.catch(() => {}));
+}
+
+function abortError() {
+  return new DOMException("Aborted", "AbortError");
+}
+
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+async function recoveryPage(status) {
+  const cached = await matchCached(CACHE_STATIC, OFFLINE_URL);
+  let html;
+  try {
+    html = cached ? await cached.text() : undefined;
+  } catch {
+    // 読めなくても、下の短い案内を返す。
+  }
+  return new Response(
+    html ||
+      '<!doctype html><html lang="ja"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><title>ページを開けませんでした</title><h1>ページを開けませんでした</h1><p>通信が不安定か、サイトが一時的に応答していません。</p><a href="">もう一度読み込む</a></html>',
+    { status, headers: { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store" } },
   );
-  self.skipWaiting();
+}
+
+async function navigationResponse(request) {
+  let gatewayStatus = 0;
+  // ページの GET だけを、1回だけ取り直す。書き込み（POST 等）と API はここへ来ない。
+  // 404・500 など、サイトが返した答えはそのまま見せる（回線のせいにしない）。
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    if (request.signal?.aborted) throw abortError();
+    const started = Date.now();
+    try {
+      const response = await fetch(request);
+      if (!GATEWAY_STATUSES.has(response.status)) return response;
+      gatewayStatus = response.status;
+    } catch (error) {
+      // 利用者が取り消した移動は、取り直しも案内もしない。
+      if (request.signal?.aborted) throw error;
+    }
+    if (attempt > 0 || self.navigator?.onLine === false || Date.now() - started > QUICK_FAILURE_MS) break;
+    await sleep(400);
+  }
+  if (request.signal?.aborted) throw abortError();
+  return recoveryPage(gatewayStatus || 503);
+}
+
+// 手元にあれば手元から、無ければ通信で。どちらから来たかも返す（保存するかの判断用）。
+async function cacheFirst(name, request) {
+  const cached = await matchCached(name, request);
+  if (cached) return { response: cached, fresh: false };
+  return { response: await fetch(request), fresh: true };
+}
+
+function respondCacheFirst(event, name, typePattern, store) {
+  const { request } = event;
+  const result = cacheFirst(name, request);
+  // 寿命の延長は同期で登録する。保存と間引きで表示を待たせない。
+  keepAlive(
+    event,
+    result.then(({ response, fresh }) => {
+      if (fresh && storable(response, typePattern)) return store(request, response.clone());
+    }),
+  );
+  event.respondWith(result.then(({ response }) => response));
+}
+
+self.addEventListener("install", (event) => {
+  event.waitUntil(
+    (async () => {
+      // 前の版の案内ページが HTTP キャッシュ（1時間）から入らないよう、取り直して入れる。
+      const cache = await caches.open(CACHE_STATIC);
+      await cache.addAll(
+        [...OFFLINE_FILES].map((path) => new Request(new URL(path, self.location.origin), { cache: "reload" })),
+      );
+      await self.skipWaiting();
+    })(),
+  );
 });
 
-self.addEventListener("activate", (e) => {
-  e.waitUntil(
-    caches.keys().then((keys) =>
-      Promise.all(keys.filter((k) => k !== CACHE_STATIC && k !== CACHE_IMAGES).map((k) => caches.delete(k)))
-    )
+self.addEventListener("activate", (event) => {
+  event.waitUntil(
+    caches
+      .keys()
+      .then((keys) =>
+        Promise.all(
+          keys
+            .filter((key) => /^(static|images)-v\d+$/.test(key) && key !== CACHE_STATIC && key !== CACHE_IMAGES)
+            .map((key) => caches.delete(key)),
+        ),
+      )
+      .catch(() => {}),
   );
   // clients.claim() は呼ばない（2026-10-04）。呼ぶと、初めて来た人のページを
   // 読み込みの途中で引き取り、HTML が先読みした写真（トップの表紙 383KB、
@@ -39,51 +161,50 @@ self.addEventListener("activate", (e) => {
   // 今までどおりすぐ切り替わる（既に受け持っているページは新しい版へ移る）。
 });
 
-self.addEventListener("fetch", (e) => {
-  const url = new URL(e.request.url);
+const STATIC_TYPES = /css|javascript|font|octet-stream/i;
 
-  if (e.request.method !== "GET") return;
-  if (url.pathname.startsWith("/api/") && !url.pathname.startsWith("/api/images/")) return;
+self.addEventListener("fetch", (event) => {
+  const { request } = event;
+  if (request.method !== "GET") return;
+  const url = new URL(request.url);
+  const sameOrigin = url.origin === self.location.origin;
+  if (!sameOrigin && !FONT_ORIGINS.has(url.origin)) return;
+  if (sameOrigin && url.pathname.startsWith("/api/") && !url.pathname.startsWith("/api/images/")) return;
+  // 一部だけの取得（動画など）はブラウザに任せる。保存済みの全体を返さない。
+  if (request.headers.has("range")) return;
 
-  if (url.pathname.startsWith("/api/images/")) {
-    e.respondWith(
-      caches.open(CACHE_IMAGES).then((cache) =>
-        cache.match(e.request).then((cached) => {
-          if (cached) return cached;
-          return fetch(e.request).then((res) => {
-            // 206(部分応答)を丸ごと保存すると、次回に欠けた画像を返す。
-            if (res.status === 200) {
-              const stored = putImageWithinLimit(cache, e.request, res.clone());
-              // 保存と間引きで応答を待たせない。失敗しても表示は続ける。
-              if (e.waitUntil) e.waitUntil(stored.catch(() => {}));
-            }
-            return res;
-          });
-        })
-      )
-    );
+  // ページの移動を先に見る。`?x=a.js` のような住所のページを JS として保存しない。
+  if (sameOrigin && request.mode === "navigate") {
+    event.respondWith(navigationResponse(request));
     return;
   }
 
-  if (STATIC_PATTERNS.some((p) => p.test(url.pathname) || p.test(url.href))) {
-    e.respondWith(
-      caches.open(CACHE_STATIC).then((cache) =>
-        cache.match(e.request).then((cached) => {
-          const fetched = fetch(e.request).then((res) => {
-            const ct = res.headers.get("content-type") || "";
-            if (res.ok && !ct.includes("text/html")) cache.put(e.request, res.clone());
-            return res;
-          });
-          return cached || fetched;
-        })
-      )
-    );
+  if (sameOrigin && url.pathname.startsWith("/api/images/")) {
+    respondCacheFirst(event, CACHE_IMAGES, /^image\//i, storeImage);
     return;
   }
 
-  if (e.request.mode === "navigate") {
-    e.respondWith(
-      fetch(e.request).catch(() => caches.match(OFFLINE_URL))
-    );
+  const fonts = FONT_ORIGINS.has(url.origin);
+  if (!fonts && !/\.(css|js)$/.test(url.pathname)) return;
+
+  // ハッシュ付きの /assets/ は中身が変わらない。持っていれば通信しない。
+  if (sameOrigin && url.pathname.startsWith("/assets/")) {
+    respondCacheFirst(event, CACHE_STATIC, STATIC_TYPES, storeStatic);
+    return;
   }
+
+  // それ以外（書体・名前の変わらない JS/CSS）は、手元の物をすぐ返し、裏で取り直す。
+  const fetched = fetch(request);
+  keepAlive(
+    event,
+    fetched.then((response) => {
+      if (storable(response, STATIC_TYPES)) return storeStatic(request, response.clone());
+    }),
+  );
+  event.respondWith(
+    (async () => {
+      const cached = await matchCached(CACHE_STATIC, request);
+      return cached ?? fetched;
+    })(),
+  );
 });

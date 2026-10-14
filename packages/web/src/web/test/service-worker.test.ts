@@ -37,6 +37,7 @@ function loadWorker(fetchImpl: (req: { url: string }) => Promise<unknown>) {
   const handlers: Handlers = {};
   const cacheStore = new Map<string, FakeCache>();
   const self = {
+    location: { origin: "https://x.test" },
     addEventListener: (type: string, fn: (event: unknown) => void) => {
       handlers[type] = fn;
     },
@@ -77,7 +78,7 @@ async function requestImage(
   let responded: Promise<unknown> | undefined;
   const pending: Promise<unknown>[] = [];
   handlers.fetch?.({
-    request: { url, method: "GET", mode: "no-cors" },
+    request: { url, method: "GET", mode: "no-cors", headers: new Headers() },
     respondWith: (p: Promise<unknown>) => {
       responded = p;
     },

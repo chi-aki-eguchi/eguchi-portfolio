@@ -4,23 +4,25 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <meta name="robots" content="noindex"/>
-  <title>一時的にページを開けません</title>
+  <title>ページを開けませんでした</title>
   <style>
-    body{box-sizing:border-box;margin:0;min-height:100vh;min-height:100svh;display:flex;align-items:center;justify-content:center;font-family:Georgia,'Hiragino Mincho ProN',serif;background:#f7f7f7;color:#1a1a1a;text-align:center;padding:24px}
+    body{box-sizing:border-box;margin:0;min-height:100vh;min-height:100svh;display:flex;align-items:center;justify-content:center;font-family:'Cormorant Garamond',Georgia,'Hiragino Mincho ProN',serif;background:#f7f7f7;color:#1a1a1a;text-align:center;padding:24px}
     @media(prefers-color-scheme:dark){body{background:#121212;color:#e8e8e8}}
-    .wrap{max-width:400px}
-    h1{font-size:clamp(22px,5vw,28px);font-weight:400;line-height:1.6;margin:0 0 16px}
+    .wrap{max-width:380px}
+    h1{font-size:clamp(22px,5vw,28px);font-weight:300;letter-spacing:0.04em;line-height:1.6;margin:0 0 16px}
     p{font-size:14px;line-height:1.8;opacity:0.75;margin:0 0 24px}
-    a{display:inline-flex;align-items:center;min-height:44px;padding:0 16px;color:inherit;font-size:14px;text-underline-offset:4px}
+    #status{font-size:12px;opacity:0.6;min-height:1.8em}
+    a{display:inline-flex;align-items:center;min-height:44px;padding:0 20px;border:1px solid currentColor;color:inherit;font-size:14px;letter-spacing:0.04em;text-decoration:none}
     a:focus-visible{outline:2px solid currentColor;outline-offset:4px}
   </style>
   <script src="/offline-recovery.js" defer></script>
 </head>
 <body>
   <main class="wrap">
-    <h1>一時的にページを開けません</h1>
-    <p>通信またはサーバーへの接続に問題があります。<br>接続を確認して、再試行してください。</p>
-    <a href="" id="retry">再試行</a>
+    <h1>ページを開けませんでした</h1>
+    <p id="reason">通信が不安定か、サイトが一時的に応答していません。<br>つながり次第、このページを自動で開き直します。</p>
+    <a href="" id="retry">もう一度読み込む</a>
+    <p id="status" role="status" aria-live="polite"></p>
   </main>
 </body>
 </html>

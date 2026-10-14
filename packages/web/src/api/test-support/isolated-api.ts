@@ -27,7 +27,15 @@ const BUCKET = "isolated-test-bucket";
  * 127.0.0.1の偽物。子プロセスへは親の環境変数を渡さない（本番の接続情報が
  * 親に読み込まれていても、子には届かない）。
  */
-export async function startIsolatedApi(): Promise<IsolatedApi> {
+export async function startIsolatedApi(
+  options: {
+    /**
+     * 偽ストレージの GET の答えを差し替える（遅い・止まる・一時エラーなど）。
+     * undefined を返すと、いつもの答え（NoSuchKey）。
+     */
+    storageGet?: (key: string, req: Request) => Response | Promise<Response> | undefined;
+  } = {},
+): Promise<IsolatedApi> {
   const dir = await mkdtemp(join(tmpdir(), "portfolio-api-test-"));
   const databaseUrl = `file:${join(dir, "test.db")}`;
 
@@ -44,12 +52,16 @@ export async function startIsolatedApi(): Promise<IsolatedApi> {
   const storage = Bun.serve({
     hostname: "127.0.0.1",
     port: 0,
+    // 遅いストレージを真似る答えを、偽物の側で10秒で切らない。
+    idleTimeout: 0,
     fetch(req) {
       const path = decodeURIComponent(new URL(req.url).pathname);
       const key = path.replace(new RegExp(`^/${BUCKET}/`), "");
       storageRequests.push({ method: req.method, key });
       if (req.method === "DELETE") return new Response(null, { status: 204 });
       if (req.method === "PUT") return new Response(null, { status: 200 });
+      const custom = options.storageGet?.(key, req);
+      if (custom) return custom;
       return new Response("<Error><Code>NoSuchKey</Code></Error>", {
         status: 404,
         headers: { "content-type": "application/xml" },

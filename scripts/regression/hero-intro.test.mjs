@@ -1,4 +1,4 @@
-// Run: node --test scripts/regression/hero-intro.test.mjs
+// Run: node --test scripts/regression/hero-intro.test.mjs（元は PR #1 のテスト）
 // Needs the project's TypeScript dev dependency (or TYPESCRIPT_PATH).
 // Executes the actual component's effect with React hooks/DOM/timers mocked.
 // This checks interruption/lifetime logic, NOT browser layout or iPhone FPS.

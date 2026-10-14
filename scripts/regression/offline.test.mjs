@@ -23,7 +23,7 @@ function worker(options = {}) {
   const entries = new Map();
   const fetches = [], writes = [], deleted = [], waits = [], added = [];
   let skipCount = 0;
-  let now = 1_000_000;
+  let now = options.now ?? 1_000_000;
   const key = (r) => (typeof r === "string" ? new URL(r, origin).href : r.url);
   const cache = {
     async match(r) {
@@ -87,7 +87,7 @@ function worker(options = {}) {
       queueMicrotask(fn);
       return waits.length;
     },
-    Date: { now: () => now },
+    Date: { now: () => now, parse: Date.parse },
     URL, Request, Response, Headers, DOMException,
   };
   vm.runInNewContext(workerSource, context, { filename: "sw.js" });
@@ -326,6 +326,93 @@ test("1回目の失敗の後に取り消されたら、2回目を始めない", 
   assert.equal(w.fetches.length, 1);
 });
 
+// ── 前の版が残した保存物 ─────────────────────────────────
+for (const [label, stored] of [
+  ["非公開（private, no-store）の写真", () => image("secret", { "cache-control": "private, no-store" })],
+  ["no-store の写真", () => image("secret", { "cache-control": "no-store" })],
+  ["前段の HTML", () => new Response("<html>502</html>", { headers: { "content-type": "text/html" } })],
+]) {
+  test(`前の版が保存した${label}は返さず、その1件だけ消して通信で取り直す`, async () => {
+    const w = worker({ fetch: () => image("fresh") });
+    w.entries.set(`${origin}/api/images/a.jpg`, stored());
+    w.entries.set(`${origin}/api/images/good.jpg`, image("good"));
+    const e = w.dispatch("/api/images/a.jpg");
+    assert.equal(await (await e.response).text(), "fresh");
+    await e.settle();
+    assert.deepEqual(w.deleted, [`${origin}/api/images/a.jpg`]);
+    assert.equal(w.fetches.length, 1);
+    // 取り直した正常な写真は入れ直し、ほかの正常な写真には触らない。
+    assert.equal(await w.entries.get(`${origin}/api/images/a.jpg`).text(), "fresh");
+    assert.ok(w.entries.has(`${origin}/api/images/good.jpg`));
+  });
+}
+test("取り直した応答も非公開なら、消したまま保存しない", async () => {
+  const w = worker({ fetch: () => image("still-secret", { "cache-control": "private" }) });
+  w.entries.set(`${origin}/api/images/a.jpg`, image("secret", { "cache-control": "private" }));
+  const e = w.dispatch("/api/images/a.jpg");
+  assert.equal(await (await e.response).text(), "still-secret");
+  await e.settle();
+  assert.equal(w.entries.has(`${origin}/api/images/a.jpg`), false);
+});
+test("前の版が JS として保存した HTML は返さないが、正常な古い JS は残す", async () => {
+  const w = worker({ fetch: () => script("fresh-js") });
+  w.entries.set(`${origin}/assets/bad.js`, new Response("<html/>", { headers: { "content-type": "text/html" } }));
+  w.entries.set(`${origin}/assets/app-OLD.js`, script("old-js"));
+  const bad = w.dispatch("/assets/bad.js");
+  assert.equal(await (await bad.response).text(), "fresh-js");
+  await bad.settle();
+  const old = w.dispatch("/assets/app-OLD.js");
+  assert.equal(await (await old.response).text(), "old-js");
+  await old.settle();
+  assert.deepEqual(w.deleted, [`${origin}/assets/bad.js`]);
+});
+
+// ── Retry-After ────────────────────────────────────────
+const gatewayThenOk = (headers) => (_r, attempt) =>
+  attempt === 1 ? new Response("busy", { status: 503, headers }) : new Response("document");
+test("Retry-After（秒）が短ければ、その秒数まで待ってから取り直す", async () => {
+  const w = worker({ fetch: gatewayThenOk({ "retry-after": "1" }) });
+  const res = await w.dispatch("/about", { navigation: true }).response;
+  assert.equal(await res.text(), "document");
+  assert.deepEqual(w.waits, [1000]);
+});
+test("Retry-After（HTTP の日時）も、その時刻より早くは送らない", async () => {
+  const now = Date.parse("Thu, 15 Oct 2026 00:00:00 GMT");
+  const w = worker({ now, fetch: gatewayThenOk({ "retry-after": "Thu, 15 Oct 2026 00:00:02 GMT" }) });
+  await w.dispatch("/about", { navigation: true }).response;
+  assert.deepEqual(w.waits, [2000]);
+});
+test("過去・0秒・読めない Retry-After は、いつもの間で1回だけ", async () => {
+  for (const value of ["0", "Thu, 01 Jan 1970 00:00:00 GMT", "soon"]) {
+    const w = worker({ fetch: gatewayThenOk({ "retry-after": value }) });
+    await w.dispatch("/about", { navigation: true }).response;
+    assert.deepEqual(w.waits, [400], value);
+  }
+});
+test("Retry-After が長ければ、画面を止めて待たずに案内へ移り、案内にもその時刻を渡す", async () => {
+  const w = worker({ fetch: () => new Response("busy", { status: 503, headers: { "retry-after": "120" } }) });
+  w.entries.set(`${origin}/offline.html`, new Response("<html><head></head><body>recovery</body></html>"));
+  const res = await w.dispatch("/about", { navigation: true }).response;
+  assert.equal(res.status, 503);
+  assert.equal(w.fetches.length, 1);
+  assert.deepEqual(w.waits, []);
+  assert.match(await res.text(), /<meta name="retry-not-before" content="1120000">/);
+});
+test("Retry-After があっても、端末オフラインと取り消しでは取り直さない", async () => {
+  const off = worker({ onLine: false, fetch: () => new Response("busy", { status: 503, headers: { "retry-after": "1" } }) });
+  await off.dispatch("/about", { navigation: true }).response;
+  assert.equal(off.fetches.length, 1);
+  const controller = new AbortController();
+  const cancelled = worker({
+    fetch: () => {
+      controller.abort();
+      return new Response("busy", { status: 503, headers: { "retry-after": "1" } });
+    },
+  });
+  await assert.rejects(cancelled.dispatch("/about", { navigation: true, signal: controller.signal }).response);
+  assert.equal(cancelled.fetches.length, 1);
+});
+
 // ── 入れ替え ───────────────────────────────────────────
 test("入れ替え: 案内ページと JS を取り直して入れ、自分の古い入れ物だけ捨てる（claim しない）", async () => {
   const w = worker();
@@ -373,6 +460,10 @@ function recovery(options = {}) {
   const document = {
     visibilityState: options.hidden ? "hidden" : "visible",
     getElementById: (id) => elements[id],
+    querySelector: (selector) =>
+      selector.includes("retry-not-before") && options.notBefore
+        ? { getAttribute: () => String(options.notBefore) }
+        : null,
     addEventListener: (name, fn) => handlers.set(name, fn),
   };
   const navigator = { onLine: options.online ?? true };
@@ -380,7 +471,7 @@ function recovery(options = {}) {
     recoverySource,
     {
       window, document, navigator, location, AbortController, JSON,
-      Date: clock,
+      Date: { now: () => clock.now(), parse: Date.parse },
       sessionStorage: {
         getItem: (key) => {
           if (options.storageFails) throw new Error("SecurityError");
@@ -515,4 +606,29 @@ test("サイトへの確認は5秒で打ち切る", async () => {
   assert.equal(abortTimer[1].ms, 5000);
   assert.equal(r.reloads(), 0);
   assert.deepEqual(r.pendingProbes(), [5000]); // 打ち切られたら次の確認を待つ
+});
+
+test("案内ページは Retry-After の時刻まではサイトに問い合わせない（合図が来ても）", async () => {
+  let now = 50_000;
+  const r = recovery({ clock: { now: () => now }, notBefore: 110_000 });
+  assert.deepEqual(r.pendingProbes(), [60_000]);
+  r.emit("online");
+  r.emit("visibilitychange");
+  await flush();
+  assert.equal(r.fetches(), 0);
+  assert.deepEqual(r.pendingProbes(), [60_000]); // 確認の回数も使わない
+  now = 110_000;
+  await r.tick();
+  assert.equal(r.fetches(), 1);
+  assert.equal(r.reloads(), 1);
+});
+test("確認先が Retry-After 付きで断ったら、次の確認はその時刻まで待つ", async () => {
+  const now = 10_000;
+  const r = recovery({
+    clock: { now: () => now },
+    fetch: () => new Response("busy", { status: 503, headers: { "retry-after": "30" } }),
+  });
+  await r.tick();
+  assert.equal(r.fetches(), 1);
+  assert.deepEqual(r.pendingProbes(), [30_000]);
 });

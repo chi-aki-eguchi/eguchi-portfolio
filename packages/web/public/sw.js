@@ -20,6 +20,10 @@ const GATEWAY_STATUSES = new Set([502, 503, 504]);
 // 1回目がこれより速く失敗したときだけ、もう1回だけ取り直す。前段が35秒待って
 // 502 を返した後に、もう一度35秒待たせない。
 const QUICK_FAILURE_MS = 5000;
+// その場で取り直す前の間。Retry-After がこれより長く、MAX_INLINE_RETRY_WAIT_MS を超える
+// なら、真っ白なまま待たせずに案内ページへ移る。
+const RETRY_DELAY_MS = 400;
+const MAX_INLINE_RETRY_WAIT_MS = 2000;
 
 // Cache Storage は無くても動く。容量・プライベートブラウズ・保存の失敗で、
 // 通信で取れた画像・CSS・ページまで失敗させない。
@@ -70,13 +74,17 @@ function abortError() {
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-async function recoveryPage(status) {
+async function recoveryPage(status, notBefore = 0) {
   const cached = await matchCached(CACHE_STATIC, OFFLINE_URL);
   let html;
   try {
     html = cached ? await cached.text() : undefined;
   } catch {
     // 読めなくても、下の短い案内を返す。
+  }
+  // Retry-After の時刻を案内ページへ渡す（offline-recovery.js が読む）。
+  if (html && notBefore > Date.now()) {
+    html = html.replace("</head>", `<meta name="retry-not-before" content="${Math.round(notBefore)}"></head>`);
   }
   return new Response(
     html ||
@@ -85,8 +93,20 @@ async function recoveryPage(status) {
   );
 }
 
+/**
+ * Retry-After（秒数か HTTP の日時）を「この時刻より前に送らない」に直す。無い・読めないなら 0。
+ */
+function retryNotBefore(response, now) {
+  const value = response?.headers.get("retry-after")?.trim();
+  if (!value) return 0;
+  if (/^\d+$/.test(value)) return now + Number(value) * 1000;
+  const at = Date.parse(value);
+  return Number.isFinite(at) ? at : 0;
+}
+
 async function navigationResponse(request) {
   let gatewayStatus = 0;
+  let notBefore = 0;
   // ページの GET だけを、1回だけ取り直す。書き込み（POST 等）と API はここへ来ない。
   // 404・500 など、サイトが返した答えはそのまま見せる（回線のせいにしない）。
   for (let attempt = 0; attempt < 2; attempt += 1) {
@@ -96,27 +116,48 @@ async function navigationResponse(request) {
       const response = await fetch(request);
       if (!GATEWAY_STATUSES.has(response.status)) return response;
       gatewayStatus = response.status;
+      notBefore = retryNotBefore(response, Date.now());
     } catch (error) {
       // 利用者が取り消した移動は、取り直しも案内もしない。
       if (request.signal?.aborted) throw error;
     }
     if (attempt > 0 || self.navigator?.onLine === false || Date.now() - started > QUICK_FAILURE_MS) break;
-    await sleep(400);
+    // Retry-After より早くは送らない。指示が長ければ、ここで画面を止めずに案内へ移る
+    // （案内ページも、その時刻まではサイトに問い合わせない）。
+    const wait = Math.max(RETRY_DELAY_MS, notBefore - Date.now());
+    if (wait > MAX_INLINE_RETRY_WAIT_MS) break;
+    await sleep(wait);
   }
   if (request.signal?.aborted) throw abortError();
-  return recoveryPage(gatewayStatus || 503);
+  return recoveryPage(gatewayStatus || 503, notBefore);
 }
 
 // 手元にあれば手元から、無ければ通信で。どちらから来たかも返す（保存するかの判断用）。
-async function cacheFirst(name, request) {
+// 保存済みの応答も、いま保存してよい物かを確かめてから返す。前の版の sw.js は 200 なら
+// 何でも images-v2 に入れていたので、非公開（private / no-store）の写真や前段の HTML が
+// 残っていることがある。合わない1件だけを捨てて通信で取り直す（入れ物ごとは消さない。
+// 正常な写真と、開いているタブが後から読む JS は残す）。
+async function cachedIfValid(name, request, typePattern) {
   const cached = await matchCached(name, request);
+  if (!cached) return undefined;
+  if (storable(cached, typePattern)) return cached;
+  try {
+    await (await caches.open(name)).delete(request);
+  } catch {
+    // 消せなくても、使わずに通信で取り直す。
+  }
+  return undefined;
+}
+
+async function cacheFirst(name, request, typePattern) {
+  const cached = await cachedIfValid(name, request, typePattern);
   if (cached) return { response: cached, fresh: false };
   return { response: await fetch(request), fresh: true };
 }
 
 function respondCacheFirst(event, name, typePattern, store) {
   const { request } = event;
-  const result = cacheFirst(name, request);
+  const result = cacheFirst(name, request, typePattern);
   // 寿命の延長は同期で登録する。保存と間引きで表示を待たせない。
   keepAlive(
     event,
@@ -203,7 +244,7 @@ self.addEventListener("fetch", (event) => {
   );
   event.respondWith(
     (async () => {
-      const cached = await matchCached(CACHE_STATIC, request);
+      const cached = await cachedIfValid(CACHE_STATIC, request, STATIC_TYPES);
       return cached ?? fetched;
     })(),
   );

@@ -99,7 +99,7 @@ function imageFetch(status = 200) {
     ok: status >= 200 && status < 300,
     headers: { get: () => "image/webp" },
     clone() {
-      return { url: req.url, status };
+      return { url: req.url, status, headers: { get: () => "image/webp" } };
     },
   });
 }

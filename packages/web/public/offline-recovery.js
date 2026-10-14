@@ -13,6 +13,8 @@
   const page = location.pathname + location.search + location.hash;
   const status = document.getElementById("status");
   const reason = document.getElementById("reason");
+  // Retry-After の時刻（sw.js が meta で渡す）。これより前はサイトに問い合わせない。
+  let notBefore = Number(document.querySelector('meta[name="retry-not-before"]')?.getAttribute("content")) || 0;
   let attempt = 0;
   let timer = 0;
   let busy = false;
@@ -55,13 +57,19 @@
       say("自動の確認を止めました。つながったら「もう一度読み込む」を押してください。");
       return;
     }
-    timer = window.setTimeout(probe, BACKOFF_MS[attempt]);
+    timer = window.setTimeout(probe, Math.max(BACKOFF_MS[attempt], notBefore - Date.now()));
     attempt += 1;
   }
 
   async function probe() {
     if (busy || reloading) return;
     if (document.visibilityState === "hidden") return; // 戻ってきたときに確かめる
+    if (Date.now() < notBefore) {
+      // online・表示の合図でも、指示の時刻より早くは問い合わせない（確認の回数も使わない）。
+      window.clearTimeout(timer);
+      timer = window.setTimeout(probe, notBefore - Date.now());
+      return;
+    }
     if (navigator.onLine === false) {
       if (reason) reason.textContent = "この端末がインターネットにつながっていないようです。つながると自動で開き直します。";
       return; // online の合図を待つ
@@ -82,6 +90,11 @@
     try {
       const response = await fetch("/api/health", { cache: "no-store", signal: controller.signal });
       healthy = response.ok && (response.headers.get("content-type") || "").includes("application/json");
+      const after = response.headers.get("retry-after")?.trim();
+      if (!healthy && after) {
+        const at = /^\d+$/.test(after) ? Date.now() + Number(after) * 1000 : Date.parse(after);
+        if (Number.isFinite(at)) notBefore = Math.max(notBefore, at);
+      }
     } catch {
       // まだつながらない。次の確認を待つ。
     } finally {

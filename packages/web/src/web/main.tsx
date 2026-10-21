@@ -9,11 +9,15 @@ import { seedBootSettings } from "./lib/boot-settings";
 import { ADMIN_DEMO_PREVIEW_PARAM } from "./lib/admin-demo-data";
 import { installAdminDemoFetch } from "./lib/admin-demo-fetch";
 import { loadPhotos } from "./lib/early-photos";
+import { installImageRetry } from "./lib/image-retry";
 
 const demoPreviewSeed = new URLSearchParams(window.location.search).get(
 	ADMIN_DEMO_PREVIEW_PARAM,
 );
 if (demoPreviewSeed) installAdminDemoFetch(demoPreviewSeed);
+
+// 写真の一時的な取り寄せ失敗（503 など）は、少し待って取り直す（lib/image-retry.ts）。
+installImageRetry();
 
 const queryClient = new QueryClient({
 	defaultOptions: {

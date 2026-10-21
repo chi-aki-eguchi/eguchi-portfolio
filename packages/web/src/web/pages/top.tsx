@@ -176,8 +176,10 @@ function ClassicHeroNameBlock({
           className="font-en tracking-[0.10em] mt-1 break-words hero-text-reveal hero-text-reveal-3"
           style={{
             fontSize: responsiveNameSize("--hero-sub-size", "0.75rem", tone, 12, 3, 4),
+            // 肩書き（写真学生）は依頼する人が最初に読む言葉。0.62 だと明るい写真の上で
+            // ほぼ読めなかった（2026-10-21 本番のスマホ）。英名と同じ濃さにする。
             color: overPhoto
-              ? `var(--hero-photo-sub-color, ${overPhotoFallbackInk(settings, 0.62)})`
+              ? `var(--hero-photo-sub-color, ${overPhotoFallbackInk(settings, 0.82)})`
               : "var(--hero-sub-color, var(--text-quiet))",
             textShadow: shadow(overPhotoPartColor(settings, settings?.heroSubColor), 12),
           }}
@@ -855,8 +857,10 @@ function HeroNameBlock({
           className="font-en tracking-[0.10em] mt-1 break-words hero-text-reveal hero-text-reveal-3"
           style={{
             fontSize: responsiveNameSize("--hero-sub-size", "0.75rem", tone, 12, 3, 4),
+            // 肩書き（写真学生）は依頼する人が最初に読む言葉。0.62 だと明るい写真の上で
+            // ほぼ読めなかった（2026-10-21 本番のスマホ）。英名と同じ濃さにする。
             color: overPhoto
-              ? `var(--hero-photo-sub-color, ${overPhotoFallbackInk(settings, 0.62)})`
+              ? `var(--hero-photo-sub-color, ${overPhotoFallbackInk(settings, 0.82)})`
               : "var(--hero-sub-color, var(--text-quiet))",
             textShadow: shadow(overPhotoPartColor(settings, settings?.heroSubColor), 12),
           }}

@@ -213,6 +213,35 @@ describe("injectOgp robots policy", () => {
     expect(robotsOf(injectOgp(page, { siteDesign: "develop" }, "/gallery"))).toBe("index, follow");
     expect(robotsOf(injectOgp(page, { siteDesign: "develop" }, "/no-such-page"))).toBe("noindex, nofollow");
   });
+  test("Info を共有すると料金の入った Contact の説明、扉の写真はそのページの物", () => {
+    const withImage = page.replace("</head>", '<meta property="og:image" content="x" />\n</head>');
+    const descOf = (html: string) => html.match(/<meta name="description" content="([^"]*)"/)?.[1] ?? "";
+    const imageOf = (html: string) => html.match(/<meta property="og:image" content="([^"]*)"/)?.[1] ?? "";
+    const settings = {
+      siteDesign: "develop",
+      siteName: "江口秋",
+      siteDescription: "江口秋の写真ポートフォリオ。",
+      metaDescriptionContact: "ポートレート撮影。60分 ¥10,000。",
+    };
+    expect(descOf(injectOgp(withImage, settings, "/info"))).toBe("ポートレート撮影。60分 ¥10,000。");
+    // Contact の説明が空のサイトでも、サイト全体の一文ではなく Info の定型文。
+    expect(descOf(injectOgp(withImage, { ...settings, metaDescriptionContact: "" }, "/info"))).toBe(
+      "江口秋のプロフィールと連絡先ページ。",
+    );
+    // 扉の写真（server.ts が override.image で渡す）が表紙の写真より優先される。
+    const portrait = injectOgp(withImage, settings, "/portrait", "/api/images/medium/cover.webp", {
+      image: "/api/images/medium/person.webp",
+      imageRotationDeg: 0,
+    });
+    expect(imageOf(portrait)).toContain("/api/images/medium/person.webp?w=1200");
+    expect(imageOf(injectOgp(withImage, settings, "/portrait", "/api/images/medium/cover.webp"))).toContain(
+      "/api/images/medium/cover.webp?w=1200",
+    );
+    // 題名・説明・robots は写真を渡しても今までどおり。
+    expect(portrait).toContain("<title>Portrait | ");
+    expect(descOf(portrait)).toBe("江口秋の写真ポートフォリオ。");
+    expect(robotsOf(portrait)).toBe("index, follow");
+  });
 
   test("admin and unknown paths are noindex", () => {
     expect(robotsOf(injectOgp(page, {}, "/admin"))).toBe("noindex, nofollow");

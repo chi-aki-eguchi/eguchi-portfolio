@@ -24,7 +24,11 @@ import {
   shouldRedirectEmptyWorkShelf,
 } from "./api/public-routes";
 import { contentTypeForStaticPath } from "./api/static-files";
-import { isDevelopDesignValue } from "./shared/develop-structure";
+import {
+  developListPhotos,
+  isDevelopDesignValue,
+  type DevelopListKind,
+} from "./shared/develop-structure";
 import { bootThemeStyle } from "./api/boot-style";
 import { bootSettingsScript } from "./api/boot-settings";
 import { earlyPhotosScript } from "./shared/early-photos";
@@ -396,6 +400,52 @@ async function getSeriesOg(slug: string): Promise<SeriesOg | null> {
     console.error("[OGP] series fetch failed:", e); /* fall back to generic */
   }
   seriesOgCache.set(slug, { data, ts: now });
+  return data;
+}
+
+// 新しい構成の扉（/portrait・/life）を共有したときの写真（2026-10-23）。それまでは
+// どの扉も表紙の写真（本番は石の写真）で、Portrait の住所を X や note に貼っても人の写真が
+// 出なかった。トップの扉の写真と同じく、そのページの最初の1枚にする（管理画面の並び、
+// 選んだ写真があればその順。DevelopHome.tsx・develop-list.tsx と同じ developListPhotos）。
+// 60秒キャッシュ。失敗・該当なしは null（呼び出し側は表紙の写真のまま）。
+const doorOgCache = new Map<string, { data: ImageRef | null; ts: number }>();
+async function getDoorOgImage(
+  kind: DevelopListKind,
+  picked: string | undefined,
+): Promise<ImageRef | null> {
+  const key = `${kind}:${picked ?? ""}`;
+  const now = Date.now();
+  const cached = doorOgCache.get(key);
+  if (cached && now - cached.ts < SETTINGS_TTL) return cached.data;
+  let data: ImageRef | null = null;
+  try {
+    const rows = await withRetry(() =>
+      db
+        .select({
+          id: schema.photos.id,
+          category: schema.photos.category,
+          url: schema.photos.url,
+          thumbKey: schema.photos.thumbKey,
+          mediumKey: schema.photos.mediumKey,
+          width: schema.photos.width,
+          height: schema.photos.height,
+          rotationDeg: schema.photos.rotationDeg,
+        })
+        .from(schema.photos)
+        .where(
+          and(
+            isNull(schema.photos.deletedAt),
+            eq(schema.photos.isPublished, true),
+          ),
+        )
+        .orderBy(schema.photos.sortOrder, schema.photos.id),
+    );
+    const first = developListPhotos(kind, rows, picked)[0];
+    data = first ? socialSourceForPhoto(first) : null;
+  } catch (e) {
+    console.error("[OGP] door photo fetch failed:", e); /* keep the cover photo */
+  }
+  doorOgCache.set(key, { data, ts: now });
   return data;
 }
 
@@ -1021,6 +1071,22 @@ async function serveNonApi(request: Request, url: URL): Promise<Response> {
           image: og.image || undefined,
           imageRotationDeg: og.imageRotationDeg,
         };
+      }
+    }
+    // 新しい構成の扉は、共有の写真をそのページの物にする（getDoorOgImage の説明）。Info は
+    // トップの扉と同じプロフィールの写真。題名と説明は今までどおり ogp.ts が決める。
+    if (!override && isDevelopDesignValue(settings.siteDesign)) {
+      if (routePathname === "/portrait" || routePathname === "/life") {
+        const door = await getDoorOgImage(
+          routePathname === "/portrait" ? "portrait" : "life",
+          routePathname === "/portrait"
+            ? settings.developPortraitIds
+            : settings.developLifeIds,
+        );
+        if (door?.url)
+          override = { image: door.url, imageRotationDeg: door.rotationDeg };
+      } else if (routePathname === "/info" && settings.profilePhotoUrl) {
+        override = { image: settings.profilePhotoUrl };
       }
     }
     let injected = injectOgp(

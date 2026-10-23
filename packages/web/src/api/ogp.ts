@@ -158,6 +158,10 @@ const META_DESCRIPTION_KEYS: Record<string, string> = {
   // genericPageDescription側で英文フォールバックを出す)。
   "/en/about": "metaDescriptionAbout",
   "/en/contact": "metaDescriptionContact",
+  // 新しい構成の Info は自己紹介・料金・依頼フォームのページ（Contact をそのまま含む）。
+  // 依頼の住所として共有されるので、料金の入った Contact の説明に相乗りする（2026-10-23。
+  // それまではサイト全体の一文「江口秋の写真ポートフォリオ。」が出ていた）。
+  "/info": "metaDescriptionContact",
 };
 
 // Generic per-page description used when the corresponding admin setting is
@@ -180,6 +184,8 @@ function genericPageDescription(
       return `${name}のプロフィールページ。`;
     case "/contact":
       return `${name}への連絡先ページ。`;
+    case "/info":
+      return `${name}のプロフィールと連絡先ページ。`;
     case "/en/about":
       return `${displayNameEnFrom(settings)}'s profile page.`;
     case "/en/contact":

@@ -46,7 +46,7 @@
 .dv-door {
   flex: 1 1 auto;
   display: grid;
-  grid-template-columns: 2.5rem minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: baseline;
   /* 広がった行の中では、文字を上下の真ん中に（文字どうしは今までどおり底をそろえる）。 */
   align-content: center;
@@ -61,11 +61,6 @@
 .dv-door:hover,
 .dv-door:focus-visible {
   color: var(--foreground);
-}
-.dv-door__no {
-  font-size: 0.8125rem;
-  letter-spacing: 0.14em;
-  font-variant-numeric: lining-nums;
 }
 .dv-door__title {
   font-size: clamp(2.25rem, 4.6vw, 4.25rem);
@@ -165,11 +160,6 @@ body[data-reveal="none"] .dv-stage__img {
   font-size: 1.125rem;
   letter-spacing: 0.04em;
 }
-.dv-archive__note {
-  font-size: 0.8125rem;
-  letter-spacing: 0.08em;
-  color: rgba(var(--foreground-rgb), 0.6);
-}
 
 /* ── 撮影依頼の帯（トップ・Portrait・Life の最後）──────────────
    帯は自分の幅（62rem）で真ん中に寄るので、広い画面では上の写真・「すべての写真」と左端が
@@ -240,7 +230,7 @@ body[data-reveal="none"] .dv-stage__img {
     display: none;
   }
   .dv-door {
-    grid-template-columns: 2rem minmax(0, 1fr) auto;
+    grid-template-columns: minmax(0, 1fr) auto;
     row-gap: 0.5rem;
     padding: 0;
     margin-bottom: var(--dv-door-gap);

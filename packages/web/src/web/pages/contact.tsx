@@ -578,14 +578,7 @@ export default function ContactPage({
               );
             })}
           </div>
-          <p
-            className="text-center mt-10 md:mt-12 text-[color:var(--text-quiet)] page-entrance page-entrance-delay-2"
-            style={{ fontSize: "var(--body-size, 0.85rem)" }}
-          >
-            {language === "en"
-              ? "For inquiries or requests, please use the form below."
-              : "ご依頼・ご相談は下記フォームよりお気軽にどうぞ。"}
-          </p>
+          {/* 料金のすぐ下がフォーム。「下記フォームより」の一文は置かない（並びで分かる。2026-10-23）。 */}
         </section>
       )}
 
@@ -1024,7 +1017,6 @@ export default function ContactPage({
           <section className="contact-inquiry mt-12 border-t border-[rgba(var(--foreground-rgb),0.12)] pt-8" aria-labelledby="photography-inquiry-heading">
             <h2 id="photography-inquiry-heading" className="text-lg leading-8"><JaPhrases>{photographyInquiry.title}</JaPhrases></h2>
             <p className="mt-4 leading-[1.75] text-[color:var(--text-quiet)] text-pretty"><JaPhrases>{photographyInquiry.intro}</JaPhrases></p>
-            <p className="mt-4 text-sm leading-7"><a href="/gallery" className="underline underline-offset-4">写真を見る</a> ／ <a href="/about" className="underline underline-offset-4">撮り手について</a></p>
             {/* 質問は畳んでおき、押した1つだけ答えを開く（2026-10-07、オーナー
                 「もっとシンプルに」）。3つとも開いていると、フォームより長い文が
                 その下に続いていた。答えは DOM に残るので、読み上げ・検索は今までどおり。 */}

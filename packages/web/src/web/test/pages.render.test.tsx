@@ -3259,7 +3259,7 @@ describe("i18n Phase 3 slice 1: /en/about, /en/contact", () => {
     cleanup();
   });
 
-  test("English ContactPage shows an English pricing lead-in when plans are published", async () => {
+  test("ContactPage puts the form right after the plans, without a 'use the form below' line", async () => {
     const prevPricing = canned["/api/pricing"];
     canned["/api/pricing"] = {
       plans: [
@@ -3278,7 +3278,8 @@ describe("i18n Phase 3 slice 1: /en/about, /en/contact", () => {
       const { host, cleanup } = await mount(
         createElement(ContactPage, { language: "en" }),
       );
-      expect(host.textContent).toContain(
+      expect(host.textContent).toContain("¥30,000");
+      expect(host.textContent).not.toContain(
         "For inquiries or requests, please use the form below.",
       );
       expect(host.textContent).not.toContain(

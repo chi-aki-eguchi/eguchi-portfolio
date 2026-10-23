@@ -547,7 +547,8 @@ test("新しい構成 › 写真は幅を使い切り、余白は区切りにだ
       };
     });
     expect(menu.heights.length).toBeGreaterThanOrEqual(3);
-    expect(menu.notes).toBe(menu.heights.length);
+    // 添え書きは初めは無し（扉の名前だけ。2026-10-23）。
+    expect(menu.notes).toBe(0);
     expect(Math.max(...menu.heights) - Math.min(...menu.heights)).toBeLessThanOrEqual(1);
     expect(Math.min(...menu.heights)).toBeGreaterThanOrEqual(72);
     expect(menu.top).toBeLessThanOrEqual(2);
@@ -924,7 +925,7 @@ test("新しい構成 › Info は、短い自己紹介 → 料金と依頼 → 
       h1: document.querySelectorAll("main h1").length,
     };
   });
-  // 扉の添え書きは「料金と依頼」。自己紹介のすぐ後に依頼が来て、プリントの案内はその後。
+  // 自己紹介のすぐ後に料金と依頼が来て、プリントの案内はその後。
   expect(order.intro).not.toBeNull();
   expect(order.contact!).toBeGreaterThan(order.intro!);
   expect(order.more!).toBeGreaterThan(order.contact!);
@@ -965,8 +966,8 @@ test("新しい構成 › 扉の名前を変えると、メニュー・トップ
     })),
   );
   expect(doors.find((d) => d.href === "/portrait")).toEqual({ href: "/portrait", title: "People", note: "ポートレート撮影" });
-  expect(doors.find((d) => d.href === "/life")).toEqual({ href: "/life", title: "Life", note: "日常の写真" });
-  expect(doors.find((d) => d.href === "/info")).toEqual({ href: "/info", title: "依頼", note: "" });
+  expect(doors.find((d) => d.href === "/life")).toEqual({ href: "/life", title: "Life", note: undefined });
+  expect(doors.find((d) => d.href === "/info")).toEqual({ href: "/info", title: "依頼", note: undefined });
   // メニュー（PC は並んでいる項目、スマホは開いたメニュー）。
   if (phone) {
     await page.locator('button[aria-controls="mobile-menu"]:visible').first().click();

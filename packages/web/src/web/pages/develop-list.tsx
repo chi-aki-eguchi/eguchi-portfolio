@@ -89,7 +89,6 @@ export default function DevelopListPage({ kind }: { kind: DevelopListKind }) {
         <p className="dv-archive">
           <Link to="/gallery" className="dv-archive__link">
             <span className="font-en">{settings?.navLabelGallery || "Gallery"}</span>
-            <span className="dv-archive__note">すべての写真</span>
             <span className="dv-archive__arrow font-en" aria-hidden="true">
               →
             </span>

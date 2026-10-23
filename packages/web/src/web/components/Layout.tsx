@@ -960,7 +960,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
         {/* Closed links stay inert; the open menu uses the remaining viewport. */}
         <div id="mobile-menu" inert={!mobileOpen} className="public-mobile-menu md:hidden">
-          {navItems.map(({ href, label, door, note }, i) => (
+          {navItems.map(({ href, label, door, note }) => (
             <Link
               key={href}
               to={href}
@@ -987,9 +987,6 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             >
               {door ? (
                 <>
-                  <span className="public-mobile-menu__no" aria-hidden="true">
-                    {String(i + 1).padStart(2, "0")}
-                  </span>
                   <span className="public-mobile-menu__label">{label}</span>
                   {note && <span className="public-mobile-menu__note font-ja">{note}</span>}
                 </>
@@ -1012,9 +1009,6 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                   }}
                 >
                   {data?.navLabelGallery || "Gallery"}
-                  <span className="public-mobile-menu__note font-ja">
-                    {isEnglishChrome ? "All photographs" : "すべての写真"}
-                  </span>
                   <span aria-hidden="true">→</span>
                 </Link>
               )}

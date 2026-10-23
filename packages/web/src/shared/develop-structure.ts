@@ -22,16 +22,17 @@ export type DevelopListKind = "portrait" | "life";
  *
  * 初めの値は下のとおり。管理画面の「ページの写真」→「扉の名前」で変えられ、設定 `developDoors` に
  * JSON で入る：`{"portrait":["Portrait","人を撮る"], …}`（変えた扉だけ入れる。空なら全部初めの値）。
+ * 添え書きは初めは無し（2026-10-23）。扉の写真と名前で行き先は分かるので、言葉を足さない。
  * メニュー・トップの扉の目次・スマホのメニュー・ページの見出し・検索や共有に出る題名が、同じ言葉を使う。
  */
 export type DevelopDoorKey = "portrait" | "life" | "series" | "info";
 export type DevelopDoorCopy = Record<DevelopDoorKey, { label: string; note: string }>;
 export const DEVELOP_DOOR_KEYS: readonly DevelopDoorKey[] = ["portrait", "life", "series", "info"];
 export const DEVELOP_DOOR_DEFAULTS: DevelopDoorCopy = {
-  portrait: { label: "Portrait", note: "人を撮る" },
-  life: { label: "Life", note: "日常の写真" },
-  series: { label: "Series", note: "まとまった作品" },
-  info: { label: "Info", note: "料金と依頼" },
+  portrait: { label: "Portrait", note: "" },
+  life: { label: "Life", note: "" },
+  series: { label: "Series", note: "" },
+  info: { label: "Info", note: "" },
 };
 /** 名前は 24 文字、添え書きは 30 文字まで（メニューの1行に収まる長さ）。 */
 export const DEVELOP_DOOR_LABEL_MAX = 24;

@@ -31,7 +31,7 @@ header[data-mobile-menu-open="true"] .public-mobile-menu {
 /* ─── 新しい構成（develop）のメニュー：扉の目次を画面いっぱいに（2026-10-12）───
    今までの形のままだと、項目が4つしか無いので上の 240px に寄り、開いた画面の下6割
    （390×664 で約 340px）が何も無い空きになっていた（本番を撮って確認。オーナー「無駄な余白
-   だったり謎の余白が多い」）。トップの扉の目次と同じ形（番号・大きな名前・添え書き・罫）にして、
+   だったり謎の余白が多い」）。トップの扉の目次と同じ形（大きな名前・添え書き・罫）にして、
    扉の行で高さを均等に分け合う。下の縁に、すべての写真（Gallery）と SNS を置く。 */
 [data-site-design="develop"] header[data-mobile-menu-open="true"] .public-mobile-menu {
   gap: 0;
@@ -40,7 +40,7 @@ header[data-mobile-menu-open="true"] .public-mobile-menu {
 }
 .public-mobile-menu__link[data-door] {
   display: grid;
-  grid-template-columns: 2rem minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: baseline;
   align-content: center;
   column-gap: 1rem;
@@ -53,7 +53,6 @@ header[data-mobile-menu-open="true"] .public-mobile-menu {
   opacity: 1;
   border-bottom: 1px solid rgba(var(--foreground-rgb), 0.14);
 }
-.public-mobile-menu__no,
 .public-mobile-menu__note {
   font-size: 0.8125rem;
   line-height: 1.5;
@@ -61,7 +60,7 @@ header[data-mobile-menu-open="true"] .public-mobile-menu {
   color: rgba(var(--foreground-rgb), 0.6);
   font-variant-numeric: lining-nums;
 }
-/* 今いる扉の印は、名前にだけ引く（行ごと下線にすると、番号と添え書きにも線が付く）。 */
+/* 今いる扉の印は、名前にだけ引く（行ごと下線にすると、添え書きにも線が付く）。 */
 .public-mobile-menu__link[data-door][aria-current="page"] {
   text-decoration: none;
 }

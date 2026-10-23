@@ -337,6 +337,7 @@ test.describe("admin — ページの写真（選んで並べる）", () => {
   });
 
   test("扉の名前：変えるとその場で保存され、タブの名前も変わる。空にすると初めの名前に戻る", async ({ page }) => {
+    // 添え書きは初めは空（2026-10-23）。足したいときだけ書く。
     const mocks = await installMocks(page);
     await open(page);
     const doors = page.locator(".pp-doors");
@@ -346,7 +347,7 @@ test.describe("admin — ページの写真（選んで並べる）", () => {
     const label = doors.locator('[data-pp-door="portrait"] [data-pp-door-label]');
     const note = doors.locator('[data-pp-door="portrait"] [data-pp-door-note]');
     await expect(label).toHaveValue("Portrait");
-    await expect(note).toHaveValue("人を撮る");
+    await expect(note).toHaveValue("");
     // スマホで押しても画面が拡大しない字の大きさ・押しやすい高さ。
     if (page.viewportSize()!.width < 640) {
       const box = await label.evaluate((el) => ({ font: parseFloat(getComputedStyle(el).fontSize), h: el.getBoundingClientRect().height }));
@@ -358,27 +359,27 @@ test.describe("admin — ページの写真（選んで並べる）", () => {
     // 名前を変える → 欄を出ると保存。変えた扉だけが入る。
     await label.fill("People");
     await label.press("Enter");
-    await expect.poll(() => mocks.saved.at(-1)).toEqual({ developDoors: JSON.stringify({ portrait: ["People", "人を撮る"] }) });
+    await expect.poll(() => mocks.saved.at(-1)).toEqual({ developDoors: JSON.stringify({ portrait: ["People", ""] }) });
     await expect(page.locator('[data-pp-tab="portrait"]')).toContainText("People");
     await expect(page.locator(".pp-toast[data-show]")).toContainText("扉の名前を変えました");
 
-    // 添え書きは空にできる。
-    await note.fill("");
+    // 添え書きを足す。
+    await note.fill("人を撮る");
     await note.blur();
-    await expect.poll(() => mocks.saved.at(-1)).toEqual({ developDoors: JSON.stringify({ portrait: ["People", ""] }) });
+    await expect.poll(() => mocks.saved.at(-1)).toEqual({ developDoors: JSON.stringify({ portrait: ["People", "人を撮る"] }) });
 
     // 名前を空にして出ると、初めの名前に戻る（名前の無い扉は作らない）。
     const before = mocks.saved.length;
     await label.fill("   ");
     await label.blur();
     await expect(label).toHaveValue("Portrait");
-    await expect.poll(() => mocks.saved.at(-1)).toEqual({ developDoors: JSON.stringify({ portrait: ["Portrait", ""] }) });
+    await expect.poll(() => mocks.saved.at(-1)).toEqual({ developDoors: JSON.stringify({ portrait: ["Portrait", "人を撮る"] }) });
     expect(mocks.saved.length).toBe(before + 1);
 
     // 初めの名前に戻す。
     await doors.getByRole("button", { name: "初めの名前に戻す" }).click();
     await expect.poll(() => mocks.saved.at(-1)).toEqual({ developDoors: "" });
-    await expect(note).toHaveValue("人を撮る");
+    await expect(note).toHaveValue("");
     await expect(doors.getByRole("button", { name: "初めの名前に戻す" })).toHaveCount(0);
   });
 

@@ -30,8 +30,6 @@ export type DevelopDoor = {
 };
 
 
-const pad = (n: number) => String(n).padStart(2, "0");
-
 /**
  * 扉の並び。Series は公開しているシリーズか実例があるときだけ（メニューと同じ条件）。
  * それぞれの扉の写真は、その先のページの最初の1枚。
@@ -113,9 +111,8 @@ function Doors({ doors }: { doors: DevelopDoor[] }) {
                   />
                 </span>
               )}
-              <span className="dv-door__no font-en">{pad(i + 1)}</span>
               <span className="dv-door__title font-en">{door.title}</span>
-              <span className="dv-door__note">{door.note}</span>
+              {door.note && <span className="dv-door__note">{door.note}</span>}
             </Link>
           </li>
         ))}
@@ -204,7 +201,6 @@ export function DevelopHome({
         <p className="dv-archive">
           <Link to="/gallery" className="dv-archive__link">
             <span className="font-en">{settings?.navLabelGallery || "Gallery"}</span>
-            <span className="dv-archive__note">すべての写真</span>
             <span className="dv-archive__arrow font-en" aria-hidden="true">
               →
             </span>

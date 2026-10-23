@@ -91,13 +91,13 @@ describe("扉の名前と添え書き", () => {
   test("保存する文字列：初めの値のままなら空。変えた扉だけを入れ、読み戻すと同じ", () => {
     expect(serializeDevelopDoors(developDoorCopy(""))).toBe("");
     const copy = developDoorCopy("");
-    copy.portrait = { label: " People ", note: "" };
+    copy.portrait = { label: " People ", note: " 人を撮る " };
     const saved = serializeDevelopDoors(copy);
-    expect(JSON.parse(saved)).toEqual({ portrait: ["People", ""] });
-    expect(developDoorCopy(saved).portrait).toEqual({ label: "People", note: "" });
+    expect(JSON.parse(saved)).toEqual({ portrait: ["People", "人を撮る"] });
+    expect(developDoorCopy(saved).portrait).toEqual({ label: "People", note: "人を撮る" });
     expect(developDoorCopy(saved).life).toEqual(DEVELOP_DOOR_DEFAULTS.life);
     // 名前を空にして保存しようとしても、初めの名前に戻る（＝変えていないので入らない）。
-    copy.portrait = { label: "", note: "人を撮る" };
+    copy.portrait = { label: "", note: "" };
     expect(serializeDevelopDoors(copy)).toBe("");
   });
 });

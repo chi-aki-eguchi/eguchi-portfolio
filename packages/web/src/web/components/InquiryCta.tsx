@@ -1,7 +1,9 @@
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { api, jsonOrThrow } from "../lib/api";
+import { siteDesignFrom, usesDevelopStructure } from "../lib/book";
 import { useScrollFadeIn } from "../hooks/useScrollFadeIn";
+import { DEVELOP_INQUIRY_HREF } from "../../shared/develop-structure";
 import { JaPhrases } from "./JaPhrases";
 
 /**
@@ -20,6 +22,7 @@ export function InquiryCta({
     queryFn: async () => jsonOrThrow(await api.settings.$get()),
   });
   const ref = useScrollFadeIn([data?.homeCtaEnabled]);
+  const [location] = useLocation();
 
   if ((data?.homeCtaEnabled ?? "off") !== "on") return null;
 
@@ -36,6 +39,12 @@ export function InquiryCta({
     ? "Portraits, editorial work, and collaborations are welcome."
     : data?.homeCtaText || "";
   const button = english ? "Get in touch" : data?.homeCtaButton || "お問い合わせ";
+  // 新しい構成では、メニューと同じ Info の料金と依頼フォームへ（DEVELOP_INQUIRY_HREF の説明）。
+  const href = english
+    ? "/en/contact"
+    : usesDevelopStructure(siteDesignFrom(data?.siteDesign), location)
+      ? DEVELOP_INQUIRY_HREF
+      : "/contact";
 
   return (
     <section lang={language} className="inquiry-note" ref={ref}>
@@ -43,7 +52,7 @@ export function InquiryCta({
         <h2 className="break-words"><JaPhrases>{title}</JaPhrases></h2>
         {text && <p className="break-words"><JaPhrases>{text}</JaPhrases></p>}
       </div>
-      <Link to={english ? "/en/contact" : "/contact"} className="inquiry-note__link section-reveal">
+      <Link to={href} className="inquiry-note__link section-reveal">
         {button}
       </Link>
     </section>

@@ -301,8 +301,11 @@ export function publicPageFallbackText(
   }
   // 撮影依頼のページ。設定にある依頼の流れと但し書きは、**頼もうとしている人が
   // 探している言葉そのもの**なのに、これまで HTML に一文字も出ていなかった。
-  if (pathname === "/contact" || pathname === "/en/contact") {
+  // 新しい構成の Info は自己紹介と依頼を1ページにまとめたもの（develop-info.tsx）なので、
+  // 自己紹介の後に同じ依頼の段落を出す（2026-10-24。それまでは説明文の1行だけだった）。
+  if (pathname === "/contact" || pathname === "/en/contact" || pathname === "/info") {
     const isEn = pathname === "/en/contact";
+    const isInfo = pathname === "/info";
     // Service ノードと同じ扱い。日本語は既定値まで解決し、英語は英語の設定
     // だけを使う（無ければ段落を作らない）。
     const resolved = resolveContactText(settings, siteUrlFrom(settings));
@@ -328,9 +331,10 @@ export function publicPageFallbackText(
       paragraphs.push(photographyInquiry.title, photographyInquiry.intro,
         ...photographyInquiry.questions.flatMap(({ q, a }) => [q, a]));
     }
+    if (isInfo) paragraphs.unshift(...splitParagraphs(settings.profileBio));
     return {
       // 英語ページの見出しに日本語の表記名を出さない（説明文と同じ規則）。
-      heading: `${PAGE_TITLES[pathname] ?? "Contact"} — ${
+      heading: `${(isInfo ? pageTitleFor(settings, pathname) : PAGE_TITLES[pathname]) ?? "Contact"} — ${
         isEn ? displayNameEnFrom(settings) : name
       }`,
       description: pageDescriptionFor(settings, pathname, name),
@@ -1099,7 +1103,10 @@ function buildJsonLd(
   // WebSite / Person / ImageGallery だけで、Person の jobTitle が「写真家」と
   // 言っているのみ。「写真家である」と「撮影を受ける」は別のこと）。
   // 文面は設定にあるオーナー自身の言葉をそのまま使う。こちらで書かない。
-  if (pathname === "/contact" || pathname === "/en/contact") {
+  // 新しい構成の Info も同じ依頼のページ（料金と依頼フォームを含む。2026-10-24）。依頼の入口は
+  // Info なので、ここに無いと、メニューから行く依頼のページが「撮影を受ける」と名乗らない。
+  // （/info は新しい構成のサイトでしか indexable にならず、この関数は indexable なときだけ呼ばれる）
+  if (pathname === "/contact" || pathname === "/en/contact" || pathname === "/info") {
     const isEn = pathname === "/en/contact";
     // 日本語ページは**既定値まで解決する。**DB に行が無いキーは `settings` に
     // 載ってこないので、生の settings だけを見ると、画面には出ている文が

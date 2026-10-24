@@ -941,6 +941,52 @@ test("新しい構成 › Info は、短い自己紹介 → 料金と依頼 → 
   await expect(page.locator("main [data-profile-part]")).toHaveCount(0);
 });
 
+test("新しい構成 › 撮影のご依頼から押すと、Info の料金と依頼の位置で開く（依頼の入口は1つ）", async ({ page, api }) => {
+  await withCategories(page, api);
+  // 撮影のご依頼の帯を出す（オーナーの本番と同じ）。
+  const settings = (await (await api.get("/api/settings")).json()) as Record<string, unknown>;
+  await page.route("**/api/settings**", (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ ...settings, homeCtaEnabled: "on" }),
+    }),
+  );
+  // 人工データの Info は短く、画面とほぼ同じ高さで、印まで送る余地が無い（本番のスマホは約4200px）。
+  // 依頼の部分を画面より高くして、止まる位置そのものを確かめる。
+  await page.addInitScript(() => {
+    document.addEventListener("DOMContentLoaded", () => {
+      const style = document.createElement("style");
+      style.textContent = ".dv-info .contact-page { min-height: 150vh !important; }";
+      document.head.appendChild(style);
+    });
+  });
+  const requestTop = () =>
+    page.evaluate(() => Math.round(document.getElementById("request")?.getBoundingClientRect().top ?? NaN));
+  await page.goto("/portrait?design=develop", { waitUntil: "networkidle" });
+  const link = page.locator(".inquiry-note__link");
+  await expect(link).toHaveAttribute("href", "/info#request");
+  await link.scrollIntoViewIfNeeded();
+  await link.click();
+  await expect(page).toHaveURL(/\/info#request$/);
+  await expect(page.locator(".dv-info .contact-page")).toBeVisible();
+  // 料金と依頼の頭が、上の帯のすぐ下に来る（自己紹介の頭から読ませない）。
+  await expect.poll(requestTop).toBeLessThan(120);
+  expect(await requestTop()).toBeGreaterThanOrEqual(0);
+  expect(await page.evaluate(() => scrollY)).toBeGreaterThan(0);
+
+  // 住所を直接開いても同じ位置（SNS や note に貼られた住所から来た人）。
+  await page.goto("/info#request", { waitUntil: "networkidle" });
+  await expect.poll(requestTop).toBeLessThan(120);
+  // 印の無い /info は今までどおり頭から。
+  await page.goto("/info", { waitUntil: "networkidle" });
+  expect(await page.evaluate(() => scrollY)).toBe(0);
+
+  // 今までの構成では、今までどおり単独の /contact へ。
+  await page.goto("/gallery?design=classic", { waitUntil: "networkidle" });
+  await expect(page.locator(".inquiry-note__link")).toHaveAttribute("href", "/contact");
+});
+
 test("新しい構成 › 扉の名前を変えると、メニュー・トップの扉・ページの見出しが同じ名前になる", async ({ page, api }) => {
   await withCategories(page, api);
   const settings = (await (await api.get("/api/settings")).json()) as Record<string, unknown>;

@@ -123,6 +123,27 @@ describe("publicPageFallbackText", () => {
     ).toEqual([]);
   });
 
+  test("新しい構成の Info は、自己紹介に続けて依頼の段落を出す（説明文の1行だけにしない）", () => {
+    const text = publicPageFallbackText(
+      {
+        ...settings,
+        siteDesign: "develop",
+        profileBio: "写真学生。東京在住。",
+        contactIntro: "撮影のご依頼をお待ちしています。",
+        contactAreas: "東京・福岡",
+        contactFlow: "ご相談 → 撮影 → 納品。",
+      },
+      "/info",
+    );
+    expect(text.heading).toBe("Info — 江口秋");
+    expect(text.paragraphs.slice(0, 4)).toEqual([
+      "写真学生。東京在住。",
+      "撮影のご依頼をお待ちしています。",
+      "東京・福岡",
+      "ご相談 → 撮影 → 納品。",
+    ]);
+  });
+
   test("/profile は /about と同じ文を返す（同じページなので）", () => {
     const bio = { ...settings, profileBio: "写真家。" };
     expect(publicPageFallbackText(bio, "/profile").paragraphs).toEqual(

@@ -45,6 +45,8 @@ export type SitemapInput = {
   photos: readonly SitemapPhoto[];
   profilePhotoUrl?: string;
   photographerName?: string;
+  /** 写真を選んで並べたページ（新しい構成の `/portrait`・`/life`）→ そのページの写真 id（並び順）。 */
+  pagePhotoIds?: ReadonlyMap<string, readonly number[]>;
 };
 
 const isoDay = (d: Date | null | undefined) =>
@@ -61,6 +63,7 @@ export function buildSitemapXml(input: SitemapInput): string {
     photos,
     profilePhotoUrl,
     photographerName = "",
+    pagePhotoIds,
   } = input;
 
   const photoById = new Map(photos.map((p) => [p.id, p]));
@@ -123,6 +126,26 @@ export function buildSitemapXml(input: SitemapInput): string {
     // image として宣言しているのに、サイトマップだけ持っていなかった。
     if (path === "/about" || path === "/en/about") {
       return profilePhotoUrl ? imageTag(profilePhotoUrl, photographerName) : "";
+    }
+    // 新しい構成の Portrait・Life。シリーズと同じく、束ねているページにその中身として付ける
+    // （2026-10-24。依頼の見本になる Portrait に、それまで1枚も付いていなかった）。
+    const pageIds = pagePhotoIds?.get(path);
+    if (pageIds) {
+      return pageIds
+        .slice(0, MAX_IMAGES_PER_SERIES)
+        .map((id) => photoById.get(id))
+        .filter((p): p is SitemapPhoto => Boolean(p))
+        .map((p) =>
+          imageTag(
+            p.url,
+            photoAltText(p, {
+              photographerName,
+              seriesName:
+                p.seriesId != null ? seriesById.get(p.seriesId)?.title : undefined,
+            }),
+          ),
+        )
+        .join("");
     }
     const sid = seriesIdBySlugPath.get(path);
     if (sid == null) return "";

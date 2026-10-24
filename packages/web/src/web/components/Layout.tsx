@@ -22,7 +22,7 @@ import { lockPageScroll } from "../lib/scroll-lock";
 import { PAGE_EXIT_MS } from "./PageTransition";
 import { useDarkModeContext, useServiceVisibility } from "./provider";
 import { hasPublicEnglishContent } from "../../shared/public-english";
-import { developDoorCopy, type DevelopDoorKey } from "../../shared/develop-structure";
+import { DEVELOP_INQUIRY_HREF, developDoorCopy, type DevelopDoorKey } from "../../shared/develop-structure";
 import {
   isAboutRoute,
   isServiceOwnerSite,
@@ -1157,7 +1157,13 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           {/* E6: optional, low-key lead-in to Contact (hidden when empty) */}
           {data?.footerCtaLabel && (
             <Link
-              to={footerPolicyLanguage === "en" ? "/en/contact" : "/contact"}
+              to={
+                footerPolicyLanguage === "en"
+                  ? "/en/contact"
+                  : developStructure
+                    ? DEVELOP_INQUIRY_HREF
+                    : "/contact"
+              }
               className="font-en tracking-[0.06em] nav-link-luxury footer-link-public break-words max-w-full"
               style={
                 {

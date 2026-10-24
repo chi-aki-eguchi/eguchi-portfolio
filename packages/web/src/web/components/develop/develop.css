@@ -261,6 +261,10 @@ body[data-reveal="none"] .dv-stage__img {
 .dv-info > section {
   min-height: 0;
 }
+/* 依頼の帯・フッターから来たとき（/info#request）に止まる位置。上の帯に隠れないように。 */
+.dv-info__request {
+  scroll-margin-top: var(--header-h);
+}
 
 /* ── Info（スマホ）─────────────────────────────────────
    About と Contact の文の間を詰める指定は styles.css にある（単独の /about・/contact にも同じ指定を

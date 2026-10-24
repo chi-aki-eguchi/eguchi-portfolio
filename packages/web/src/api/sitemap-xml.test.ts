@@ -134,6 +134,25 @@ describe("buildSitemapXml", () => {
     expect(xml.trimEnd().endsWith("</urlset>")).toBe(true);
   });
 
+  test("写真を選んで並べたページ（Portrait・Life）には、そのページの写真を並び順で付ける", () => {
+    const input = base();
+    const xml = buildSitemapXml({
+      ...input,
+      paths: [...input.paths, "/portrait"],
+      // 21 は表紙の後ろ、10 はどのシリーズにも入っていない写真。999 は公開されていない（無い）。
+      pagePhotoIds: new Map([["/portrait", [21, 10, 999]]]),
+    });
+    const portraitLine = xml
+      .split("\n")
+      .find((l) => l.includes("<loc>https://example.com/portrait</loc>"))!;
+    expect(imageLocs(portraitLine)).toEqual([
+      "https://example.com/api/images/photos/second.jpg",
+      "https://example.com/api/images/photos/loose.jpg",
+    ]);
+    // 言葉の無い画像にしない。
+    expect(portraitLine.split("<image:title>").length - 1).toBe(2);
+  });
+
   test("英語のAboutにもプロフィール写真を出す", () => {
     const input = base();
     const xml = buildSitemapXml({

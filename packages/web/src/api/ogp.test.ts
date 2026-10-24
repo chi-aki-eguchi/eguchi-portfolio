@@ -1694,6 +1694,14 @@ describe("injectOgp 撮影依頼の構造化データ", () => {
     });
   });
 
+  test("新しい構成では、依頼の入口の Info も撮影を受けるページとして名乗る", () => {
+    const out = injectOgp(page, { ...settings, siteDesign: "develop" }, "/info");
+    expect(nodeOf(out, "Service")?.availableChannel?.serviceUrl).toBe("https://akieguchi.com/info");
+    expect(nodeOf(out, "ContactPage")).toMatchObject({ url: "https://akieguchi.com/info", inLanguage: "ja" });
+    // 今までの構成のサイトでは /info は無いページ。名乗らない。
+    expect(nodeOf(injectOgp(page, settings, "/info"), "Service")).toBeUndefined();
+  });
+
   test("英語URLは英語で名乗り、日本語を混ぜない", () => {
     const out = injectOgp(page, { ...settings, contactIntroEn: "Shoot requests welcome." }, "/en/contact");
     const svc = nodeOf(out, "Service");

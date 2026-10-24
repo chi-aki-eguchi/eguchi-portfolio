@@ -25,6 +25,7 @@ import {
 } from "./api/public-routes";
 import { contentTypeForStaticPath } from "./api/static-files";
 import {
+  developDoorCopy,
   developListPhotos,
   isDevelopDesignValue,
   type DevelopListKind,
@@ -657,6 +658,7 @@ async function buildSitemap(fallbackOrigin: string): Promise<string> {
     createdAt: Date | null;
     shotAt: string | null;
     filmType: string | null;
+    category: string;
   };
   let livePhotos: SitemapPhoto[] = [];
   try {
@@ -673,6 +675,8 @@ async function buildSitemap(fallbackOrigin: string): Promise<string> {
           // フィルムの shotAt は複写した時刻。これが無いと sitemap の説明文
           // だけが「○年○月に撮影」と言い続ける。
           filmType: schema.photos.filmType,
+          // 新しい構成の Portrait・Life の中身を、画面と同じ規則で選ぶため。
+          category: schema.photos.category,
         })
         .from(schema.photos)
         .where(
@@ -681,7 +685,7 @@ async function buildSitemap(fallbackOrigin: string): Promise<string> {
             eq(schema.photos.isPublished, true),
           ),
         )
-        .orderBy(schema.photos.sortOrder),
+        .orderBy(schema.photos.sortOrder, schema.photos.id),
     );
     // シリーズのページに載せる写真は、結びつきの表から（1枚が複数のシリーズに入れる）。
     const bySeries = await withRetry(() => seriesMembership(schema).membershipsByPhoto(db));
@@ -701,6 +705,13 @@ async function buildSitemap(fallbackOrigin: string): Promise<string> {
     photos: livePhotos,
     profilePhotoUrl: settings.profilePhotoUrl,
     photographerName: settings.profileName || settings.siteName || "",
+    // 新しい構成の Portrait・Life に出ている写真（画面・扉・共有カードと同じ developListPhotos）。
+    pagePhotoIds: isDevelopDesignValue(settings.siteDesign)
+      ? new Map([
+          ["/portrait", developListPhotos("portrait", livePhotos, settings.developPortraitIds).map((p) => p.id)],
+          ["/life", developListPhotos("life", livePhotos, settings.developLifeIds).map((p) => p.id)],
+        ])
+      : undefined,
   });
 }
 
@@ -1164,20 +1175,39 @@ async function serveNonApi(request: Request, url: URL): Promise<Response> {
       const hasWorkShelf = navSeries.some((n) => n.path.startsWith("/work/"));
       const fallbackIsEnglish =
         routePathname.startsWith("/en/") || routePathname.endsWith("/en");
-      const sectionLinks = [
-        { href: "/", label: fallbackIsEnglish ? "Home" : siteLabel },
-        { href: "/gallery", label: "Gallery" },
-        { href: "/series", label: "Series" },
-        ...(hasWorkShelf ? [{ href: "/work", label: "Work" }] : []),
-        {
-          href: fallbackIsEnglish ? "/en/about" : "/about",
-          label: "About",
-        },
-        {
-          href: fallbackIsEnglish ? "/en/contact" : "/contact",
-          label: "Contact",
-        },
-      ].filter((l) => l.href !== routePathname);
+      // 新しい構成のサイトでは、画面のメニューと同じ扉を並べる（2026-10-24。それまでは
+      // 今までの構成のメニューのままで、Portrait・Life・Info へのリンクが1本も無かった）。
+      // 英語のページは英語の扉がまだ無いので、今までどおり。
+      const doors =
+        !fallbackIsEnglish && isDevelopDesignValue(settings.siteDesign)
+          ? developDoorCopy(settings.developDoors)
+          : null;
+      const sectionLinks = (
+        doors
+          ? [
+              { href: "/", label: siteLabel },
+              { href: "/portrait", label: doors.portrait.label },
+              { href: "/life", label: doors.life.label },
+              { href: "/series", label: doors.series.label },
+              ...(hasWorkShelf ? [{ href: "/work", label: "Work" }] : []),
+              { href: "/info", label: doors.info.label },
+              { href: "/gallery", label: "Gallery" },
+            ]
+          : [
+              { href: "/", label: fallbackIsEnglish ? "Home" : siteLabel },
+              { href: "/gallery", label: "Gallery" },
+              { href: "/series", label: "Series" },
+              ...(hasWorkShelf ? [{ href: "/work", label: "Work" }] : []),
+              {
+                href: fallbackIsEnglish ? "/en/about" : "/about",
+                label: "About",
+              },
+              {
+                href: fallbackIsEnglish ? "/en/contact" : "/contact",
+                label: "Contact",
+              },
+            ]
+      ).filter((l) => l.href !== routePathname);
       const shelfLinks =
         routePathname === "/work"
           ? navSeries.filter((n) => n.path.startsWith("/work/"))

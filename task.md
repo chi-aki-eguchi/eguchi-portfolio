@@ -1,3 +1,13 @@
+## 今回の引き継ぎ — 2026-10-24 依頼の入口を Info にまとめる
+
+- 依頼: 2026-10-23 の点検（下の「止まっていた修正の本番反映と、扉の共有カード」）で、依頼の入口が Info・Contact に分かれ、料金と依頼の説明書きが `/contact` にしか無いと分かった。オーナー「任せる」。主担当・編集担当 Claude Code 1名、委譲なし。worktree `/Users/chiaki/wt-info-20261024`（branch `claude/info-entry-20261024`、基点 `origin/main=637fc6b`）。
+- 製品（新しい構成のときだけ。今までの構成・英語のページは変えていない）:
+  - 撮影のご依頼の帯（`InquiryCta`）とフッターの「お問い合わせ」を `/contact` から `/info#request` へ（`shared/develop-structure.ts` の `DEVELOP_INQUIRY_HREF`）。Info の料金と依頼の頭に印 `#request` を置き、そこで開く（`develop-info.tsx`。印は上の帯に隠れないよう `scroll-margin-top`）。`useInitialHashScroll` に `followLayoutMs` を足し、Info では 1.5 秒のあいだ高さが変わるたびに印へ合わせ直す（読む人が動かしたらやめる）。`/contact`・`/about` は今までどおり開ける。
+  - 検索側: `/info` にも ContactPage・Service の構造化データ（それまでは `/contact` だけ）。JavaScript を動かさない検索ロボット向けの本文（noscript）は、`/info` で自己紹介＋依頼の文・地域・流れ・よくある質問（それまでは説明文1行・187文字）。そのリンクは新しい構成では Portrait／Life／Series／Work／Info／Gallery（それまでは今までの構成の About・Contact で、扉の3ページへのリンクが無かった）。サイトマップの `/portrait`・`/life` に、そのページの写真（画面と同じ `developListPhotos`）を付けた（それまで0枚）。
+- 変えていない物（判断）: `/contact`・`/about` を `/info` へ正規化（canonical）・転送はしていない。`/contact` の題名「撮影依頼・お問い合わせ」は検索の言葉として Info より強く、`/about` を寄せると `/en/about` との言語の対が崩れる。Info の題名・メニューの名前をどうするか（オーナーの質問「About じゃなくて Info なのはなんで？」）と一緒に決める。
+- 検証（2026-10-24、この worktree）: `bun run check` 成功（単体1657・ツール128・番人48・型・lint・build）、全体 `bun run smoke` 886 成功・308 対象外・失敗0（32.9分）。足した確認: 単体（`ogp.test.ts` Info の ContactPage・Service、`spa-fallback.test.ts` Info の本文、`sitemap-xml.test.ts` Portrait の写真）、smoke `public-develop-structure.spec.ts`「撮影のご依頼から押すと、Info の料金と依頼の位置で開く」（4種のブラウザ。押して移る・住所を直接開く・印の無い /info は頭から・今までの構成は /contact）。人工データの Info は画面とほぼ同じ高さで印まで送る余地が無いので、その検査の中だけ依頼の部分を画面より高くしている（最初はこれで4種とも同じ値で失敗した。製品の不具合ではなかった）。`server.ts` は一時 SQLite・127.0.0.1 でそのまま起動して、`/info` の構造化データと本文、扉のリンク、サイトマップの Portrait／Life の写真を確かめた（試験台は会話の作業領域）。
+- 未確認: iPhone 実機。
+
 ## 今回の引き継ぎ — 2026-10-23 補助ラベルと説明文を減らす
 
 - 依頼: オーナーが共通指示に「不要なセカンダリラベルや説明を避ける。レイアウトに説明させる」を追加し、このサイトへの適用を依頼。主担当・編集担当 Claude Code 1名。worktree `/Users/chiaki/wt-quiet-labels`（branch `claude/quiet-labels-20261023`、基点 `origin/main=e008f92`）。元 checkout には触れていない。

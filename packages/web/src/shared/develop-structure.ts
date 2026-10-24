@@ -15,6 +15,14 @@ export function isDevelopOnlyPath(pathname: string): boolean {
   return (DEVELOP_ONLY_PATHS as readonly string[]).includes(pathname);
 }
 
+/**
+ * 依頼の入口（2026-10-24）。撮影のご依頼の帯とフッターの「お問い合わせ」は、メニューと同じ
+ * Info へ向け、料金と依頼フォームの位置から見せる。それまでは単独の /contact へ行き、
+ * 依頼の入口が Info と Contact の2つに分かれていた。/contact も今までどおり開ける。
+ */
+export const DEVELOP_INQUIRY_ANCHOR = "request";
+export const DEVELOP_INQUIRY_HREF = `/info#${DEVELOP_INQUIRY_ANCHOR}`;
+
 export type DevelopListKind = "portrait" | "life";
 
 /**

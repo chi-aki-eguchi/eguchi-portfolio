@@ -1,3 +1,11 @@
+## 今回の引き継ぎ — 2026-10-25 Bun・Node.js・sharp のセキュリティ更新
+
+- 依頼: Brotli の脆弱性 CVE-2026-111497（Bun 1.4.4・Node.js 22.23.4 で修正）と sharp の librsvg の脆弱性 GHSA-wq5f-xc86-pv6w（0.35.5 で修正）への対応を本番まで。Claude Code 1名、worktree `/Users/chiaki/wt-sec-portfolio`（基点 `origin/main=ea5657a`）。
+- 変更（c2db790）: `packageManager` を `bun@1.4.4`、`engines.node` を `22.23.4`（"22.x" では修正前の 22.23.3 が選ばれていた）、sharp `^0.35.5`（bun.lock の変化は sharp とその依存だけ）。`/api/health` の `runtime` と起動ログ `[boot]` に実行中の Bun・sharp・libvips の版を出す。番人テスト `node-support.test.ts` は "22.x" 固定から「22 系かつ 22.23.4 以上」の確認へ。
+- 検証（Bun 1.4.4・Node 22.23.4 で）: `bun run check` の全段階が成功（単体1657・ツール128・番人48・型・lint・build）。smoke は実行していない。sharp 0.34.5 と 0.35.5 を本番写真3枚で比べ、JPEG・WebP・SVG→PNG は同一、AVIF は新しい調整で容量が最大約2割増減し、等倍の目視では差が無い。
+- 本番（2026-10-25 20:3x JST）: `/api/health` が `build=c2db790c`、`runtime={bun:1.4.4, sharp:0.35.5, vips:8.18.7}`。画像の変換（AVIF・WebP・JPEG）、`/og-default.png`、favicon、トップと `/life` の写真表示を確認。今回は `packages/web/` の変更を含めたので監視パスで自動デプロイされた。
+- 未確認・残り: Railway のビルドログでの Node 22.23.4（ダッシュボードに入れず未確認）。監視パス `/packages/web/**` に `/package.json`・`/bun.lock` を足す設定は未変更（ルートの依存だけの更新では今後も自動デプロイされない）。Railway の保留中の変更には触れていない。
+
 ## 今回の引き継ぎ — 2026-10-24 依頼の入口を Info にまとめる
 
 - 依頼: 2026-10-23 の点検（下の「止まっていた修正の本番反映と、扉の共有カード」）で、依頼の入口が Info・Contact に分かれ、料金と依頼の説明書きが `/contact` にしか無いと分かった。オーナー「任せる」。主担当・編集担当 Claude Code 1名、委譲なし。worktree `/Users/chiaki/wt-info-20261024`（branch `claude/info-entry-20261024`、基点 `origin/main=637fc6b`）。

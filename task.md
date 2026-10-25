@@ -5,6 +5,7 @@
 - 検証（Bun 1.4.4・Node 22.23.4 で）: `bun run check` の全段階が成功（単体1657・ツール128・番人48・型・lint・build）。smoke は実行していない。sharp 0.34.5 と 0.35.5 を本番写真3枚で比べ、JPEG・WebP・SVG→PNG は同一、AVIF は新しい調整で容量が最大約2割増減し、等倍の目視では差が無い。
 - 本番（2026-10-25 20:20頃 JST）: `/api/health` が `build=c2db790c`、`runtime={bun:1.4.4, sharp:0.35.5, vips:8.18.7}`。画像の変換（AVIF・WebP・JPEG）、`/og-default.png`、favicon、トップと `/life` の写真表示を確認。今回は `packages/web/` の変更を含めたので監視パスで自動デプロイされた。
 - 未確認・残り: Railway のビルドログでの Node 22.23.4（ダッシュボードに入れず未確認）。監視パス `/packages/web/**` に `/package.json`・`/bun.lock` を足す設定は未変更（ルートの依存だけの更新では今後も自動デプロイされない）。Railway の保留中の変更には触れていない。
+- 追記（2026-10-25 21:31 JST、オーナー確認）: Railway のビルドログで Node 22.23.4・Bun 1.4.4 のインストールとデプロイ SUCCESS を確認。このサービスに未適用の設定差分は無い（環境一覧に変更0件の古い保留記録が1つ）。監視パスは引き続き `/packages/web/**` だけで、`/package.json`・`/bun.lock` の追加が残り。
 
 ## 今回の引き継ぎ — 2026-10-24 依頼の入口を Info にまとめる
 

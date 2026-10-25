@@ -31,7 +31,11 @@ test("each Node version gets the flags it needs, or a clear refusal", () => {
 
 test("package.json runs the guard tests through the version-aware entry", () => {
   const pkg = JSON.parse(readFileSync(resolve(import.meta.dirname, "../../../package.json"), "utf8"));
-  assert.equal(pkg.engines.node, "22.x");
+  // Railway はこの値でビルドの Node を選ぶ。"22.x" では修正前の 22.23.3 が選ばれたので、
+  // Brotli の修正（CVE-2026-111497）を含む 22 系の版を固定する（2026-10-25）。
+  const [major, minor, patch] = pkg.engines.node.split(".").map(Number);
+  assert.equal(major, 22, pkg.engines.node);
+  assert.ok(minor > 23 || (minor === 23 && patch >= 4), pkg.engines.node);
   assert.equal(pkg.scripts["test:smoke-guard"], "node scripts/smoke/guard/run.mjs");
   assert.match(pkg.scripts.check, /bun run test:smoke-guard/);
 });

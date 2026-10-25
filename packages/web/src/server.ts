@@ -1272,7 +1272,7 @@ console.log(`Web server listening on http://localhost:${server.port}`);
 const memoryLimit = containerMemoryLimitBytes();
 const memoryLimitLabel = memoryLimit ? `${toMB(memoryLimit)}MB` : "unknown";
 console.log(
-  `[boot] build=${BUILD_ID} pid=${process.pid} memoryLimit=${memoryLimitLabel}`,
+  `[boot] build=${BUILD_ID} bun=${Bun.version} pid=${process.pid} memoryLimit=${memoryLimitLabel}`,
 );
 process.once("SIGTERM", () => {
   console.log(

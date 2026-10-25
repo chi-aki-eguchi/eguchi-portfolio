@@ -1007,6 +1007,12 @@ const app = new Hono()
       {
         status: "ok",
         build: BUILD_ID,
+        // 本番で実際に動いている版。セキュリティ更新が届いたかを外から確かめるため（2026-10-25）。
+        runtime: {
+          bun: Bun.version,
+          sharp: sharp.versions.sharp,
+          vips: sharp.versions.vips,
+        },
         mem: {
           rssMB: Math.round(rss / 1024 / 1024),
           resizeCacheMB: Math.round(resizeBytes / 1024 / 1024),

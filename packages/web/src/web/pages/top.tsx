@@ -1394,6 +1394,9 @@ export default function TopPage() {
   });
   const [introPlaying, setIntroPlaying] = useState(introPlanned);
   const endIntro = useCallback(() => setIntroPlaying(false), []);
+  // 展示の壁は、名刺が定位置へ戻り始めたら現像を始める（見せ場が終わるのを待たない）。
+  const [introLanding, setIntroLanding] = useState(false);
+  const landIntro = useCallback(() => setIntroLanding(true), []);
   // 新しい構成のトップには Works の一覧が無いので、ランダムの束は取りに行かない。
   const randomWorks = topWorksMode === "random" && !isDevelopDesign;
   const homeGalleryCount = Math.max(
@@ -1817,6 +1820,7 @@ export default function TopPage() {
             key={heroMotionKey(settings)}
             className="ex-cover"
             data-wall={showWall ? "" : undefined}
+            data-on={!introPlaying || introLanding ? "" : undefined}
             style={coverRatio ? ({ "--photo-ar": coverRatio } as React.CSSProperties) : undefined}
           >
             <div ref={heroBoxRef as React.Ref<HTMLDivElement>} className="hero-motion-stage ex-cover__frame">
@@ -1825,7 +1829,6 @@ export default function TopPage() {
                   photos={exhibitionPhotos}
                   viewer={exhibitionViewer}
                   text={exhibitionText}
-                  on={!introPlaying}
                   name={settings?.siteName ?? CLIENT_SITE_FALLBACKS.siteName}
                   photographerName={photographerName}
                 />
@@ -1851,12 +1854,16 @@ export default function TopPage() {
             </div>
             <ExhibitionLabel
               name={
-                <ClassicHeroNameBlock
-                  settings={settings}
-                  tone="on-paper"
-                  nameSizeFallback="1.5rem"
-                  enSizeFallback="0.875rem"
-                />
+                showWall ? (
+                  <h1>{settings?.siteName ?? CLIENT_SITE_FALLBACKS.siteName}</h1>
+                ) : (
+                  <ClassicHeroNameBlock
+                    settings={settings}
+                    tone="on-paper"
+                    nameSizeFallback="1.5rem"
+                    enSizeFallback="0.875rem"
+                  />
+                )
               }
               title={exhibitionTitle}
               dates={settings?.exhibitionDates ?? EXHIBITION_DEFAULTS.dates}
@@ -1867,7 +1874,8 @@ export default function TopPage() {
               name={settings?.siteName ?? CLIENT_SITE_FALLBACKS.siteName}
               caption={exhibitionTitle}
               expectPhoto={!showWall && (exhibitionPhotos.length > 0 || photosLoading)}
-              nameOnly={showWall}
+              card={showWall}
+              onLand={landIntro}
               onDone={endIntro}
             />
           )}

@@ -12,6 +12,7 @@ import {
   exhibitionShape,
   exhibitionTextFitsSheet,
   type ExhibitionPhoto,
+  type WallBox,
 } from "../../../shared/exhibition";
 import { photoAltText } from "../../../shared/photo-alt";
 import type { PhotoViewerState } from "../photo-site/viewer";
@@ -50,31 +51,73 @@ function Poem({ text, live }: { text: string; live?: boolean }) {
   );
 }
 
+/** 壁の中の置き場所。PC は会場の位置、スマホは掛け直した位置（どちらを使うかは exhibition.css）。 */
+function wallPlace(wall: WallBox, phone: WallBox) {
+  return {
+    "--ex-x": `${wall.x}%`,
+    "--ex-y": `${wall.y}%`,
+    "--ex-w": `${wall.w}%`,
+    "--ex-h": `${wall.h}%`,
+    "--ex-sx": `${phone.x}%`,
+    "--ex-sy": `${phone.y}%`,
+    "--ex-sw": `${phone.w}%`,
+    "--ex-sh": `${phone.h}%`,
+  } as React.CSSProperties;
+}
+
 /**
- * 会場の壁の配置。展示を見てきた人が、開いてすぐ「さっきの壁だ」と分かるように、5枚と詩の紙・札を
- * 会場と同じ位置に置く。PC は額と写真の大きさの比まで会場どおり、スマホは写真が見えるように額いっぱいに。
- * 写真が左上から順に現像される（on になってから。開いた瞬間の見せ場の裏で終わってしまわないように）。
+ * 壁の1枚。画像が届いてから現像を始める（届く前に動きが終わると、あとで急に写真が出る。会場の回線は
+ * 混むことがある）。届くまでは写真の場所に薄い面を置いて、壁の形だけ先に見せる。
+ */
+function WallPrint({ photo }: { photo: ExhibitionItem }) {
+  const [ready, setReady] = useState(false);
+  return (
+    <span className="ex-wall__print" data-ready={ready ? "" : undefined}>
+      <Picture
+        url={photo.url}
+        width={photo.width}
+        height={photo.height}
+        alt=""
+        preset="grid"
+        sizes="(min-width: 768px) 24vw, 52vw"
+        fallbackW={800}
+        fallbackQ={84}
+        className="ex-wall__img"
+        loading="eager"
+        fetchPriority="high"
+        draggable={false}
+        onLoad={() => setReady(true)}
+        imgRef={(img) => {
+          if (img?.complete && img.naturalWidth > 0) setReady(true);
+        }}
+      />
+    </span>
+  );
+}
+
+/**
+ * 会場の壁の配置。展示を見てきた人が、開いてすぐ「さっきの壁だ」と分かるように、5枚と詩の紙・名刺を
+ * 会場と同じ順に置く。PC は額と写真の大きさの比まで会場どおり、スマホは写真が大きく見えるように掛け直す。
+ * 写真は左上から順に現像される（`.ex-cover[data-on]` になってから。開いた瞬間の見せ場の裏で終わらないように）。
  */
 export function ExhibitionWall({
   photos,
   viewer,
   text,
-  on,
   name,
   photographerName,
 }: {
   photos: ExhibitionItem[];
   viewer: PhotoViewerState;
   text: string;
-  on: boolean;
-  /** 札に小さく置く名前。 */
+  /** 名刺の表の名前。 */
   name?: string;
   photographerName?: string;
 }) {
   const fits = text && exhibitionTextFitsSheet(text);
   return (
-    <div className="ex-wall" data-on={on ? "" : undefined}>
-      {EXHIBITION_WALL.works.map(({ id, frame, print }, order) => {
+    <div className="ex-wall" style={{ "--ex-phone-ar": EXHIBITION_WALL.phone.ratio } as React.CSSProperties}>
+      {EXHIBITION_WALL.works.map(({ id, frame, print, phone }, order) => {
         const index = photos.findIndex((photo) => photo.id === id);
         const photo = photos[index];
         if (!photo) return null;
@@ -88,10 +131,7 @@ export function ExhibitionWall({
             onClick={() => viewer.open(index)}
             style={
               {
-                left: `${frame.x}%`,
-                top: `${frame.y}%`,
-                width: `${frame.w}%`,
-                height: `${frame.h}%`,
+                ...wallPlace(frame, phone),
                 "--ex-px": `${print.x}%`,
                 "--ex-py": `${print.y}%`,
                 "--ex-pw": `${print.w}%`,
@@ -100,22 +140,7 @@ export function ExhibitionWall({
               } as React.CSSProperties
             }
           >
-            <span className="ex-wall__print">
-              <Picture
-                url={photo.url}
-                width={photo.width}
-                height={photo.height}
-                alt=""
-                preset="grid"
-                sizes="(min-width: 768px) 24vw, 34vw"
-                fallbackW={800}
-                fallbackQ={84}
-                className="ex-wall__img"
-                loading="eager"
-                fetchPriority="high"
-                draggable={false}
-              />
-            </span>
+            <WallPrint photo={photo} />
           </button>
         );
       })}
@@ -124,12 +149,7 @@ export function ExhibitionWall({
           className="ex-wall__sheet"
           href="#ex-sheet"
           aria-label="詩へ"
-          style={{
-            left: `${EXHIBITION_WALL.sheet.x}%`,
-            top: `${EXHIBITION_WALL.sheet.y}%`,
-            width: `${EXHIBITION_WALL.sheet.w}%`,
-            height: `${EXHIBITION_WALL.sheet.h}%`,
-          }}
+          style={wallPlace(EXHIBITION_WALL.sheet, EXHIBITION_WALL.phone.sheet)}
         >
           <span aria-hidden="true">
             <Poem text={text} />
@@ -144,7 +164,7 @@ export function ExhibitionWall({
           className="ex-wall__card"
           href="#ex-cards"
           aria-label="名刺へ"
-          style={{ left: `${card.x}%`, top: `${card.y}%`, width: `${card.w}%`, height: `${card.h}%` }}
+          style={wallPlace(card, EXHIBITION_WALL.phone.cards[i]!)}
         >
           {i === 0 && name && <span aria-hidden="true">{name}</span>}
         </a>
@@ -155,7 +175,7 @@ export function ExhibitionWall({
 
 /**
  * 表紙の下の札。展示の壁で作品の横に添える札と同じで、誰の・どの展示の写真かだけを置く。
- * 名前は表紙の部品と同じ物（pages/top.tsx の ClassicHeroNameBlock）を受け取る。
+ * 壁のトップでは、名前も題と同じ小さな字で（name）。1枚の表紙のときは表紙の名前の部品を受け取る。
  */
 export function ExhibitionLabel({
   name,

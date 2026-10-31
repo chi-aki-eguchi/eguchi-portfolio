@@ -4,6 +4,18 @@
    スマホの写真は画面の端から端まで、左右を空けるのは文字だけ。余白は1枚ずつを分けるために使う。 */
 .top-page[data-exhibition] {
   --ex-gap: clamp(4.5rem, 13svh, 6.5rem);
+  /* 紙・名刺・マットの白。画面の色に関わらず物としての紙で、暗い画面では部屋の明かりを落とした分だけ沈める。 */
+  --ex-paper: #fff;
+  /* 紙・名刺が壁に落とす影。線で囲まず、上からの光で物に見せる。 */
+  --ex-object-shadow: 0 1px 1px rgba(0, 0, 0, 0.05), 0 16px 30px -22px rgba(0, 0, 0, 0.3);
+  /* 名刺の表の名前（`~/01_simple_square_55x55_print.pdf` を描いて測った）。開いた瞬間の名刺と共通。 */
+  --card-name-size: 7.85cqw;
+  --card-name-tracking: 0.65em;
+  --card-name-left: 49.45%;
+  --card-name-top: 48.3%;
+}
+[data-theme="dark"] .top-page[data-exhibition] {
+  --ex-paper: #dcdbd7;
 }
 
 /* ── 表紙：写真の全体＋札 ───────────────────────────── */
@@ -52,10 +64,10 @@
   padding: 1.25rem var(--page-inset) 0;
 }
 /* ── 壁の配置：開いて最初に見る、会場と同じ並び ─────────────
-   見ている場所は実物の壁と同じ。スマホは写真を額いっぱいに（額の線は引かない）、PC は額の線を
-   引いて、マットの白い余白まで会場の比のまま。詩の紙は小さくても本物の組みで置く。 */
+   スマホは掛け直した位置に写真を枠いっぱいに（shared/exhibition.ts の phone）、PC は額の線を引いて、
+   マットの余白まで会場の比のまま。詩の紙は小さくても本物の組みで置く。 */
 .ex-cover[data-wall] .ex-cover__frame {
-  padding: clamp(1rem, 6svh, 2.75rem) var(--page-inset) 0;
+  padding: clamp(0.75rem, 2.4svh, 2.75rem) var(--page-inset) 0;
   box-sizing: border-box;
 }
 .ex-wall {
@@ -63,8 +75,16 @@
   width: 100%;
   aspect-ratio: var(--photo-ar);
 }
-.ex-wall__frame {
+.ex-wall__frame,
+.ex-wall__sheet,
+.ex-wall__card {
   position: absolute;
+  left: var(--ex-x);
+  top: var(--ex-y);
+  width: var(--ex-w);
+  height: var(--ex-h);
+}
+.ex-wall__frame {
   padding: 0;
   border: 0;
   background: none;
@@ -74,6 +94,11 @@
   position: absolute;
   inset: 0;
   display: block;
+  background: rgba(var(--foreground-rgb), 0.05);
+  transition: background-color 0.9s ease;
+}
+.ex-wall__print[data-ready] {
+  background-color: transparent;
 }
 .ex-wall__print picture {
   display: block;
@@ -90,36 +115,49 @@
   transition:
     opacity 0.9s var(--ease-reveal),
     filter 1.35s var(--ease-reveal);
-  transition-delay: calc(var(--ex-order, 0) * 0.16s + 0.1s);
+  transition-delay: calc(var(--ex-order, 0) * 0.15s + 0.05s);
 }
-.ex-wall[data-on] .ex-wall__img {
+.ex-cover[data-on] .ex-wall__print[data-ready] .ex-wall__img {
   opacity: 1;
   filter: none;
 }
 .ex-wall__sheet,
 .ex-wall__card {
-  position: absolute;
   display: block;
   opacity: 0;
-  background: #fff;
-  box-shadow: 0 0 0 1px rgba(var(--foreground-rgb), 0.1);
-  transition: opacity 0.9s var(--ease-reveal) 1.1s;
+  background: var(--ex-paper);
+  box-shadow: var(--ex-object-shadow);
+  transition: opacity 0.8s var(--ease-reveal) 0.75s;
 }
 .ex-wall__card {
   container-type: inline-size;
-  border-radius: 12%;
+  border-radius: 13%;
   color: #1a1a1a;
   text-decoration: none;
 }
+/* 壁の名刺は小さいので、押せる範囲だけ広げる。 */
+.ex-wall__card::before {
+  content: "";
+  position: absolute;
+  inset: -0.75rem;
+}
+/* 名刺の表は、開いた瞬間の名刺が着く場所。着いたときには下に待っている。 */
+.ex-wall__card:has(span) {
+  transition: opacity 0.01s linear 1s;
+}
+/* 裏は、表が着いてから。 */
+.ex-wall__card:not(:has(span)) {
+  transition: opacity 0.7s var(--ease-reveal) 1.3s;
+}
 .ex-wall__card span {
   position: absolute;
-  left: 50%;
-  top: 46%;
+  left: var(--card-name-left);
+  top: var(--card-name-top);
   transform: translate(-50%, -50%);
   font-family: var(--font-ja);
-  font-size: 9cqw;
+  font-size: var(--card-name-size);
   line-height: 1;
-  letter-spacing: 0.7em;
+  letter-spacing: var(--card-name-tracking);
   writing-mode: vertical-rl;
   text-orientation: upright;
 }
@@ -127,10 +165,10 @@
 .ex-wall__card:not(:has(span))::after {
   content: "";
   position: absolute;
-  inset: 26% 37% 50%;
+  inset: 27% 38% 49%;
   background: rgba(26, 26, 26, 0.78);
 }
-.ex-wall[data-on] :is(.ex-wall__sheet, .ex-wall__card) {
+.ex-cover[data-on] :is(.ex-wall__sheet, .ex-wall__card) {
   opacity: 1;
 }
 .ex-wall__sheet {
@@ -139,11 +177,33 @@
   text-decoration: none;
   cursor: pointer;
 }
-/* 画面の色が暗いときも、紙は白いまま（詩の紙は物）。 */
 body[data-reveal="none"] .ex-wall__img {
   opacity: 1;
   filter: none;
   transition: none;
+}
+
+/* スマホの縦の画面は、掛け直した位置へ（横向きは会場の位置のまま）。 */
+@media (max-width: 767px) and (orientation: portrait) {
+  .ex-wall {
+    aspect-ratio: var(--ex-phone-ar);
+  }
+  .ex-wall__frame,
+  .ex-wall__sheet,
+  .ex-wall__card {
+    left: var(--ex-sx);
+    top: var(--ex-sy);
+    width: var(--ex-sw);
+    height: var(--ex-sh);
+  }
+}
+
+/* 小さいスマホの横向きは会場の位置のまま、壁の全体が1画面に入る大きさに。 */
+@media (max-width: 767px) and (orientation: landscape) {
+  .ex-wall {
+    max-width: calc((100svh - var(--header-h, 0px) - 1.5rem) * var(--photo-ar));
+    margin-inline: auto;
+  }
 }
 
 /* 名前は縮めない（題が長いときに折れるのは題のほう）。 */
@@ -167,6 +227,29 @@ body[data-reveal="none"] .ex-wall__img {
 }
 .ex-label__show p {
   margin: 0;
+}
+/* 壁のトップの札は、会場の作品札と同じ。名前・題・会期を、同じ小さな字で左へそろえる。
+   大きさではなく、並びと濃さで読ませる。 */
+.ex-cover[data-wall] .ex-label {
+  display: block;
+  padding-top: 1.15rem;
+  font-size: 0.75rem;
+  line-height: 1.8;
+  letter-spacing: 0.08em;
+}
+.ex-cover[data-wall] .ex-label h1 {
+  margin: 0;
+  font: inherit;
+  font-family: var(--font-ja);
+  letter-spacing: 0.32em;
+  color: var(--foreground);
+}
+.ex-cover[data-wall] .ex-label__show {
+  text-align: left;
+  line-height: inherit;
+}
+.ex-cover[data-wall] .ex-label__show h2 {
+  color: inherit;
 }
 
 /* 開いた瞬間の見せ場は、画面の高さぶんを紙で覆う（札の下の写真が先に見えないように）。
@@ -226,10 +309,9 @@ body[data-reveal="none"] .ex-wall__img {
   aspect-ratio: 210 / 297;
   margin: var(--ex-gap) var(--page-inset) 0;
   scroll-margin-top: calc(var(--header-h) + 1rem);
-  /* 紙は白いまま（画面の色に関わらず、物としての紙）。縁が分かるだけの薄い線と影。 */
-  background: #fff;
+  background: var(--ex-paper);
   color: #1a1a1a;
-  box-shadow: 0 0 0 1px rgba(var(--foreground-rgb), 0.06), 0 1px 14px rgba(0, 0, 0, 0.05);
+  box-shadow: var(--ex-object-shadow);
 }
 .ex-poem {
   position: absolute;
@@ -264,8 +346,8 @@ body[data-reveal="none"] .ex-sheet .ex-poem span {
 }
 
 /* ── 名刺：詩の紙の下に、表と裏の2枚 ──────────────────────
-   寸法は実物と同じ比（角の丸い正方形）。表の名前は名刺どおり、幅の 8.3% の字を 1.7 倍の送りで、
-   少し上寄りの真ん中に。裏は名刺の並びのまま、QR の場所に押せる言葉を置く。 */
+   寸法は実物と同じ比（角の丸い正方形）。表の名前は名刺どおり、少し上寄りの真ん中に。
+   裏は名刺の並びのまま、QR の場所に押せる言葉を置く。 */
 .ex-cards {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -278,21 +360,21 @@ body[data-reveal="none"] .ex-sheet .ex-poem span {
   container-type: inline-size;
   aspect-ratio: 1;
   overflow: hidden;
-  border-radius: 9%;
-  background: #fff;
+  border-radius: 13%;
+  background: var(--ex-paper);
   color: #1a1a1a;
-  box-shadow: 0 0 0 1px rgba(var(--foreground-rgb), 0.06), 0 1px 12px rgba(0, 0, 0, 0.05);
+  box-shadow: var(--ex-object-shadow);
 }
 .ex-card__name {
   position: absolute;
-  left: 50%;
-  top: 46%;
+  left: var(--card-name-left);
+  top: var(--card-name-top);
   transform: translate(-50%, -50%);
   margin: 0;
   font-family: var(--font-ja);
-  font-size: 8.3cqw;
+  font-size: var(--card-name-size);
   line-height: 1;
-  letter-spacing: 0.7em;
+  letter-spacing: var(--card-name-tracking);
   writing-mode: vertical-rl;
   text-orientation: upright;
 }
@@ -331,7 +413,10 @@ body[data-reveal="none"] .ex-sheet .ex-poem span {
   font-size: 6.4cqw;
   letter-spacing: 0.04em;
   color: inherit;
-  text-decoration: none;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.3em;
+  text-decoration-color: rgba(26, 26, 26, 0.35);
 }
 .ex-card__links a:focus-visible {
   outline: 1px solid currentColor;
@@ -431,27 +516,28 @@ body[data-reveal="none"] .ex-work__open.fade-in-item .ex-work__img {
     width: 100%;
     aspect-ratio: auto;
   }
-  /* 壁は本文の幅いっぱい近くまで。額の線を引き、写真は会場の大きさへ。 */
+  /* 壁は本文の幅いっぱい近くまで。額の線を引き、写真は会場の大きさへ。札は壁の下（幅が足りないタブレット）か、
+     右下（PC と横向きのスマホ）。 */
   .ex-cover[data-wall] {
-    grid-template-columns: minmax(0, 1fr) minmax(11rem, 15rem);
+    grid-template-columns: minmax(0, 1fr);
     padding-top: clamp(2rem, 7vh, 4rem);
   }
   .ex-cover[data-wall] .ex-cover__frame {
     height: auto;
     aspect-ratio: auto;
-    padding: 0 0 0 var(--page-inset);
+    padding: 0 var(--page-inset);
   }
   .ex-cover[data-wall] .ex-wall {
     max-height: calc(100svh - 2 * clamp(2rem, 7vh, 4rem));
     max-width: calc((100svh - 2 * clamp(2rem, 7vh, 4rem)) * var(--photo-ar));
   }
-  /* 額の線と、白いマット。 */
+  /* 額。細い銀の枠・白いマット・窓の段（二重マット）・壁に落ちる影まで会場に合わせる。線だけだと図面に見える。 */
   .ex-wall__frame {
-    box-shadow: inset 0 0 0 1px rgba(var(--foreground-rgb), 0.2);
-    background: #fff;
-  }
-  [data-theme="dark"] .ex-wall__frame {
-    background: rgba(255, 255, 255, 0.05);
+    background: var(--ex-paper);
+    box-shadow:
+      0 0 0 2px #d6d6d2,
+      0 0 0 3px rgba(0, 0, 0, 0.1),
+      0 16px 28px -22px rgba(0, 0, 0, 0.28);
   }
   .ex-wall__print {
     inset: auto;
@@ -459,6 +545,7 @@ body[data-reveal="none"] .ex-work__open.fade-in-item .ex-work__img {
     top: var(--ex-py);
     width: var(--ex-pw);
     height: var(--ex-ph);
+    box-shadow: 0 0 0 0.38vw var(--ex-paper), 0 0 0 calc(0.38vw + 1px) rgba(0, 0, 0, 0.05);
   }
   .ex-label {
     flex-direction: column;
@@ -470,6 +557,24 @@ body[data-reveal="none"] .ex-work__open.fade-in-item .ex-work__img {
   .ex-label__show {
     text-align: left;
     font-size: 0.8125rem;
+  }
+  .ex-cover[data-wall] .ex-label {
+    padding: 1.75rem var(--page-inset) 0;
+    font-size: 0.8125rem;
+  }
+  .ex-cover[data-wall] .ex-label__show {
+    font-size: inherit;
+  }
+  @media (min-width: 1100px), (max-height: 600px) {
+    .ex-cover[data-wall] {
+      grid-template-columns: minmax(0, 1fr) minmax(11rem, 15rem);
+    }
+    .ex-cover[data-wall] .ex-cover__frame {
+      padding-right: 0;
+    }
+    .ex-cover[data-wall] .ex-label {
+      padding: 0 var(--page-inset) 2.5rem clamp(1.5rem, 3vw, 3rem);
+    }
   }
   .ex-works,
   .ex-works__text {
@@ -498,6 +603,24 @@ body[data-reveal="none"] .ex-work__open.fade-in-item .ex-work__img {
   .ex-work__title {
     padding-inline: 0;
   }
+  /* 目次は控えめに。展示の余韻のあとなので、言葉は小さく、写真は触れたときだけ隣に切り抜かずに出る。 */
+  .dv-doors[data-plain] {
+    align-items: stretch;
+  }
+  .dv-doors[data-plain] .dv-stage {
+    aspect-ratio: auto;
+    background: none;
+  }
+  .dv-doors[data-plain] .dv-stage__img {
+    object-fit: contain;
+    object-position: left center;
+  }
+  .dv-doors[data-plain] .dv-door {
+    color: var(--foreground);
+  }
+  .dv-doors[data-plain] .dv-door__title {
+    font-size: clamp(1.75rem, 2.6vw, 2.5rem);
+  }
   /* 名刺は詩の紙の下、右寄せ（会場の位置）。 */
   .ex-cards {
     grid-template-columns: repeat(2, 9.5rem);
@@ -519,7 +642,9 @@ body[data-reveal="none"] .ex-work__open.fade-in-item .ex-work__img {
   }
   .ex-wall__img,
   .ex-wall__sheet,
-  .ex-wall__card {
+  .ex-wall__card,
+  .ex-wall__card:has(span),
+  .ex-wall__card:not(:has(span)) {
     opacity: 1;
     filter: none;
     transition: none;

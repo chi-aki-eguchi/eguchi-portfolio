@@ -4,6 +4,7 @@ import { test, expect, type Page, type SmokeApi } from "./fixtures.ts";
  * トップの展示（shared/exhibition.ts）。人工データの上で、設定だけこの spec の中で差し替えて見る（保存はしない）。
  *
  * 1. 会場の壁の配置から始まり、同じ順に切り抜かない写真が続き、最後が縦書きの詩と名刺、言葉の目次
+ *    開いた瞬間は名刺で始まり、壁の札まで戻る
  * 2. 同梱の写真が、いつもの画像の経路（/api/images/…）で配信される
  * 3. 押すといつものビューアが、その写真から順に開く
  * 4. 5枚から外すと1枚の表紙になる。写真・文を足すと出る。書いていない文の場所は取らない
@@ -98,6 +99,41 @@ test("展示のトップ › 会場の壁の配置から始まり、同じ順に
   // 続きは言葉の目次。色の写真を挟まない。
   await expect(page.locator(".dv-doors[data-plain]")).toBeVisible();
   await expect(page.locator(".dv-door__photo")).toHaveCount(0);
+  expect(await noSideScroll(page)).toBeLessThanOrEqual(0);
+});
+
+test("展示のトップ › 開いた瞬間の名刺が壁の札まで戻り、そのあいだに現像が始まって片づく", async ({ page, api }) => {
+  await withSettings(page, api, { siteName: "江口秋" });
+  await page.goto("/?design=develop&intro", { waitUntil: "commit" });
+  const card = page.locator(".dv-intro__card");
+  await expect(card).toContainText("江口秋");
+  // 名刺が動き出すまでは現像を始めない（紙の裏で終わらないように）。
+  await expect(page.locator(".ex-cover")).not.toHaveAttribute("data-on", "");
+
+  // 動き終わりの名刺と札を、退く段取りに入った瞬間に測る。
+  const landed = await page.evaluate(
+    () =>
+      new Promise<{ card: number[]; target: number[] } | null>((resolve) => {
+        const intro = document.querySelector<HTMLElement>(".dv-intro");
+        if (!intro) return resolve(null);
+        const box = (el: Element | null) => {
+          const r = el!.getBoundingClientRect();
+          return [r.left, r.top, r.width, r.height];
+        };
+        const observer = new MutationObserver(() => {
+          if (intro.getAttribute("data-phase") !== "out") return;
+          observer.disconnect();
+          resolve({ card: box(intro.querySelector(".dv-intro__card")), target: box(document.querySelector(".ex-wall__card")) });
+        });
+        observer.observe(intro, { attributes: true, attributeFilter: ["data-phase"] });
+        setTimeout(() => resolve(null), 9000);
+      }),
+  );
+  expect(landed, "名刺が戻って退く段取りまで進む").not.toBeNull();
+  landed!.card.forEach((value, i) => expect(Math.abs(value - landed!.target[i]!)).toBeLessThanOrEqual(1.5));
+  await expect(page.locator(".ex-cover")).toHaveAttribute("data-on", "");
+  await expect(page.locator(".dv-intro")).toHaveCount(0);
+  await expect(page.locator(".ex-wall__card").first()).toHaveCSS("opacity", "1");
   expect(await noSideScroll(page)).toBeLessThanOrEqual(0);
 });
 

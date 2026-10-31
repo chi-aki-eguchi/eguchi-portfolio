@@ -18,9 +18,9 @@ const result = ts.transpileModule(readFileSync(filename, 'utf8'), {
 assert.equal((result.diagnostics || []).filter(d => d.category === ts.DiagnosticCategory.Error).length, 0);
 const flush = async () => { for (let i = 0; i < 20; i += 1) await Promise.resolve(); };
 
-function mount({ pendingFont = false, hasPhoto = true, expectPhoto = true } = {}) {
+function mount({ pendingFont = false, hasPhoto = true, expectPhoto = true, card = false, target = null } = {}) {
   const refs = [], effects = [], states = [], timers = new Map(), handlers = new Map();
-  let now = 0, timerId = 0, completed = 0, stateIndex = 0;
+  let now = 0, timerId = 0, completed = 0, stateIndex = 0, landed = 0;
   const window = {
     scrollY: 0,
     setTimeout(fn, ms) { const id = ++timerId; timers.set(id, { at: now + ms, fn }); return id; },
@@ -32,8 +32,20 @@ function mount({ pendingFont = false, hasPhoto = true, expectPhoto = true } = {}
     removeEventListener: (name, fn) => handlers.get(name)?.delete(fn),
   };
   const image = { complete: true, naturalWidth: 1000, currentSrc: '/photo.jpg', decode: async () => {}, closest: () => ({}) };
-  const root = { parentElement: { querySelector: (selector) => selector.includes('img') ? (hasPhoto ? image : null) : {} } };
-  const props = { name: '秋', caption: '', expectPhoto, onDone: () => { completed += 1; } };
+  const root = {
+    getBoundingClientRect: () => ({ left: 0, top: 0, width: 390, height: 608 }),
+    parentElement: {
+      querySelector(selector) {
+        if (selector === '.ex-wall__card') return target && { getBoundingClientRect: () => target };
+        return selector.includes('img') ? (hasPhoto ? image : null) : {};
+      },
+    },
+  };
+  const props = {
+    name: '秋', caption: '', expectPhoto, card,
+    onLand: () => { landed += 1; },
+    onDone: () => { completed += 1; },
+  };
   const exports = {};
   vm.runInNewContext(result.outputText, {
     exports, window, performance: { now: () => now },
@@ -56,6 +68,9 @@ function mount({ pendingFont = false, hasPhoto = true, expectPhoto = true } = {}
         INTRO_FONT_WAIT_MS: 100, INTRO_GROW_AFTER_MS: 20, INTRO_GROW_MS: 20,
         INTRO_IMAGE_WAIT_MS: 200, INTRO_OUT_MS: 20, INTRO_PLATE_AFTER_MS: 20,
         INTRO_SEEN_KEY: 'seen', introLayout: () => null, isVerticalName: () => true,
+        INTRO_CARD_HOLD_MS: 30, INTRO_LAND_MS: 40,
+        introCardLayout: () => ({ size: 100, left: 0, top: 0 }),
+        introCardLanding: (_stage, _card, box) => (box.w > 0 ? { dx: 1, dy: 1, scale: 0.1 } : null),
       };
       throw new Error(`Unexpected import: ${name}`);
     },
@@ -80,6 +95,7 @@ function mount({ pendingFont = false, hasPhoto = true, expectPhoto = true } = {}
     window, timers, handlers, advance,
     phases: () => states.filter((item) => item.index === 0).map((item) => item.value),
     completed: () => completed,
+    landed: () => landed,
     emit: (name) => { for (const fn of handlers.get(name) || []) fn(); },
     cleanup: () => cleanup?.(),
     strictReplay() { cleanup?.(); cleanup = effects[0](); },
@@ -152,4 +168,32 @@ test('missing photo still ends naturally with the existing name-only exit', asyn
   await m.advance(1500);
   assert.deepEqual(m.phases(), ['on', 'out']); assert.equal(m.completed(), 0);
   await m.advance(60); assert.equal(m.completed(), 1); m.cleanup();
+});
+const wallCard = { left: 340, top: 500, width: 14, height: 14 };
+test('card lands on the wall, tells the page once, then exits', async () => {
+  const m = mount({ hasPhoto: false, expectPhoto: false, card: true, target: wallCard });
+  await m.advance(30);
+  assert.deepEqual(m.phases(), ['on', 'land']); assert.equal(m.landed(), 1);
+  await m.advance(40);
+  assert.deepEqual(m.phases(), ['on', 'land', 'out']); assert.equal(m.completed(), 0);
+  await m.advance(60);
+  assert.equal(m.completed(), 1); assert.equal(m.landed(), 1); assert.equal(m.timers.size, 0);
+  m.cleanup();
+});
+test('touch during the landing finishes at once and never exits twice', async () => {
+  const m = mount({ hasPhoto: false, expectPhoto: false, card: true, target: wallCard });
+  await m.advance(35);
+  m.emit('touchstart');
+  assert.equal(m.completed(), 1); assert.equal(m.timers.size, 0);
+  await m.advance(5000);
+  assert.deepEqual(m.phases(), ['on', 'land']); assert.equal(m.completed(), 1);
+  m.cleanup();
+});
+test('card with nowhere to land fades without moving', async () => {
+  for (const target of [null, { left: 0, top: 0, width: 0, height: 0 }]) {
+    const m = mount({ hasPhoto: false, expectPhoto: false, card: true, target });
+    await m.advance(30);
+    assert.deepEqual(m.phases(), ['on', 'out']); assert.equal(m.landed(), 0);
+    await m.advance(60); assert.equal(m.completed(), 1); m.cleanup();
+  }
 });

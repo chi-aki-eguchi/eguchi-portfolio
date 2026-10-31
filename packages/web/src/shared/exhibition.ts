@@ -61,26 +61,64 @@ export type WallBox = { x: number; y: number; w: number; h: number };
 /**
  * 会場の壁の配置（2026-10-31 オーナーが送ってくれた会場の写真から測った。壁の範囲に対する %）。
  * frame は額、print は額の中の写真の位置（額に対する %）。sheet は詩の紙、cards は名前と QR の札。
+ *
+ * phone はスマホの縦の画面に掛け直した位置（2026-11-01）。会場の比のままでは写真が幅 115px ほどにしか
+ * ならないので、3枚2段を2枚3段に。順はそのまま（左から右、上から下）で、右下が詩の紙と名刺なのも会場と同じ。
+ * 枠の比は写真の比と同じなので、スマホでは写真が枠いっぱいになる。
  */
 export const EXHIBITION_WALL: {
   ratio: number;
-  works: readonly { id: number; frame: WallBox; print: WallBox }[];
+  works: readonly { id: number; frame: WallBox; print: WallBox; phone: WallBox }[];
   sheet: WallBox;
   cards: readonly WallBox[];
+  phone: { ratio: number; sheet: WallBox; cards: readonly WallBox[] };
 } = {
   ratio: 1738 / 1220,
   works: [
-    { id: -4, frame: { x: 0, y: 4.5, w: 33.7, h: 36.5 }, print: { x: 21.3, y: 20.2, w: 56.5, h: 58.9 } },
-    { id: -3, frame: { x: 38, y: 0, w: 25.1, h: 46.3 }, print: { x: 20.6, y: 21.9, w: 58.7, h: 57.2 } },
-    { id: -2, frame: { x: 68, y: 5.2, w: 32, h: 35.8 }, print: { x: 21.9, y: 20.8, w: 57.3, h: 58.4 } },
-    { id: -1, frame: { x: 3, y: 53.3, w: 26.1, h: 46.7 }, print: { x: 21, y: 27.2, w: 58.5, h: 46.1 } },
-    { id: -5, frame: { x: 33.7, y: 57.2, w: 32.2, h: 35.6 }, print: { x: 15.9, y: 20.5, w: 68.4, h: 59.4 } },
+    {
+      id: -4,
+      frame: { x: 0, y: 4.5, w: 33.7, h: 36.5 },
+      print: { x: 21.3, y: 20.2, w: 56.5, h: 58.9 },
+      phone: { x: 0, y: 4.25, w: 48.05, h: 29.09 },
+    },
+    {
+      id: -3,
+      frame: { x: 38, y: 0, w: 25.1, h: 46.3 },
+      print: { x: 20.6, y: 21.9, w: 58.7, h: 57.2 },
+      phone: { x: 53.07, y: 0, w: 46.93, h: 44.59 },
+    },
+    {
+      id: -2,
+      frame: { x: 68, y: 5.2, w: 32, h: 35.8 },
+      print: { x: 21.9, y: 20.8, w: 57.3, h: 58.4 },
+      phone: { x: 0, y: 37.79, w: 48.05, h: 29.09 },
+    },
+    {
+      id: -1,
+      frame: { x: 3, y: 53.3, w: 26.1, h: 46.7 },
+      print: { x: 21, y: 27.2, w: 58.5, h: 46.1 },
+      phone: { x: 58.1, y: 47.98, w: 41.9, h: 31.85 },
+    },
+    {
+      id: -5,
+      frame: { x: 33.7, y: 57.2, w: 32.2, h: 35.6 },
+      print: { x: 15.9, y: 20.5, w: 68.4, h: 59.4 },
+      phone: { x: 0, y: 71.34, w: 55.87, h: 28.24 },
+    },
   ],
   sheet: { x: 76.4, y: 53.3, w: 12, h: 24.4 },
   cards: [
     { x: 91.3, y: 80.6, w: 3.1, h: 4.5 },
     { x: 95.3, y: 80.6, w: 3.1, h: 4.5 },
   ],
+  phone: {
+    ratio: 358 / 471,
+    sheet: { x: 73.18, y: 83.23, w: 15.64, h: 16.77 },
+    cards: [
+      { x: 91.06, y: 95.54, w: 3.91, h: 2.97 },
+      { x: 96.09, y: 95.54, w: 3.91, h: 2.97 },
+    ],
+  },
 };
 
 /** 同梱の5枚が全部並びに入っている間は、トップの最初に壁の配置を出す。外すと先頭の写真が表紙になる。 */

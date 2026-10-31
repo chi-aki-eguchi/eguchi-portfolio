@@ -74,7 +74,8 @@ function position(photo: DevelopPhoto): string | undefined {
  * スマホでは隣に置く幅が無いので、扉ごとに写真を上に添える。
  */
 function Doors({ doors, plain = false }: { doors: DevelopDoor[]; plain?: boolean }) {
-  const [active, setActive] = useState(0);
+  // 展示のトップ（plain）は、触れるまで写真を出さない（白黒の展示の直後に、色の写真が急に並ばないように）。
+  const [active, setActive] = useState(plain ? -1 : 0);
   const staged = doors.filter((d) => d.photo);
   // スマホの扉の写真は、画面に入ってきたときに現れる（今までの「写真が現れる」仕組みをそのまま使う）。
   const fadeRef = useScrollFadeIn([doors.length]);

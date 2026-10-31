@@ -57,6 +57,28 @@ describe("トップの展示の決まり", () => {
     expect(exhibitionShowsWall("12,34")).toBe(false);
   });
 
+  test("スマホの掛け方：写真は枠の比のまま（切り抜かない）、はみ出さず、どれも重ならない", () => {
+    const { ratio, sheet, cards } = EXHIBITION_WALL.phone;
+    const boxes = [...EXHIBITION_WALL.works.map((work) => work.phone), sheet, ...cards];
+    for (const box of boxes) {
+      expect(box.x).toBeGreaterThanOrEqual(0);
+      expect(box.y).toBeGreaterThanOrEqual(0);
+      expect(box.x + box.w).toBeLessThanOrEqual(100.01);
+      expect(box.y + box.h).toBeLessThanOrEqual(100.01);
+    }
+    for (const work of EXHIBITION_WALL.works) {
+      const photo = EXHIBITION_BUILT_IN.find((item) => item.id === work.id)!;
+      const shown = (work.phone.w * ratio) / work.phone.h;
+      expect(Math.abs(shown / (photo.width / photo.height) - 1)).toBeLessThan(0.02);
+    }
+    boxes.forEach((a, i) =>
+      boxes.slice(i + 1).forEach((b) => {
+        const apart = a.x + a.w <= b.x || b.x + b.w <= a.x || a.y + a.h <= b.y || b.y + b.h <= a.y;
+        expect(apart).toBe(true);
+      }),
+    );
+  });
+
   test("詩は原稿のまま8行で、紙に収まる。長い文は横書きへ回す", () => {
     expect(EXHIBITION_POEM.split("\n")).toHaveLength(8);
     expect(exhibitionTextFitsSheet(EXHIBITION_POEM)).toBe(true);

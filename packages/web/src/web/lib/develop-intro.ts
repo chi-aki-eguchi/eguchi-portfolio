@@ -59,8 +59,10 @@ export function shouldPlayIntro(env: IntroEnvironment): boolean {
   return env.landedOnTop && !env.seen;
 }
 
-/** 図版を出さず名前だけで終える回の、名前が残る時間（添える言葉まで読める長さ）。 */
-export const INTRO_NAME_ONLY_MS = 2100;
+/** 名刺の回の、名前が定まってから名刺が動き出すまでを含めた長さ。 */
+export const INTRO_CARD_HOLD_MS = 1750;
+/** 名刺が壁の定位置へ戻る長さ。 */
+export const INTRO_LAND_MS = 1150;
 
 /** 縦に組む名前か（漢字・かなを含む短い名前）。英字だけの名前は、図版の下に横で組む。 */
 export function isVerticalName(name: string): boolean {
@@ -79,22 +81,23 @@ export type IntroLayout = {
 };
 
 /**
- * 図版を出さないときの名前の置き場所（展示の壁のトップ）。名前と添え書きを、箱の真ん中に。
- * 添え書きは左右の真ん中に置く（呼ぶ側が自分の幅の半分だけ戻す）。
+ * 名刺の置き場所（展示の壁のトップ）。手に持った名刺くらいの大きさで、箱の真ん中より少し上に。
+ * 名前の組みは名刺そのもの（develop-intro.css）。
  */
-export function introNameLayout(
+export function introCardLayout(stage: { w: number; h: number }): { size: number; left: number; top: number } {
+  const size = Math.round(Math.min(stage.w * 0.74, stage.h * 0.52, 360));
+  return { size, left: (stage.w - size) / 2, top: Math.max(0, (stage.h - size) / 2 - stage.h * 0.03) };
+}
+
+/** 名刺を壁の札へ重ねる変形。行き先が箱の外（横向きのスマホなど）なら null（動かさず薄れて終える）。 */
+export function introCardLanding(
   stage: { w: number; h: number },
-  length: number,
-): Pick<IntroLayout, "name" | "caption"> {
-  const narrow = stage.w < 640;
-  const fontSize = narrow ? 28 : 36;
-  // 縦の名前は、字の高さに字間（0.7em、名刺の表と同じ。develop-intro.css）を足した長さ。
-  const height = length * fontSize * 1.7;
-  const top = Math.max(0, (stage.h - height) / 2 - 18);
-  return {
-    name: { left: (stage.w - fontSize) / 2, top, fontSize },
-    caption: { left: stage.w / 2, top: top + height + 14 },
-  };
+  card: { left: number; top: number; size: number },
+  target: IntroBox,
+): { dx: number; dy: number; scale: number } | null {
+  if (target.w <= 0 || target.x < 0 || target.y < 0) return null;
+  if (target.x + target.w > stage.w || target.y + target.h > stage.h) return null;
+  return { dx: target.x - card.left, dy: target.y - card.top, scale: target.w / card.size };
 }
 
 /**

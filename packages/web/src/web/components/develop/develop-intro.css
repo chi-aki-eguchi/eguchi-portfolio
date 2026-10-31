@@ -31,6 +31,15 @@
 .dv-intro[data-phase="out"] {
   opacity: 0;
 }
+/* 名刺が動き出したら、紙が引いて、後ろの壁が見えてくる。 */
+.dv-intro:has(.dv-intro__card) {
+  transition:
+    opacity 0.3s ease,
+    background-color 0.75s ease;
+}
+.dv-intro:is([data-phase="land"], [data-phase="out"]):has(.dv-intro__card) {
+  background-color: transparent;
+}
 
 /* 図版。箱は表紙の写真と同じ場所・同じ大きさで、最初は小さく縮めて置いてある（変形は
    DevelopIntro.tsx が書く）。引き伸ばすときは、その変形を外すだけ。 */
@@ -96,12 +105,31 @@
     font-size: 12px;
   }
 }
-.dv-intro__caption[data-center] {
-  transform: translateX(-50%);
+/* 名刺（展示の壁のトップ）。寸法の比・名前の組みは本物の名刺の表（exhibition.css の .ex-card と同じ）。
+   DevelopIntro.tsx が置き場所と、定位置へ戻る変形を書く。 */
+.dv-intro__card {
+  position: absolute;
+  container-type: inline-size;
+  overflow: hidden;
+  border-radius: 13%;
+  background: var(--ex-paper, #fff);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04), 0 18px 36px -26px rgba(0, 0, 0, 0.24);
+  opacity: 0;
+  transform-origin: 0 0;
+  will-change: transform;
+  transition-property: opacity, transform;
+  transition-timing-function: ease, cubic-bezier(0.62, 0, 0.18, 1);
 }
-/* 名前だけの回は、名刺の表と同じ字間（1字ぶんの高さの 1.7 倍の送り）。 */
-.dv-intro[data-name-only] .dv-intro__name[data-vertical] {
-  letter-spacing: 0.7em;
+.dv-intro:not([data-phase="wait"]) .dv-intro__card {
+  opacity: 1;
+}
+.dv-intro__card .dv-intro__name[data-vertical] {
+  left: var(--card-name-left);
+  top: var(--card-name-top);
+  transform: translate(-50%, -50%);
+  color: #1a1a1a;
+  font-size: var(--card-name-size);
+  letter-spacing: var(--card-name-tracking);
 }
 .dv-intro__name span,
 .dv-intro__caption span {

@@ -1,15 +1,17 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import {
+  INTRO_CARD_HOLD_MS,
   INTRO_FONT_WAIT_MS,
   INTRO_GROW_AFTER_MS,
   INTRO_GROW_MS,
   INTRO_IMAGE_WAIT_MS,
-  INTRO_NAME_ONLY_MS,
+  INTRO_LAND_MS,
   INTRO_OUT_MS,
   INTRO_PLATE_AFTER_MS,
   INTRO_SEEN_KEY,
+  introCardLanding,
+  introCardLayout,
   introLayout,
-  introNameLayout,
   isVerticalName,
   type IntroBox,
 } from "../../lib/develop-intro";
@@ -20,9 +22,10 @@ import "./develop-intro.css";
  * on    名前がにじんで現れる
  * plate 図版が像で出て、現像される
  * grow  図版が表紙いっぱいに引き伸ばされる（名前は退く）
+ * land  名刺が壁の定位置へ戻る（展示の壁のトップだけ）
  * out   見せ場そのものが薄れて、下の表紙に替わる
  */
-type Phase = "wait" | "on" | "plate" | "grow" | "out";
+type Phase = "wait" | "on" | "plate" | "grow" | "land" | "out";
 type Plate = { src: string; fit: string; position: string; ground: string };
 
 /**
@@ -35,16 +38,22 @@ type Plate = { src: string; fit: string; position: string; ground: string };
  *
  * 動かすのは濃さと、図版の拡大（変形）と、名前のにじみ（小さい字のぼかし）だけ。
  * 流すかどうかは `lib/develop-intro.ts` の shouldPlayIntro が決める。
+ *
+ * 展示の壁のトップ（card）は写真集の扉の代わりに名刺で始まる（2026-11-01）。名刺の QR を読んだ人の手元に
+ * あった物が画面いっぱいに出て、縮みながら壁の右下の定位置へ戻り、そのあいだに写真が現像される。
  */
 export function DevelopIntro({
   name,
   caption,
   expectPhoto,
   onDone,
-  nameOnly = false,
+  card = false,
+  onLand,
 }: {
-  /** 図版を出さず、紙の上の名前と言葉だけで終える（展示の壁のトップ。名前は会場の札と同じ縦組み）。 */
-  nameOnly?: boolean;
+  /** 名刺で始まり、壁の札（`.ex-wall__card`）へ戻って終える。 */
+  card?: boolean;
+  /** 名刺が動き出すとき（壁の写真が現像を始める合図）。 */
+  onLand?: () => void;
   name: string;
   /** 図版の下に小さく添える言葉（肩書きなど）。無ければ出さない。 */
   caption: string;
@@ -57,13 +66,17 @@ export function DevelopIntro({
   const [phase, setPhase] = useState<Phase>("wait");
   const [boxes, setBoxes] = useState<{ stage: { w: number; h: number }; photo: IntroBox } | null>(null);
   const [plate, setPlate] = useState<Plate | null>(null);
+  const [landing, setLanding] = useState<{ dx: number; dy: number; scale: number } | null>(null);
   const doneRef = useRef(onDone);
   doneRef.current = onDone;
   const expectRef = useRef(expectPhoto);
   expectRef.current = expectPhoto;
-  const nameOnlyRef = useRef(nameOnly);
-  nameOnlyRef.current = nameOnly;
+  const landRef = useRef(onLand);
+  landRef.current = onLand;
   const vertical = isVerticalName(name);
+  const asCard = card && vertical;
+  const asCardRef = useRef(asCard);
+  asCardRef.current = asCard;
   const chars = Array.from(name.trim());
 
   // 置き場所は、表紙の写真の箱（写真が届く前から置いてある枠）から決める。
@@ -160,7 +173,26 @@ export function DevelopIntro({
       if (!alive || leaving) return;
       // 表紙の写真が無い・届かないなら、見せ場は名前だけで終える（名前が定まるまでは見せる）。
       if (!drawable(img)) {
-        await wait(Math.max(0, (nameOnlyRef.current ? INTRO_NAME_ONLY_MS : 1500) - (performance.now() - started)));
+        await wait(Math.max(0, (asCardRef.current ? INTRO_CARD_HOLD_MS : 1500) - (performance.now() - started)));
+        if (!alive || leaving) return;
+        const target = asCardRef.current ? host.querySelector(".ex-wall__card")?.getBoundingClientRect() : null;
+        if (target) {
+          const box = root.getBoundingClientRect();
+          const stage = { w: box.width, h: box.height };
+          const route = introCardLanding(stage, introCardLayout(stage), {
+            x: target.left - box.left,
+            y: target.top - box.top,
+            w: target.width,
+            h: target.height,
+          });
+          if (route) {
+            setLanding(route);
+            setPhase("land");
+            landRef.current?.();
+            await wait(INTRO_LAND_MS);
+            if (!alive || leaving) return;
+          }
+        }
         leave();
         return;
       }
@@ -214,11 +246,8 @@ export function DevelopIntro({
     context.drawImage(source, 0, 0);
   }, [plate]);
 
-  const layout = boxes
-    ? nameOnly && vertical
-      ? { vertical, plate: null, ...introNameLayout(boxes.stage, chars.length) }
-      : introLayout(boxes.stage, boxes.photo, vertical)
-    : null;
+  const layout = boxes && !asCard ? introLayout(boxes.stage, boxes.photo, vertical) : null;
+  const cardBox = boxes && asCard ? introCardLayout(boxes.stage) : null;
   const grown = phase === "grow" || phase === "out";
   // 字ごとに少しずつ遅らせる。長い名前でも、最後の字が 0.72 秒より後にならないようにする。
   const step = Math.min(180, 720 / Math.max(1, chars.length - 1));
@@ -228,9 +257,33 @@ export function DevelopIntro({
       ref={rootRef}
       className="dv-intro"
       data-phase={phase}
-      data-name-only={nameOnly && vertical ? "" : undefined}
       aria-hidden="true"
     >
+      {cardBox && (
+        <div
+          className="dv-intro__card"
+          style={{
+            left: cardBox.left,
+            top: cardBox.top,
+            width: cardBox.size,
+            height: cardBox.size,
+            transitionDuration: `0.5s, ${INTRO_LAND_MS}ms`,
+            transform: landing
+              ? `translate(${landing.dx}px, ${landing.dy}px) scale(${landing.scale})`
+              : undefined,
+          }}
+        >
+          <p className="dv-intro__name" data-vertical="">
+            {chars.map((char, i) => (
+              // 並びは変わらない（名前の字を順に置くだけ）。
+              // eslint-disable-next-line react/no-array-index-key
+              <span key={i} style={{ animationDelay: `${150 + i * step}ms` }}>
+                {char}
+              </span>
+            ))}
+          </p>
+        </div>
+      )}
       {layout?.plate && boxes && plate && (
         <div
           className="dv-intro__plate"
@@ -277,7 +330,6 @@ export function DevelopIntro({
       {layout && caption && (
         <p
           className="dv-intro__caption"
-          data-center={nameOnly && vertical ? "" : undefined}
           style={{ left: layout.caption.left, top: layout.caption.top }}
         >
           <span>{caption}</span>

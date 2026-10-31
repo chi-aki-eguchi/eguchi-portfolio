@@ -1,7 +1,8 @@
 import { describe, expect, test } from "bun:test";
 import {
   introLayout,
-  introNameLayout,
+  introCardLanding,
+  introCardLayout,
   isVerticalName,
   shouldPlayIntro,
   type IntroEnvironment,
@@ -102,12 +103,30 @@ describe("introLayout", () => {
   });
 });
 
-describe("図版を出さないときの名前の置き場所", () => {
-  test("名前を左右の真ん中に置き、添え書きを名前の下の真ん中に置く", () => {
-    const layout = introNameLayout({ w: 390, h: 608 }, 3);
-    expect(layout.name.fontSize).toBe(28);
-    expect(layout.name.left).toBe((390 - 28) / 2);
-    expect(layout.caption.left).toBe(195);
-    expect(layout.caption.top).toBeGreaterThan(layout.name.top + 3 * 28);
+describe("名刺から壁へ戻る見せ場", () => {
+  const stage = { w: 390, h: 608 };
+  test("名刺は箱の左右の真ん中に、幅の4分の3ほどで置く", () => {
+    const card = introCardLayout(stage);
+    expect(card.size).toBe(289);
+    expect(card.left + card.size / 2).toBe(195);
+    expect(card.top).toBeGreaterThan(0);
+    expect(card.top + card.size).toBeLessThan(stage.h);
+  });
+  test("横に広い画面では、高さに合わせて大きくなりすぎない", () => {
+    expect(introCardLayout({ w: 1260, h: 900 }).size).toBe(360);
+    expect(introCardLayout({ w: 844, h: 390 }).size).toBe(203);
+  });
+  test("名刺が札にぴったり重なる変形を返す", () => {
+    const card = introCardLayout(stage);
+    const route = introCardLanding(stage, card, { x: 342, y: 470, w: 14, h: 14 });
+    expect(route).not.toBeNull();
+    expect(card.left + route!.dx).toBe(342);
+    expect(card.top + route!.dy).toBe(470);
+    expect(card.size * route!.scale).toBeCloseTo(14);
+  });
+  test("札が箱の外にあるときは動かさない", () => {
+    const card = introCardLayout(stage);
+    expect(introCardLanding(stage, card, { x: 342, y: 640, w: 14, h: 14 })).toBeNull();
+    expect(introCardLanding(stage, card, { x: 0, y: 0, w: 0, h: 0 })).toBeNull();
   });
 });

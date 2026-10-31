@@ -21,6 +21,7 @@
 | 現在地・進行中の作業 | `task.md` 冒頭 Current State |
 | 写真表示機能の統合と旧試作の扱い | `docs/specs/prototype-integration-20260928.md` |
 | 紹介素材・About写真の仕上げ | `docs/specs/finish-review-20260928.md` |
+| トップの展示（日藝祭 2026、2026-10-31） | `docs/specs/exhibition-top-20261031.md` |
 | 写真中心への作り直し・1枚を複数シリーズへ（2026-09-26） | `docs/specs/photo-first-2026-09-26.md` |
 | 写真管理・サイト編集の再設計（2026-09-13） | `docs/specs/admin-studio-2026-09-13.md` |
 | 公開サイトの根本デザイン比較（2026-09-08） | `docs/specs/public-design-review-2026-09-08.md` |

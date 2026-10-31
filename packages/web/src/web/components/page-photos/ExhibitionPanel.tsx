@@ -38,7 +38,7 @@ function CopyField({
         <textarea
           value={draft}
           maxLength={max}
-          rows={4}
+          rows={9}
           data-pp-exhibition={field}
           onChange={(event) => setDraft(event.target.value)}
           onBlur={commit}
@@ -60,7 +60,7 @@ function CopyField({
   );
 }
 
-/** 展示の題・会期・添える文。欄を出ると、その場で保存される。空にした項目はトップに出ない。 */
+/** 展示の題・会期・詩。欄を出ると、その場で保存される。空にした項目はトップに出ない。 */
 export function ExhibitionCopy({
   title,
   dates,
@@ -89,12 +89,12 @@ export function ExhibitionCopy({
         onSave={(next) => onSave("exhibitionDates", next, "会期を変えました")}
       />
       <CopyField
-        label="添える文"
+        label="詩・添える文（写真のあとに、短い文は会場の紙と同じ縦書きで出ます）"
         field="text"
         value={text}
         max={EXHIBITION_TEXT_MAX}
         multiline
-        onSave={(next) => onSave("exhibitionText", next, "添える文を変えました")}
+        onSave={(next) => onSave("exhibitionText", next, "詩・添える文を変えました")}
       />
     </div>
   );

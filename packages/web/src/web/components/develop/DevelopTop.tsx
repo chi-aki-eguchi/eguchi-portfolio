@@ -78,7 +78,8 @@ export function DevelopTop({ settings, exhibition = false }: { settings: Setting
       seriesCover={seriesCover}
       showSeries={shelves.length > 0}
       showGallery={galleryHasPhotos(photoCounts, galleryExcludesSeries(settings))}
-      after={<InquiryCta />}
+      // 展示のトップでは、詩の余韻のあとに料金を置かない。依頼の入口は Info にある。
+      after={exhibition ? undefined : <InquiryCta />}
       plain={exhibition}
       extraDoors={extraDoors}
     />

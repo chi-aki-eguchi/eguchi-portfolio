@@ -10,7 +10,7 @@ import {
   parsePhotoIdList,
   type DevelopListKind,
 } from "../../shared/develop-structure";
-import { EXHIBITION_BUILT_IN, exhibitionPhotoList } from "../../shared/exhibition";
+import { EXHIBITION_BUILT_IN, exhibitionPhotoList, exhibitionShowsWall } from "../../shared/exhibition";
 import { isServiceOwnerSite } from "../../shared/service-visibility";
 import { DoorNames } from "../components/page-photos/DoorNames";
 import { ExhibitionCaptions, ExhibitionCopy } from "../components/page-photos/ExhibitionPanel";
@@ -343,7 +343,11 @@ export default function AdminPagesPage() {
               いつもの
             </button>
           </fieldset>
-          <p className="pp-note">先頭の写真が表紙になります。この順に、続けて並びます。</p>
+          <p className="pp-note">
+            {exhibitionShowsWall(savedValue("exhibitionPhotoIds"))
+              ? "この順に並びます。同梱の5枚が揃っている間は、トップの最初に会場の壁の配置が出ます。"
+              : "先頭の写真が表紙になり、この順に続きます。"}
+          </p>
           <PagePhotoEditor
             key="exhibition"
             photos={exhibitionCatalog}

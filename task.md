@@ -1,12 +1,12 @@
 ## 今回の引き継ぎ — 2026-10-31 トップを日藝祭の展示向けにする（ローカルまで・push はオーナー）
 
-- 依頼: akieguchi.com のトップを、日藝祭（2026-11-01〜03）で展示を見た人向けに。スマホで写真をもう一度見る・ほかの作品・Instagram へ。会期後も続け、自動で戻さない。次の作品ができたら更新できるように。追加の写真・文はあとから足せるように。「まずローカルで見て確認できるところまで。push は自分でやる」。
+- 依頼: akieguchi.com のトップを、日藝祭（2026-11-01〜03）で展示を見た人向けに。スマホで写真をもう一度見る・ほかの作品・Instagram へ。会期後も続け、自動で戻さない。次の作品ができたら更新できるように。「まずローカルで見て確認できるところまで。push は自分でやる」。同日夜、オーナーが会場の写真を送り「詩の内容は把握してる？で、こだわり見せて」。
 - 担当: Claude Code 1名（主担当・編集担当とも、委譲なし）。worktree `/Users/chiaki/wt-nichigei`、branch `claude/nichigei-20261031`、基点 `origin/main=502da91`。元 checkout の `main` は origin より97件遅れで書きかけあり、触っていない。対象外: push・本番の設定と写真への書き込み。
-- 製品: 正本 [exhibition-top-20261031.md](docs/specs/exhibition-top-20261031.md)。5枚は同梱（`packages/web/assets/exhibition/2026-nichigei/`、長辺2800px、原本 `~/Desktop/03_展示・作品/藝祭` は読むだけでハッシュ一致を確認）。push だけで本番のトップが展示になる（`homeExhibition` の既定が持ち主のサイトだけ on）。管理画面 `/admin/pages` の「展示」で、止める・写真の足し引きと並べ替え・題・会期・添える文・写真ごとの題。
-- 検証（コードで確認）: `bun run check` 成功（単体1668・ツール128・番人・組み立て。この後の変更は同梱写真の撮影日を外す・ビューアへシリーズのリンクを渡すの2点で、型・lint・関連単体を再実行）。`bun run smoke` 全体 918成功・308対象外・失敗0（33分）。最後の1点の後に `public-exhibition` 24成功。組み立てた server.ts を一時 SQLite で動かし、開いた瞬間の見せ場・HTML の先読み・共有の写真と説明・画像の変換（AVIF/WebP/JPEG）・一覧に無い名前と住所の遡りの404を確認。幅・枚数・文の組み合わせを Chromium と WebKit で測り、横スクロール・はみ出し・比のずれ0。ダーク表示・ビューアも確認。
+- 製品: 正本 [exhibition-top-20261031.md](docs/specs/exhibition-top-20261031.md)。最初の画面は会場の壁の配置、続いて壁と同じ順の5枚、最後に詩（原稿と同じ書体・同じ組み）、言葉の目次と Instagram。5枚は同梱（`packages/web/assets/exhibition/2026-nichigei/`、長辺2800px、原本 `~/Desktop/03_展示・作品/藝祭` は読むだけでハッシュ一致を確認）。push だけで本番のトップが展示になる（`homeExhibition` の既定が持ち主のサイトだけ on）。管理画面 `/admin/pages` の「展示」で、止める・写真の足し引きと並べ替え・題・会期・詩・写真ごとの題。撮影依頼の帯は展示のトップから外した（Info には残る）。
+- 検証（コードで確認）: `bun run smoke` 全体 922成功・308対象外・失敗0（33分）。組み立てた server.ts を一時 SQLite で動かし、開いた瞬間の見せ場（名前→壁が現像）・共有の写真と説明・先読みなし・画像の変換・一覧に無い名前の404を確認。幅×内容×エンジンの56通りで横スクロール・はみ出し・比のずれ・詩のはみ出し0。詩の組みは原稿の PDF と8行とも紙の0.18%以内。
 - 公開環境: 未反映。本番は `c2db790c` のまま（2026-10-31 確認）。
-- 未確認: iPhone 実機、本番での見え方、本番での最初の画像変換の待ち（手元では1枚 0.3〜0.9 秒、以後は控えから返る）。
-- 次の一手: オーナーが見て push（`git -C /Users/chiaki/wt-nichigei push origin claude/nichigei-20261031:main`）→ `/api/health` の build と本番のトップ・共有の写真を確認 → 公開済みなら worktree を片づけて元 checkout と整理。文（題・会期）と並びはオーナーの確認待ち。
+- 未確認: iPhone 実機、本番での見え方、会場の札の QR の行き先（元データは `https://akieguchi.com/`）、本番で Google Fonts から Zen Old Mincho が届くこと（手元の Chromium では確認）。詩の作者表記は付けていない（本人の詩という前提）。
+- 次の一手: オーナーが見て push（`git -C /Users/chiaki/wt-nichigei push origin claude/nichigei-20261031:main`）→ `/api/health` の build と本番のトップ・共有の写真を確認 → 公開済みなら worktree を片づけて元 checkout と整理。
 
 ## 今回の引き継ぎ — 2026-10-25 Bun・Node.js・sharp のセキュリティ更新
 

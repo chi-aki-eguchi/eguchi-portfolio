@@ -36,12 +36,19 @@ import { isServiceOwnerSite } from "../../shared/service-visibility";
 import { PhotoHome } from "../components/photo-site/PhotoHome";
 import { siteDesignFrom } from "../lib/book";
 import { DevelopTop } from "../components/develop/DevelopTop";
-import { ExhibitionLabel, ExhibitionWorks, type ExhibitionItem } from "../components/develop/ExhibitionTop";
+import {
+  ExhibitionLabel,
+  ExhibitionWall,
+  ExhibitionWorks,
+  type ExhibitionItem,
+} from "../components/develop/ExhibitionTop";
 import { PhotoViewer, usePhotoViewer } from "../components/photo-site/viewer";
 import {
   EXHIBITION_DEFAULTS,
+  EXHIBITION_WALL,
   exhibitionNeedsLibrary,
   exhibitionPhotoList,
+  exhibitionShowsWall,
   readExhibitionCaptions,
 } from "../../shared/exhibition";
 import { DevelopIntro } from "../components/develop/DevelopIntro";
@@ -1784,16 +1791,24 @@ export default function TopPage() {
       </section>
     );
 
-  // 展示のトップ：表紙の部品はそのままで、写真を切り抜かず、名前は札として写真の外へ置く。
-  // 開いた瞬間の見せ場も、表紙の現れ方・送ったときの動きの設定も、いつものトップと同じ物が効く。
+  // 展示のトップ。同梱の5枚が揃っている間は、最初の画面が会場の壁の配置（開いた瞬間の見せ場は
+  // 名前と題だけで、壁へつなぐ）。5枚から外したら、先頭の写真が表紙（いつもの表紙の部品を、切り抜かない
+  // 形で使う）。名前はどちらも札として写真の外へ置く。
   if (exhibitionOn) {
-    const exhibitionCover = exhibitionPhotos[0];
+    const showWall = exhibitionShowsWall(exhibitionIds);
+    const exhibitionCover = showWall ? undefined : exhibitionPhotos[0];
     const exhibitionTitle = settings?.exhibitionTitle ?? EXHIBITION_DEFAULTS.title;
+    const exhibitionText = settings?.exhibitionText ?? EXHIBITION_DEFAULTS.text;
     const coverSize = orientedDimensions(
       exhibitionCover?.width,
       exhibitionCover?.height,
       (exhibitionCover as GalleryPhoto | undefined)?.rotationDeg ?? 0,
     );
+    const coverRatio = showWall
+      ? String(EXHIBITION_WALL.ratio)
+      : coverSize.width && coverSize.height
+        ? `${coverSize.width} / ${coverSize.height}`
+        : undefined;
     return (
       <div className="top-page" data-hero-mode="single" data-develop-top data-exhibition>
         {experiencePanel}
@@ -1801,27 +1816,36 @@ export default function TopPage() {
           <section
             key={heroMotionKey(settings)}
             className="ex-cover"
-            style={
-              coverSize.width && coverSize.height
-                ? ({ "--photo-ar": `${coverSize.width} / ${coverSize.height}` } as React.CSSProperties)
-                : undefined
-            }
+            data-wall={showWall ? "" : undefined}
+            style={coverRatio ? ({ "--photo-ar": coverRatio } as React.CSSProperties) : undefined}
           >
             <div ref={heroBoxRef as React.Ref<HTMLDivElement>} className="hero-motion-stage ex-cover__frame">
-              <HeroSingle
-                photo={exhibitionCover as HomeHeroPhoto | undefined}
-                fxRef={heroFxRef}
-                photographerName={photographerName}
-                develop
-              />
-              {exhibitionCover && (
-                <button
-                  type="button"
-                  className="ex-cover__open"
-                  data-photo-tile={exhibitionCover.id}
-                  aria-label={`${photoAltText(exhibitionCover, { photographerName })}を大きく見る`}
-                  onClick={() => exhibitionViewer.open(0)}
+              {showWall ? (
+                <ExhibitionWall
+                  photos={exhibitionPhotos}
+                  viewer={exhibitionViewer}
+                  text={exhibitionText}
+                  on={!introPlaying}
+                  photographerName={photographerName}
                 />
+              ) : (
+                <>
+                  <HeroSingle
+                    photo={exhibitionCover as HomeHeroPhoto | undefined}
+                    fxRef={heroFxRef}
+                    photographerName={photographerName}
+                    develop
+                  />
+                  {exhibitionCover && (
+                    <button
+                      type="button"
+                      className="ex-cover__open"
+                      data-photo-tile={exhibitionCover.id}
+                      aria-label={`${photoAltText(exhibitionCover, { photographerName })}を大きく見る`}
+                      onClick={() => exhibitionViewer.open(0)}
+                    />
+                  )}
+                </>
               )}
             </div>
             <ExhibitionLabel
@@ -1841,16 +1865,18 @@ export default function TopPage() {
             <DevelopIntro
               name={settings?.siteName ?? CLIENT_SITE_FALLBACKS.siteName}
               caption={exhibitionTitle}
-              expectPhoto={exhibitionPhotos.length > 0 || photosLoading}
+              expectPhoto={!showWall && (exhibitionPhotos.length > 0 || photosLoading)}
+              nameOnly={showWall}
               onDone={endIntro}
             />
           )}
         </div>
         <ExhibitionWorks
           photos={exhibitionPhotos}
+          from={showWall ? 0 : 1}
           viewer={exhibitionViewer}
           label={exhibitionTitle || "展示の写真"}
-          text={settings?.exhibitionText ?? EXHIBITION_DEFAULTS.text}
+          text={exhibitionText}
           photographerName={photographerName}
         />
         <DevelopTop settings={settings} exhibition />

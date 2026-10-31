@@ -69,6 +69,7 @@ import {
   EXHIBITION_DEFAULTS,
   exhibitionNeedsLibrary,
   exhibitionPhotoList,
+  exhibitionShowsWall,
   exhibitionStatus,
 } from "./shared/exhibition";
 import { srcFor, srcSetFor } from "./shared/image-presets";
@@ -1084,6 +1085,9 @@ async function serveNonApi(request: Request, url: URL): Promise<Response> {
       exhibitionStatus(settings.homeExhibition, siteUrlFrom(settings, publicOrigin)) === "on";
     const exhibitionCover = exhibitionOn ? await getExhibitionCover(settings.exhibitionPhotoIds) : null;
     const heroImg = exhibitionCover ?? (await getHeroOgImage());
+    // 壁の配置を出す間は大きな表紙が無いので、表紙の写真を先読みさせない（共有の写真には使う）。
+    const heroPreload =
+      heroPreloadAllowed(settings.heroRandom) && !(exhibitionOn && exhibitionShowsWall(settings.exhibitionPhotoIds));
     const serviceUnavailable =
       isServiceVisibilityGatedPath(routePathname) &&
       !resolveServiceVisibility(
@@ -1175,13 +1179,9 @@ async function serveNonApi(request: Request, url: URL): Promise<Response> {
       override,
       publicOrigin,
       heroImg.rotationDeg,
-      heroPreloadAllowed(settings.heroRandom)
-        ? heroImg.preloadUrl
-        : undefined,
-      heroPreloadAllowed(settings.heroRandom)
-        ? heroImg.preloadSrcSet
-        : undefined,
-      heroPreloadAllowed(settings.heroRandom),
+      heroPreload ? heroImg.preloadUrl : undefined,
+      heroPreload ? heroImg.preloadSrcSet : undefined,
+      heroPreload,
     );
     // 文字の太さを最初の描画から設定どおりに（boot-style.ts）。管理画面は別の書体なので書かない。
     const bootStyle = routePathname.startsWith("/admin") ? "" : bootThemeStyle(settings);

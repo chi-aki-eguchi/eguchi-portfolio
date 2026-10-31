@@ -6,6 +6,8 @@
  * 処理は持たない**。次に見せたい作品ができたら、管理画面の「ページの写真」→「展示」で入れ替えるか、
  * 止めると、いつものトップに戻る。文は会期中でも会期後でも読める、記録の形にしてある。
  *
+ * 会場の壁と同じ順に写真を並べ、最後に詩を会場の紙と同じ組みで置く。
+ *
  * 写真の5枚はリポジトリに同梱する（`packages/web/assets/exhibition/`）。本番の写真の保存先へ入れなくても
  * push だけで出せるようにするため。配信は `/api/images/exhibition/…`（いつもの変換を通る）。
  * 同梱の写真は負の ID を持ち、ライブラリの写真（正の ID）と同じ並びに入れられる。
@@ -42,28 +44,85 @@ const builtIn = (
 });
 
 /**
- * 並びは写真を見て決めた: 背を向ける → 振り向いてこちらを見る → 窓の光 → 外へ → ほどける。
- * 明るさは花の窓で一番高くなり、また沈む。先頭が表紙になる。
+ * 並びは会場の壁と同じ：上の段の左から 芝生の腕・花と窓・部屋、下の段の左から 背中・髪。
+ * 壁はこのあと詩の紙、名前の札と続く。サイトも同じ順で読めるようにする（オーナーの展示の順）。
  * 撮影日は持たせない（元の記録はフィルムを複写した日で、ビューアに撮影日として出てしまう）。
  */
 export const EXHIBITION_BUILT_IN: readonly ExhibitionPhoto[] = [
-  builtIn(-1, "back", 2799, 2800, "こちらに背を向けた人の、濡れた黒髪と肩"),
-  builtIn(-2, "room", 2800, 2222, "薄いカーテンの光の前で、椅子に座りこちらを見ている人"),
-  builtIn(-3, "flowers", 2240, 2800, "明るい窓の前に横たわる体と、かぎ針編みの花"),
   builtIn(-4, "grass", 2800, 2240, "芝生に投げ出された、縞のシャツの腕と開いた手"),
+  builtIn(-3, "flowers", 2240, 2800, "明るい窓の前に横たわる体と、かぎ針編みの花"),
+  builtIn(-2, "room", 2800, 2222, "薄いカーテンの光の前で、椅子に座りこちらを見ている人"),
+  builtIn(-1, "back", 2799, 2800, "こちらに背を向けた人の、濡れた黒髪と肩"),
   builtIn(-5, "hair", 2800, 1866, "白い布を背にした、髪の先"),
 ];
+
+export type WallBox = { x: number; y: number; w: number; h: number };
+
+/**
+ * 会場の壁の配置（2026-10-31 オーナーが送ってくれた会場の写真から測った。壁の範囲に対する %）。
+ * frame は額、print は額の中の写真の位置（額に対する %）。sheet は詩の紙、cards は名前と QR の札。
+ */
+export const EXHIBITION_WALL: {
+  ratio: number;
+  works: readonly { id: number; frame: WallBox; print: WallBox }[];
+  sheet: WallBox;
+  cards: readonly WallBox[];
+} = {
+  ratio: 1738 / 1220,
+  works: [
+    { id: -4, frame: { x: 0, y: 4.5, w: 33.7, h: 36.5 }, print: { x: 21.3, y: 20.2, w: 56.5, h: 58.9 } },
+    { id: -3, frame: { x: 38, y: 0, w: 25.1, h: 46.3 }, print: { x: 20.6, y: 21.9, w: 58.7, h: 57.2 } },
+    { id: -2, frame: { x: 68, y: 5.2, w: 32, h: 35.8 }, print: { x: 21.9, y: 20.8, w: 57.3, h: 58.4 } },
+    { id: -1, frame: { x: 3, y: 53.3, w: 26.1, h: 46.7 }, print: { x: 21, y: 27.2, w: 58.5, h: 46.1 } },
+    { id: -5, frame: { x: 33.7, y: 57.2, w: 32.2, h: 35.6 }, print: { x: 15.9, y: 20.5, w: 68.4, h: 59.4 } },
+  ],
+  sheet: { x: 76.4, y: 53.3, w: 12, h: 24.4 },
+  cards: [
+    { x: 91.3, y: 80.6, w: 3.1, h: 4.5 },
+    { x: 95.3, y: 80.6, w: 3.1, h: 4.5 },
+  ],
+};
+
+/** 同梱の5枚が全部並びに入っている間は、トップの最初に壁の配置を出す。外すと先頭の写真が表紙になる。 */
+export function exhibitionShowsWall(ids: string | null | undefined): boolean {
+  const list = parsePhotoIdList(ids);
+  return list.length === 0 || EXHIBITION_BUILT_IN.every((photo) => list.includes(photo.id));
+}
 
 export const EXHIBITION_ASSET_KEYS: ReadonlySet<string> = new Set(
   EXHIBITION_BUILT_IN.map((photo) => photo.url.replace("/api/images/", "")),
 );
 
-/** 題・会期・添える文の初めの値。添える文は、書くまで出さない。 */
+/** 会場の壁の詩（原稿 `~/Downloads/poem_A4_tate_vector.pdf`）。一字も変えない。 */
+export const EXHIBITION_POEM = [
+  "どこへいくのかわからない",
+  "ぼくたちはなにをしてるの",
+  "どうして生きていられるの",
+  "いつまで生きなきゃいけないの",
+  "うれしいことはある",
+  "かなしいことがある",
+  "かわいいものもある",
+  "だけど私のものじゃないの",
+].join("\n");
+
+/** 題・会期・詩の初めの値。 */
 export const EXHIBITION_DEFAULTS = {
   title: "日藝祭 2026 展示作品",
   dates: "2026年11月1日〜3日",
-  text: "",
+  text: EXHIBITION_POEM,
 } as const;
+
+/** 詩の書体。原稿と同じ。 */
+export const EXHIBITION_POEM_FONT = "Zen Old Mincho";
+
+/**
+ * 縦書きの紙に組める文か。行が多い・長い文（長い説明文など）は紙からはみ出すので、横書きで出す。
+ * 紙の幅と高さは A4 の比で、スマホでも読める字の大きさにしたときに収まる数。
+ */
+export function exhibitionTextFitsSheet(text: string): boolean {
+  const lines = text.trim().split("\n");
+  return lines.length <= 10 && lines.every((line) => Array.from(line.trim()).length <= 24);
+}
 
 export const EXHIBITION_TITLE_MAX = 40;
 export const EXHIBITION_DATES_MAX = 40;
@@ -85,7 +144,7 @@ export function exhibitionNeedsLibrary(ids: string | null | undefined): boolean 
 }
 
 /**
- * 展示に出す写真。並びが空、または1枚も残っていないときは同梱の写真を初めの順で出す
+ * 展示に出す写真。並びが空、または1枚も残っていないときは同梱の写真を壁の順で出す
  * （展示が空のトップにならないように）。同梱とライブラリの写真は混ぜて並べられる。
  */
 export function exhibitionPhotoList<T extends { id: number }>(

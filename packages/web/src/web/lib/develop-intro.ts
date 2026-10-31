@@ -59,6 +59,9 @@ export function shouldPlayIntro(env: IntroEnvironment): boolean {
   return env.landedOnTop && !env.seen;
 }
 
+/** 図版を出さず名前だけで終える回の、名前が残る時間（添える言葉まで読める長さ）。 */
+export const INTRO_NAME_ONLY_MS = 2100;
+
 /** 縦に組む名前か（漢字・かなを含む短い名前）。英字だけの名前は、図版の下に横で組む。 */
 export function isVerticalName(name: string): boolean {
   const chars = Array.from(name.trim());
@@ -74,6 +77,25 @@ export type IntroLayout = {
   name: { left: number; top: number; fontSize: number };
   caption: { left: number; top: number };
 };
+
+/**
+ * 図版を出さないときの名前の置き場所（展示の壁のトップ）。名前と添え書きを、箱の真ん中に。
+ * 添え書きは左右の真ん中に置く（呼ぶ側が自分の幅の半分だけ戻す）。
+ */
+export function introNameLayout(
+  stage: { w: number; h: number },
+  length: number,
+): Pick<IntroLayout, "name" | "caption"> {
+  const narrow = stage.w < 640;
+  const fontSize = narrow ? 28 : 36;
+  // 縦の名前は、字の高さに字間（0.42em、develop-intro.css）を足した長さ。
+  const height = length * fontSize * 1.42;
+  const top = Math.max(0, (stage.h - height) / 2 - 18);
+  return {
+    name: { left: (stage.w - fontSize) / 2, top, fontSize },
+    caption: { left: stage.w / 2, top: top + height + 14 },
+  };
+}
 
 /**
  * 図版と名前の置き場所。

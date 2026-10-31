@@ -1,10 +1,14 @@
 import { describe, expect, test } from "bun:test";
 import {
   EXHIBITION_BUILT_IN,
+  EXHIBITION_POEM,
+  EXHIBITION_WALL,
   exhibitionNeedsLibrary,
   exhibitionPhotoList,
   exhibitionShape,
+  exhibitionShowsWall,
   exhibitionStatus,
+  exhibitionTextFitsSheet,
   readExhibitionCaptions,
   writeExhibitionCaptions,
 } from "./exhibition";
@@ -28,9 +32,27 @@ describe("トップの展示の決まり", () => {
     expect(exhibitionStatus("???", "https://someone-else.example")).toBe("off");
   });
 
-  test("並びが空なら、同梱の写真を初めの順で出す", () => {
-    expect(exhibitionPhotoList("", library).map((p) => p.id)).toEqual([-1, -2, -3, -4, -5]);
-    expect(exhibitionPhotoList(undefined, []).map((p) => p.id)).toEqual([-1, -2, -3, -4, -5]);
+  const WALL_ORDER = [-4, -3, -2, -1, -5];
+
+  test("並びが空なら、同梱の写真を会場の壁の順で出す", () => {
+    expect(exhibitionPhotoList("", library).map((p) => p.id)).toEqual(WALL_ORDER);
+    expect(exhibitionPhotoList(undefined, []).map((p) => p.id)).toEqual(WALL_ORDER);
+    expect(EXHIBITION_WALL.works.map((work) => work.id)).toEqual(WALL_ORDER);
+  });
+
+  test("5枚が揃っている間は壁の配置を出し、外すと1枚の表紙に戻る", () => {
+    expect(exhibitionShowsWall("")).toBe(true);
+    expect(exhibitionShowsWall("-1,-2,-3,-4,-5")).toBe(true);
+    expect(exhibitionShowsWall("-4,12,-3,-2,-1,-5")).toBe(true);
+    expect(exhibitionShowsWall("-4,-3,-2,-1")).toBe(false);
+    expect(exhibitionShowsWall("12,34")).toBe(false);
+  });
+
+  test("詩は原稿のまま8行で、紙に収まる。長い文は横書きへ回す", () => {
+    expect(EXHIBITION_POEM.split("\n")).toHaveLength(8);
+    expect(exhibitionTextFitsSheet(EXHIBITION_POEM)).toBe(true);
+    expect(exhibitionTextFitsSheet("長い一行".repeat(10))).toBe(false);
+    expect(exhibitionTextFitsSheet(Array(11).fill("行").join("\n"))).toBe(false);
   });
 
   test("同梱とライブラリの写真を、選んだ順で混ぜて出せる。消した写真は飛ばす", () => {
@@ -38,7 +60,7 @@ describe("トップの展示の決まり", () => {
   });
 
   test("選んだ写真が1枚も残っていなければ、空のトップにせず同梱の写真に戻す", () => {
-    expect(exhibitionPhotoList("999", library).map((p) => p.id)).toEqual([-1, -2, -3, -4, -5]);
+    expect(exhibitionPhotoList("999", library).map((p) => p.id)).toEqual(WALL_ORDER);
   });
 
   test("ライブラリの写真が並びにあるときだけ、写真の一覧を待つ", () => {

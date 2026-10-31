@@ -433,12 +433,13 @@ test.describe("admin — ページの写真（選んで並べる）", () => {
     await open(page);
     await page.locator('[data-pp-tab="exhibition"]').click();
     await expect(page.locator('[data-pp-tab="exhibition"] small')).toHaveText("5");
-    await expect.poll(() => shownIds(page)).toEqual([-1, -2, -3, -4, -5]);
-    // 並べ替えると、そのまま保存される（先頭が表紙になる）。
+    // 同梱の5枚は、会場の壁の順で出ている。
+    await expect.poll(() => shownIds(page)).toEqual([-4, -3, -2, -1, -5]);
+    // 並べ替えると、そのまま保存される。
     await page.locator(".pp-grid .pp-tile").nth(1).click();
     await page.getByRole("button", { name: "先頭へ" }).click();
-    await expect.poll(() => mocks.saved.at(-1)).toEqual({ exhibitionPhotoIds: "-2,-1,-3,-4,-5" });
-    await expect.poll(() => shownIds(page)).toEqual([-2, -1, -3, -4, -5]);
+    await expect.poll(() => mocks.saved.at(-1)).toEqual({ exhibitionPhotoIds: "-3,-4,-2,-1,-5" });
+    await expect.poll(() => shownIds(page)).toEqual([-3, -4, -2, -1, -5]);
     expect(await noSideScroll(page)).toBeLessThanOrEqual(0);
   });
 

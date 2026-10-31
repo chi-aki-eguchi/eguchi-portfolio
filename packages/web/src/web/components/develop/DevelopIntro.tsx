@@ -4,10 +4,12 @@ import {
   INTRO_GROW_AFTER_MS,
   INTRO_GROW_MS,
   INTRO_IMAGE_WAIT_MS,
+  INTRO_NAME_ONLY_MS,
   INTRO_OUT_MS,
   INTRO_PLATE_AFTER_MS,
   INTRO_SEEN_KEY,
   introLayout,
+  introNameLayout,
   isVerticalName,
   type IntroBox,
 } from "../../lib/develop-intro";
@@ -39,7 +41,10 @@ export function DevelopIntro({
   caption,
   expectPhoto,
   onDone,
+  nameOnly = false,
 }: {
+  /** 図版を出さず、紙の上の名前と言葉だけで終える（展示の壁のトップ。名前は会場の札と同じ縦組み）。 */
+  nameOnly?: boolean;
   name: string;
   /** 図版の下に小さく添える言葉（肩書きなど）。無ければ出さない。 */
   caption: string;
@@ -56,6 +61,8 @@ export function DevelopIntro({
   doneRef.current = onDone;
   const expectRef = useRef(expectPhoto);
   expectRef.current = expectPhoto;
+  const nameOnlyRef = useRef(nameOnly);
+  nameOnlyRef.current = nameOnly;
   const vertical = isVerticalName(name);
   const chars = Array.from(name.trim());
 
@@ -153,7 +160,7 @@ export function DevelopIntro({
       if (!alive || leaving) return;
       // 表紙の写真が無い・届かないなら、見せ場は名前だけで終える（名前が定まるまでは見せる）。
       if (!drawable(img)) {
-        await wait(Math.max(0, 1500 - (performance.now() - started)));
+        await wait(Math.max(0, (nameOnlyRef.current ? INTRO_NAME_ONLY_MS : 1500) - (performance.now() - started)));
         leave();
         return;
       }
@@ -207,14 +214,18 @@ export function DevelopIntro({
     context.drawImage(source, 0, 0);
   }, [plate]);
 
-  const layout = boxes ? introLayout(boxes.stage, boxes.photo, vertical) : null;
+  const layout = boxes
+    ? nameOnly && vertical
+      ? { vertical, plate: null, ...introNameLayout(boxes.stage, chars.length) }
+      : introLayout(boxes.stage, boxes.photo, vertical)
+    : null;
   const grown = phase === "grow" || phase === "out";
   // 字ごとに少しずつ遅らせる。長い名前でも、最後の字が 0.72 秒より後にならないようにする。
   const step = Math.min(180, 720 / Math.max(1, chars.length - 1));
 
   return (
     <div ref={rootRef} className="dv-intro" data-phase={phase} aria-hidden="true">
-      {layout && boxes && plate && (
+      {layout?.plate && boxes && plate && (
         <div
           className="dv-intro__plate"
           style={{
@@ -258,7 +269,11 @@ export function DevelopIntro({
         </p>
       )}
       {layout && caption && (
-        <p className="dv-intro__caption" style={{ left: layout.caption.left, top: layout.caption.top }}>
+        <p
+          className="dv-intro__caption"
+          data-center={nameOnly && vertical ? "" : undefined}
+          style={{ left: layout.caption.left, top: layout.caption.top }}
+        >
           <span>{caption}</span>
         </p>
       )}

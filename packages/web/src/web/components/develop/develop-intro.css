@@ -96,6 +96,9 @@
     font-size: 12px;
   }
 }
+.dv-intro__caption[data-center] {
+  transform: translateX(-50%);
+}
 .dv-intro__name span,
 .dv-intro__caption span {
   display: inline-block;

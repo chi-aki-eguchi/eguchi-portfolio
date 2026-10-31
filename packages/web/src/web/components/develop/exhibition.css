@@ -51,6 +51,79 @@
   gap: 1rem;
   padding: 1.25rem var(--page-inset) 0;
 }
+/* ── 壁の配置：開いて最初に見る、会場と同じ並び ─────────────
+   見ている場所は実物の壁と同じ。スマホは写真を額いっぱいに（額の線は引かない）、PC は額の線を
+   引いて、マットの白い余白まで会場の比のまま。詩の紙は小さくても本物の組みで置く。 */
+.ex-cover[data-wall] .ex-cover__frame {
+  padding: clamp(1rem, 6svh, 2.75rem) var(--page-inset) 0;
+  box-sizing: border-box;
+}
+.ex-wall {
+  position: relative;
+  width: 100%;
+  aspect-ratio: var(--photo-ar);
+}
+.ex-wall__frame {
+  position: absolute;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: zoom-in;
+}
+.ex-wall__print {
+  position: absolute;
+  inset: 0;
+  display: block;
+}
+.ex-wall__print picture {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.ex-wall__img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  opacity: 0;
+  filter: grayscale(1) sepia(0.32) contrast(0.78) brightness(1.18);
+  transition:
+    opacity 0.9s var(--ease-reveal),
+    filter 1.35s var(--ease-reveal);
+  transition-delay: calc(var(--ex-order, 0) * 0.16s + 0.1s);
+}
+.ex-wall[data-on] .ex-wall__img {
+  opacity: 1;
+  filter: none;
+}
+.ex-wall__sheet,
+.ex-wall__card {
+  position: absolute;
+  display: block;
+  opacity: 0;
+  background: #fff;
+  box-shadow: 0 0 0 1px rgba(var(--foreground-rgb), 0.1);
+  transition: opacity 0.9s var(--ease-reveal) 1.1s;
+}
+.ex-wall__card {
+  border-radius: 12%;
+}
+.ex-wall[data-on] :is(.ex-wall__sheet, .ex-wall__card) {
+  opacity: 1;
+}
+.ex-wall__sheet {
+  container-type: inline-size;
+  color: #1a1a1a;
+  text-decoration: none;
+  cursor: pointer;
+}
+/* 画面の色が暗いときも、紙は白いまま（詩の紙は物）。 */
+body[data-reveal="none"] .ex-wall__img {
+  opacity: 1;
+  filter: none;
+  transition: none;
+}
+
 /* 名前は縮めない（題が長いときに折れるのは題のほう）。 */
 .ex-label__name {
   flex: none;
@@ -120,6 +193,54 @@
   letter-spacing: 0.06em;
   color: var(--text-quiet);
 }
+/* ── 詩の紙 ─────────────────────────────────────
+   組みは原稿（A4）の比：書体 Zen Old Mincho、字の大きさは紙の幅の 2.336%、行の間隔は字の 2 倍、
+   1行目の中心が紙の左から 74.65%、行頭が紙の上から 16.4%（原稿の PDF を描いて測った）。
+   スマホだけ、読める大きさの下限を持つ。行は折り返さない（4行目だけ長く、5〜7行目が短い、
+   下の段差まで詩の形）。下の余白は埋めない。 */
+.ex-sheet {
+  position: relative;
+  container-type: inline-size;
+  aspect-ratio: 210 / 297;
+  margin: var(--ex-gap) var(--page-inset) 0;
+  scroll-margin-top: calc(var(--header-h) + 1rem);
+  /* 紙は白いまま（画面の色に関わらず、物としての紙）。縁が分かるだけの薄い線と影。 */
+  background: #fff;
+  color: #1a1a1a;
+  box-shadow: 0 0 0 1px rgba(var(--foreground-rgb), 0.06), 0 1px 14px rgba(0, 0, 0, 0.05);
+}
+.ex-poem {
+  position: absolute;
+  top: 16.28%;
+  /* 1行目の中心を 74.65% に置く：行の幅は字の 2 倍なので、右端は字 1 文字ぶん右。 */
+  right: calc(25.35% - 1em);
+  margin: 0;
+  font-family: "Zen Old Mincho", var(--font-ja);
+  font-size: 2.336cqw;
+  font-weight: 400;
+  font-feature-settings: "vpal" 1;
+  line-height: 2;
+  letter-spacing: 0;
+  color: inherit;
+  writing-mode: vertical-rl;
+  text-orientation: upright;
+  white-space: nowrap;
+}
+.ex-poem span {
+  display: block;
+}
+.ex-sheet .ex-poem span {
+  opacity: 0;
+}
+.ex-sheet[data-on] .ex-poem span {
+  animation: hero-text-ink 1.3s var(--ease-reveal) forwards;
+  animation-delay: calc(var(--ex-i, 0) * 0.32s);
+}
+body[data-reveal="none"] .ex-sheet .ex-poem span {
+  opacity: 1;
+  animation: none;
+}
+
 .ex-works__text {
   max-width: 34em;
   margin: var(--ex-gap) 0 0;
@@ -153,6 +274,9 @@ body[data-reveal="none"] .ex-work__open.fade-in-item .ex-work__img {
 }
 
 @media (max-width: 767px) {
+  .ex-sheet .ex-poem {
+    font-size: max(2.336cqw, min(15px, 4.2cqw));
+  }
   .dv-doors[data-plain] {
     margin-top: var(--ex-gap);
   }
@@ -210,6 +334,35 @@ body[data-reveal="none"] .ex-work__open.fade-in-item .ex-work__img {
     width: 100%;
     aspect-ratio: auto;
   }
+  /* 壁は本文の幅いっぱい近くまで。額の線を引き、写真は会場の大きさへ。 */
+  .ex-cover[data-wall] {
+    grid-template-columns: minmax(0, 1fr) minmax(11rem, 15rem);
+    padding-top: clamp(2rem, 7vh, 4rem);
+  }
+  .ex-cover[data-wall] .ex-cover__frame {
+    height: auto;
+    aspect-ratio: auto;
+    padding: 0 0 0 var(--page-inset);
+  }
+  .ex-cover[data-wall] .ex-wall {
+    max-height: calc(100svh - 2 * clamp(2rem, 7vh, 4rem));
+    max-width: calc((100svh - 2 * clamp(2rem, 7vh, 4rem)) * var(--photo-ar));
+  }
+  /* 額の線と、白いマット。 */
+  .ex-wall__frame {
+    box-shadow: inset 0 0 0 1px rgba(var(--foreground-rgb), 0.2);
+    background: #fff;
+  }
+  [data-theme="dark"] .ex-wall__frame {
+    background: rgba(255, 255, 255, 0.05);
+  }
+  .ex-wall__print {
+    inset: auto;
+    left: var(--ex-px);
+    top: var(--ex-py);
+    width: var(--ex-pw);
+    height: var(--ex-ph);
+  }
   .ex-label {
     flex-direction: column;
     align-items: flex-start;
@@ -248,11 +401,28 @@ body[data-reveal="none"] .ex-work__open.fade-in-item .ex-work__img {
   .ex-work__title {
     padding-inline: 0;
   }
+  /* 詩の紙は、会場と同じく最後の写真の右へ。1画面に全体が入る大きさで、原稿と同じ比の字になる。 */
+  .ex-sheet {
+    width: min(100%, calc(var(--ex-fit) * 210 / 297));
+    margin-left: auto;
+    margin-right: 0;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .ex-work__open.fade-in-item .ex-work__img {
     filter: none;
     transition: none;
+  }
+  .ex-wall__img,
+  .ex-wall__sheet,
+  .ex-wall__card {
+    opacity: 1;
+    filter: none;
+    transition: none;
+  }
+  .ex-sheet .ex-poem span {
+    opacity: 1;
+    animation: none;
   }
 }

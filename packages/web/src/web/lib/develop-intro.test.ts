@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import {
   introLayout,
+  introNameLayout,
   isVerticalName,
   shouldPlayIntro,
   type IntroEnvironment,
@@ -98,5 +99,15 @@ describe("introLayout", () => {
     expect(layout.name.left).toBeCloseTo(layout.plate.dx);
     expect(layout.name.top).toBeGreaterThan(layout.plate.dy + plateH);
     expect(layout.caption.top).toBeGreaterThan(layout.name.top + layout.name.fontSize);
+  });
+});
+
+describe("図版を出さないときの名前の置き場所", () => {
+  test("名前を左右の真ん中に置き、添え書きを名前の下の真ん中に置く", () => {
+    const layout = introNameLayout({ w: 390, h: 608 }, 3);
+    expect(layout.name.fontSize).toBe(28);
+    expect(layout.name.left).toBe((390 - 28) / 2);
+    expect(layout.caption.left).toBe(195);
+    expect(layout.caption.top).toBeGreaterThan(layout.name.top + 3 * 28);
   });
 });

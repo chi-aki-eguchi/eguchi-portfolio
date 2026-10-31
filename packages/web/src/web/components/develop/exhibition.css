@@ -1,0 +1,258 @@
+/* トップの展示（shared/exhibition.ts、2026-10-31）。
+   展示の壁と同じ考え方で組む：写真は切り抜かず、上に何も重ねず、文字は札のように横へ添える。
+   色・書体は今までの設定をそのまま使い、ここで決めるのは置き方だけ。
+   スマホの写真は画面の端から端まで、左右を空けるのは文字だけ。余白は1枚ずつを分けるために使う。 */
+.top-page[data-exhibition] {
+  --ex-gap: clamp(4.5rem, 13svh, 6.5rem);
+}
+
+/* ── 表紙：写真の全体＋札 ───────────────────────────── */
+/* 表紙の部品（HeroSingle）はそのままで、切り抜かない形にする。名前は写真の外の札へ置くので、
+   名前を読ませるための陰は要らない。地は紙の色（暗い地は切り抜く表紙のためのもの）。 */
+.ex-cover {
+  position: relative;
+}
+.ex-cover .hero-single {
+  height: auto;
+  min-height: 0;
+  max-height: none;
+  aspect-ratio: var(--photo-ar, 1 / 1);
+  background: var(--background);
+}
+.ex-cover .hero-single-img,
+.ex-cover .hero-latent canvas {
+  object-fit: contain;
+}
+.ex-cover .hero-single-overlay,
+.ex-cover .hero-single-caption {
+  display: none;
+}
+.ex-cover__open {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: block;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: zoom-in;
+}
+/* 表紙の押す場所は、写真の箱に合わせる（札の上は押せない）。 */
+.ex-cover__frame {
+  position: relative;
+}
+
+.ex-label {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.25rem var(--page-inset) 0;
+}
+/* 名前は縮めない（題が長いときに折れるのは題のほう）。 */
+.ex-label__name {
+  flex: none;
+  max-width: 100%;
+}
+.ex-label__show {
+  min-width: 0;
+  text-align: right;
+  font-size: 0.75rem;
+  line-height: 1.7;
+  letter-spacing: 0.08em;
+  color: var(--text-quiet);
+}
+.ex-label__show h2 {
+  margin: 0;
+  font: inherit;
+  letter-spacing: inherit;
+  color: var(--foreground);
+}
+.ex-label__show p {
+  margin: 0;
+}
+
+/* 開いた瞬間の見せ場は、画面の高さぶんを紙で覆う（札の下の写真が先に見えないように）。
+   図版と名前の置き場所も、この高さの中で決まる。 */
+.top-page[data-exhibition] .dv-intro {
+  bottom: auto;
+  height: calc(100svh - var(--header-h, 0px));
+}
+
+/* ── 写真 ──────────────────────────────────────── */
+.ex-works {
+  padding-top: var(--ex-gap);
+}
+.ex-works__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--ex-gap);
+}
+.ex-work {
+  min-width: 0;
+}
+.ex-work__open {
+  display: block;
+  width: 100%;
+  aspect-ratio: var(--ex-ar, 5 / 4);
+  padding: 0;
+  border: 0;
+  background: rgba(var(--foreground-rgb), 0.04);
+  cursor: zoom-in;
+}
+.ex-work__open picture,
+.ex-work__img {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.ex-work__img {
+  object-fit: contain;
+}
+.ex-work__title {
+  margin: 0.6rem 0 0;
+  padding-inline: var(--page-inset);
+  font-size: 0.8125rem;
+  letter-spacing: 0.06em;
+  color: var(--text-quiet);
+}
+.ex-works__text {
+  max-width: 34em;
+  margin: var(--ex-gap) 0 0;
+  padding-inline: var(--page-inset);
+  font-size: 0.9375rem;
+  line-height: 2;
+  letter-spacing: 0.04em;
+  white-space: pre-line;
+}
+
+/* 現像されるように現れる（扉の写真・一覧の写真と同じ変化）。白黒の写真では、印画紙に像が
+   起きてくるように見える。 */
+.ex-work__open.fade-in-item .ex-work__img {
+  filter: grayscale(1) sepia(0.32) contrast(0.78) brightness(1.18);
+  transition: filter 1.35s var(--ease-reveal) 0.12s;
+}
+.ex-work__open.fade-in-item.visible .ex-work__img {
+  filter: none;
+}
+body[data-reveal="none"] .ex-work__open.fade-in-item .ex-work__img {
+  filter: none;
+  transition: none;
+}
+
+/* ── 続き：言葉の目次 ─────────────────────────────── */
+.top-page[data-exhibition] .dv-home {
+  --dv-after-cover: var(--ex-gap);
+}
+.dv-doors[data-plain] .dv-doors__list {
+  border-top: 1px solid rgba(var(--foreground-rgb), 0.14);
+}
+
+@media (max-width: 767px) {
+  .dv-doors[data-plain] {
+    margin-top: var(--ex-gap);
+  }
+  .dv-doors[data-plain] .dv-doors__list {
+    display: flex;
+  }
+  .dv-doors[data-plain] .dv-doors__list > li {
+    display: flex;
+  }
+  .dv-doors[data-plain] .dv-door,
+  .dv-doors[data-plain] .dv-doors__list li:last-child .dv-door {
+    align-items: center;
+    min-height: 4.25rem;
+    margin-bottom: 0;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid rgba(var(--foreground-rgb), 0.14);
+  }
+  .dv-doors[data-plain] .dv-door__title {
+    font-size: 2rem;
+  }
+}
+
+/* ── PC：壁に掛けるように ───────────────────────────── */
+/* 表紙は画面の高さいっぱいの写真を左に、札を右下へ。続く写真は画面に収まる大きさで、
+   形と順番で左右へ振る。どの写真も1画面に全体が入る。 */
+@media (min-width: 768px) {
+  .top-page[data-exhibition] {
+    --ex-gap: clamp(6rem, 18vh, 11rem);
+    --ex-fit: calc(100svh - 7rem);
+    --ex-top: 0px;
+  }
+  .ex-cover {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: end;
+  }
+  /* 高さの低い画面（スマホの横向き）は左の帯が上の帯になるので、そのぶん引く。 */
+  @media (max-height: 520px) {
+    .ex-cover__frame {
+      --ex-top: var(--header-h, 0px);
+    }
+  }
+  /* 高さは画面いっぱいまで。ただし幅が本文の7割を超えない（縦長の画面でも札の場所を残す）。
+     幅は高さと写真の比から決まるので、余白が写真の中に出ない。 */
+  .ex-cover__frame {
+    --ex-cover-h: min(
+      calc(100svh - var(--ex-top)),
+      calc(0.72 * (100vw - var(--nav-rail-w, 11rem)) / (var(--photo-ar, 1 / 1)))
+    );
+    height: var(--ex-cover-h);
+    aspect-ratio: var(--photo-ar, 1 / 1);
+  }
+  .ex-cover .hero-single {
+    height: 100%;
+    width: 100%;
+    aspect-ratio: auto;
+  }
+  .ex-label {
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: flex-end;
+    gap: 1.5rem;
+    padding: 0 var(--page-inset) 2.5rem clamp(1.5rem, 3vw, 3rem);
+  }
+  .ex-label__show {
+    text-align: left;
+    font-size: 0.8125rem;
+  }
+  .ex-works,
+  .ex-works__text {
+    padding-inline: var(--page-inset);
+  }
+  .ex-works__text {
+    padding-inline: 0;
+  }
+  .ex-work {
+    display: flex;
+    flex-direction: column;
+  }
+  .ex-work[data-side="right"] {
+    align-items: flex-end;
+  }
+  .ex-work[data-side="left"] {
+    align-items: flex-start;
+  }
+  /* 大きさは、1画面に全体が入る高さと写真の比から決める。 */
+  .ex-work__open {
+    width: min(100%, calc(var(--ex-fit) * var(--ex-ar, 1.25)));
+  }
+  .ex-work[data-shape="wide"] .ex-work__open {
+    width: min(100%, 62rem, calc(var(--ex-fit) * var(--ex-ar, 1.25)));
+  }
+  .ex-work__title {
+    padding-inline: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ex-work__open.fade-in-item .ex-work__img {
+    filter: none;
+    transition: none;
+  }
+}

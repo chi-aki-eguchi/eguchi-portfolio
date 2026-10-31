@@ -65,6 +65,13 @@ import {
   resolveServiceVisibility,
 } from "./shared/service-visibility";
 import { PORTFOLIO_DISCOVERY_GUIDE } from "./shared/portfolio-guide";
+import {
+  EXHIBITION_DEFAULTS,
+  exhibitionNeedsLibrary,
+  exhibitionPhotoList,
+  exhibitionStatus,
+} from "./shared/exhibition";
+import { srcFor, srcSetFor } from "./shared/image-presets";
 import { INDEXABLE_POLICY_PATHS } from "./shared/policy-content";
 import { publicContentVersion } from "./shared/public-content-version";
 import {
@@ -447,6 +454,51 @@ async function getDoorOgImage(
     console.error("[OGP] door photo fetch failed:", e); /* keep the cover photo */
   }
   doorOgCache.set(key, { data, ts: now });
+  return data;
+}
+
+// 展示のトップの表紙（shared/exhibition.ts）。共有の写真と、HTML から先読みさせる写真の両方に使う。
+// 同梱の写真には作り置きの小さい版が無いので、先読みは画面の <source type="image/avif"> と同じ候補を
+// 指す（HeroPicture）。ライブラリの写真が先頭なら、いつもの表紙と同じ組み立て。60秒キャッシュ。
+let exhibitionCoverCache: { key: string; data: ImageRef | null; ts: number } | null = null;
+async function getExhibitionCover(ids: string | undefined): Promise<ImageRef | null> {
+  const key = ids ?? "";
+  const now = Date.now();
+  if (exhibitionCoverCache?.key === key && now - exhibitionCoverCache.ts < SETTINGS_TTL)
+    return exhibitionCoverCache.data;
+  let data: ImageRef | null = null;
+  try {
+    const rows = exhibitionNeedsLibrary(ids)
+      ? await withRetry(() =>
+          db
+            .select({
+              id: schema.photos.id,
+              url: schema.photos.url,
+              thumbKey: schema.photos.thumbKey,
+              mediumKey: schema.photos.mediumKey,
+              width: schema.photos.width,
+              height: schema.photos.height,
+              rotationDeg: schema.photos.rotationDeg,
+            })
+            .from(schema.photos)
+            .where(and(isNull(schema.photos.deletedAt), eq(schema.photos.isPublished, true))),
+        )
+      : [];
+    const first = exhibitionPhotoList(ids, rows)[0];
+    if (first && first.id > 0) {
+      data = socialSourceForPhoto(first as (typeof rows)[number]);
+    } else if (first) {
+      data = {
+        url: first.url,
+        rotationDeg: 0,
+        preloadUrl: srcFor(first.url, 1024, 88, "avif"),
+        preloadSrcSet: srcSetFor(first.url, "hero", "avif"),
+      };
+    }
+  } catch (e) {
+    console.error("[OGP] exhibition cover fetch failed:", e); /* keep the regular cover */
+  }
+  exhibitionCoverCache = { key, data, ts: now };
   return data;
 }
 
@@ -1025,7 +1077,13 @@ async function serveNonApi(request: Request, url: URL): Promise<Response> {
   if (await index.exists()) {
     const html = await index.text();
     const settings = await getSettings();
-    const heroImg = await getHeroOgImage();
+    // 展示のトップでは、表紙（共有の写真・先読み）は展示の先頭の写真。トップだけ差し替える。
+    const exhibitionOn =
+      routePathname === "/" &&
+      isDevelopDesignValue(settings.siteDesign) &&
+      exhibitionStatus(settings.homeExhibition, siteUrlFrom(settings, publicOrigin)) === "on";
+    const exhibitionCover = exhibitionOn ? await getExhibitionCover(settings.exhibitionPhotoIds) : null;
+    const heroImg = exhibitionCover ?? (await getHeroOgImage());
     const serviceUnavailable =
       isServiceVisibilityGatedPath(routePathname) &&
       !resolveServiceVisibility(
@@ -1099,6 +1157,15 @@ async function serveNonApi(request: Request, url: URL): Promise<Response> {
       } else if (routePathname === "/info" && settings.profilePhotoUrl) {
         override = { image: settings.profilePhotoUrl };
       }
+    }
+    // 共有したときの説明にも展示の名前を出す。会期が過ぎても読める、記録の形の文。
+    if (!override && exhibitionOn) {
+      const show = [
+        settings.exhibitionTitle ?? EXHIBITION_DEFAULTS.title,
+        settings.exhibitionDates ?? EXHIBITION_DEFAULTS.dates,
+      ].filter(Boolean);
+      if (show.length > 0)
+        override = { desc: `${settings.siteName || displayNameFrom(settings)}の写真。${show.join("、")}。` };
     }
     let injected = injectOgp(
       html,

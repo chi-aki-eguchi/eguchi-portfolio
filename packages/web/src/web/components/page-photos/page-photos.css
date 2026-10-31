@@ -1168,3 +1168,59 @@ body.pp-dragging * {
     animation: none !important;
   }
 }
+
+/* ── 展示（題・会期・添える文、写真ごとの題）──────────────── */
+.pp-exhibition-copy {
+  display: grid;
+  gap: 10px;
+  max-width: 760px;
+  margin: 28px 0 0;
+  font-size: 13.5px;
+}
+.pp-exhibition-copy label {
+  display: grid;
+  gap: 2px;
+}
+.pp-exhibition-copy label > span {
+  font-size: 12px;
+  color: var(--admin-muted);
+}
+.pp-exhibition-copy input,
+.pp-exhibition-copy textarea {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 40px;
+  padding: 6px 10px;
+  border: 1px solid var(--admin-line-strong);
+  border-radius: 0;
+  background: #fff;
+  color: var(--admin-ink);
+  font: inherit;
+  font-size: 16px;
+}
+.pp-exhibition-copy textarea {
+  resize: vertical;
+  line-height: 1.8;
+}
+.pp-exhibition-copy input:focus-visible,
+.pp-exhibition-copy textarea:focus-visible {
+  outline: 2px solid var(--admin-ink);
+  outline-offset: 1px;
+}
+.pp-captions {
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
+}
+.pp-captions label {
+  display: grid;
+  grid-template-columns: 64px minmax(0, 1fr);
+  gap: 12px;
+  align-items: center;
+}
+.pp-captions img {
+  display: block;
+  width: 64px;
+  height: 64px;
+  object-fit: cover;
+}

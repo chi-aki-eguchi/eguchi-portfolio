@@ -36,6 +36,14 @@ import { isServiceOwnerSite } from "../../shared/service-visibility";
 import { PhotoHome } from "../components/photo-site/PhotoHome";
 import { siteDesignFrom } from "../lib/book";
 import { DevelopTop } from "../components/develop/DevelopTop";
+import { ExhibitionLabel, ExhibitionWorks, type ExhibitionItem } from "../components/develop/ExhibitionTop";
+import { PhotoViewer, usePhotoViewer } from "../components/photo-site/viewer";
+import {
+  EXHIBITION_DEFAULTS,
+  exhibitionNeedsLibrary,
+  exhibitionPhotoList,
+  readExhibitionCaptions,
+} from "../../shared/exhibition";
 import { DevelopIntro } from "../components/develop/DevelopIntro";
 import { INTRO_SEEN_KEY, shouldPlayIntro } from "../lib/develop-intro";
 import { isDarkTextColor, textShadowOverPhoto } from "../lib/color-contrast";
@@ -1339,6 +1347,8 @@ export default function TopPage() {
   const topWorksMode = settings?.topWorksMode || "auto";
   const isBookDesign = siteDesignFrom(settings?.siteDesign) === "book";
   const isDevelopDesign = siteDesignFrom(settings?.siteDesign) === "develop";
+  // 展示のトップ（shared/exhibition.ts）。日付では切り替えない。止めるのは管理画面の「ページの写真」→「展示」。
+  const exhibitionOn = isDevelopDesign && settings?.homeExhibition === "on";
   // 開いた瞬間の見せ場（写真集の扉。components/develop/DevelopIntro.tsx）を流すか。
   // **最初の描画で決める**——あとから被せると、表紙が一度見えてから紙で隠れる。
   // 流す回は、このページを開いている間ずっと、表紙の「現れる動き」を省いたままにする
@@ -1417,6 +1427,8 @@ export default function TopPage() {
   const { data: heroData, isLoading: heroLoading } = useQuery({
     queryKey: ["hero-photos"],
     queryFn: async () => jsonOrThrow(await api["hero-photos"].$get()),
+    // 展示のトップの表紙は、展示の写真の先頭。
+    enabled: !exhibitionOn,
   });
 
   // Stable reference across renders so the `featured` useMemo doesn't recompute every render.
@@ -1432,6 +1444,18 @@ export default function TopPage() {
           ),
     [photosData, settings?.gallerySortOrder, randomWorks, isDevelopDesign],
   );
+  // 展示の写真。同梱の写真だけの並びなら、写真の一覧を待たずに最初の描画から出せる。
+  const exhibitionIds = settings?.exhibitionPhotoIds;
+  const exhibitionCaptions = settings?.exhibitionCaptions;
+  const exhibitionPhotos = useMemo<ExhibitionItem[]>(() => {
+    if (!exhibitionOn) return [];
+    if (exhibitionNeedsLibrary(exhibitionIds) && !photosData) return [];
+    const captions = readExhibitionCaptions(exhibitionCaptions);
+    return exhibitionPhotoList(exhibitionIds, (photosData?.photos ?? []) as GalleryPhoto[]).map((photo) =>
+      captions[photo.id] ? { ...photo, title: captions[photo.id] } : photo,
+    );
+  }, [exhibitionOn, exhibitionIds, exhibitionCaptions, photosData]);
+  const exhibitionViewer = usePhotoViewer(exhibitionPhotos as GalleryPhoto[]);
   // The API may return null entries for hero rows whose photo was deleted.
   const heroPhotosPicked = (heroData?.heroPhotos ?? []).filter(
     (p): p is NonNullable<typeof p> => p != null,
@@ -1545,7 +1569,8 @@ export default function TopPage() {
   const heroFullscreen =
     (settings?.heroDisplayMode || "normal") === "fullscreen";
   const heroTitlePosition = settings?.heroTitlePosition || "center";
-  const heroScrollEffect = settings?.heroScrollEffect || "none";
+  // 展示の表紙は、送っても沈ませない（写真が紙の色へ褪せて、プリントに見えなくなる）。
+  const heroScrollEffect = exhibitionOn ? "none" : settings?.heroScrollEffect || "none";
 
   const heroFxRef = useRef<HTMLDivElement>(null);
   const heroBoxRef = useRef<HTMLElement>(null);
@@ -1758,6 +1783,86 @@ export default function TopPage() {
         )}
       </section>
     );
+
+  // 展示のトップ：表紙の部品はそのままで、写真を切り抜かず、名前は札として写真の外へ置く。
+  // 開いた瞬間の見せ場も、表紙の現れ方・送ったときの動きの設定も、いつものトップと同じ物が効く。
+  if (exhibitionOn) {
+    const exhibitionCover = exhibitionPhotos[0];
+    const exhibitionTitle = settings?.exhibitionTitle ?? EXHIBITION_DEFAULTS.title;
+    const coverSize = orientedDimensions(
+      exhibitionCover?.width,
+      exhibitionCover?.height,
+      (exhibitionCover as GalleryPhoto | undefined)?.rotationDeg ?? 0,
+    );
+    return (
+      <div className="top-page" data-hero-mode="single" data-develop-top data-exhibition>
+        {experiencePanel}
+        <div className="dv-intro-host" data-dv-intro={introPlanned ? "" : undefined}>
+          <section
+            key={heroMotionKey(settings)}
+            className="ex-cover"
+            style={
+              coverSize.width && coverSize.height
+                ? ({ "--photo-ar": `${coverSize.width} / ${coverSize.height}` } as React.CSSProperties)
+                : undefined
+            }
+          >
+            <div ref={heroBoxRef as React.Ref<HTMLDivElement>} className="hero-motion-stage ex-cover__frame">
+              <HeroSingle
+                photo={exhibitionCover as HomeHeroPhoto | undefined}
+                fxRef={heroFxRef}
+                photographerName={photographerName}
+                develop
+              />
+              {exhibitionCover && (
+                <button
+                  type="button"
+                  className="ex-cover__open"
+                  data-photo-tile={exhibitionCover.id}
+                  aria-label={`${photoAltText(exhibitionCover, { photographerName })}を大きく見る`}
+                  onClick={() => exhibitionViewer.open(0)}
+                />
+              )}
+            </div>
+            <ExhibitionLabel
+              name={
+                <ClassicHeroNameBlock
+                  settings={settings}
+                  tone="on-paper"
+                  nameSizeFallback="1.5rem"
+                  enSizeFallback="0.875rem"
+                />
+              }
+              title={exhibitionTitle}
+              dates={settings?.exhibitionDates ?? EXHIBITION_DEFAULTS.dates}
+            />
+          </section>
+          {introPlaying && (
+            <DevelopIntro
+              name={settings?.siteName ?? CLIENT_SITE_FALLBACKS.siteName}
+              caption={exhibitionTitle}
+              expectPhoto={exhibitionPhotos.length > 0 || photosLoading}
+              onDone={endIntro}
+            />
+          )}
+        </div>
+        <ExhibitionWorks
+          photos={exhibitionPhotos}
+          viewer={exhibitionViewer}
+          label={exhibitionTitle || "展示の写真"}
+          text={settings?.exhibitionText ?? EXHIBITION_DEFAULTS.text}
+          photographerName={photographerName}
+        />
+        <DevelopTop settings={settings} exhibition />
+        <PhotoViewer
+          photos={exhibitionPhotos as GalleryPhoto[]}
+          viewer={exhibitionViewer}
+          photographerName={photographerName}
+          seriesLinkById={seriesLinkById}
+        />
+      </div>
+    );
+  }
 
   // 新しい構成のトップ：表紙は今までと同じ部品（上）、その下に扉の目次。
   // 以前は写真だけを置く専用の表紙で、名前も、現れる順も、送ったときの動きも無く、

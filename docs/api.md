@@ -40,7 +40,7 @@ real routes.
 - Format: always negotiated. An explicit `fmt=avif|webp|jpeg` wins; otherwise the
   `Accept` header picks AVIF, then WebP, then JPEG (`Vary: Accept`). No environment
   variable is needed.
-- Allowed key prefixes: `photos/`, `thumbs/`, `medium/`, `hero/`, `profile/`, `fonts/`
+- Allowed key prefixes: `photos/`, `thumbs/`, `medium/`, `hero/`, `profile/`, `fonts/`, `exhibition/` (`exhibition/` is read from the repository: `packages/web/assets/exhibition/`, listed names only)
 - Responses are cached with `Cache-Control: public, max-age=31536000, immutable`
 
 ## Auth

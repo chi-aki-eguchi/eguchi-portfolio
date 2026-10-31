@@ -10,7 +10,10 @@ import {
   parsePhotoIdList,
   type DevelopListKind,
 } from "../../shared/develop-structure";
+import { EXHIBITION_BUILT_IN, exhibitionPhotoList } from "../../shared/exhibition";
+import { isServiceOwnerSite } from "../../shared/service-visibility";
 import { DoorNames } from "../components/page-photos/DoorNames";
+import { ExhibitionCaptions, ExhibitionCopy } from "../components/page-photos/ExhibitionPanel";
 import { PagePhotoEditor } from "../components/page-photos/PagePhotoEditor";
 import {
   assertOk,
@@ -27,10 +30,22 @@ async function loadCoverRows(): Promise<{ heroPhotos: HeroPhotoRow[] }> {
 const LIST_KEY = { portrait: "developPortraitIds", life: "developLifeIds" } as const;
 /** 表紙のタブの名前。Portrait／Life は扉の名前（設定 developDoors）から。 */
 const COVER_NAME = "表紙";
-/** 表紙（トップの最初の写真）と、写真を選んで並べる2つのページ。 */
-type Tab = "cover" | DevelopListKind;
-const TABS: readonly Tab[] = ["cover", "portrait", "life"];
-type SavedKey = (typeof LIST_KEY)[DevelopListKind] | "siteDesign" | "heroMode" | "developDoors";
+/** 展示のタブの名前。 */
+const EXHIBITION_NAME = "展示";
+/** トップの展示、表紙（トップの最初の写真）と、写真を選んで並べる2つのページ。 */
+type Tab = "exhibition" | "cover" | DevelopListKind;
+const TABS: readonly Tab[] = ["exhibition", "cover", "portrait", "life"];
+type SavedKey =
+  | (typeof LIST_KEY)[DevelopListKind]
+  | "siteDesign"
+  | "heroMode"
+  | "developDoors"
+  | "homeExhibition"
+  | "exhibitionTitle"
+  | "exhibitionDates"
+  | "exhibitionText"
+  | "exhibitionPhotoIds"
+  | "exhibitionCaptions";
 type Toast = { text: string; undo?: () => void };
 
 /**
@@ -44,6 +59,8 @@ type Toast = { text: string; undo?: () => void };
  * - 並びを変えると、その場で保存する（`developPortraitIds`／`developLifeIds`）。失敗したら元へ戻して知らせる
  * - まだ何も選んでいないページは、いま出ている写真（分類から）をそのまま見せる。動かしたら、その並びを保存する
  * - 構成の切り替えは、公開サイトが変わるので、押してから一度確かめる
+ * - 展示（2026-10-31、shared/exhibition.ts）は、トップに出すかどうか・写真・題と会期をここで変える。
+ *   同梱の写真とライブラリの写真は同じ並びに入れられる。止めるといつものトップに戻る
  */
 export default function AdminPagesPage() {
   const queryClient = useQueryClient();
@@ -84,7 +101,9 @@ export default function AdminPagesPage() {
     enabled: auth === "ok",
   });
 
-  const [tab, setTab] = useState<Tab>("portrait");
+  // 展示をトップに出している間は、展示のタブから開く。押して選んだタブが優先。
+  const [chosenTab, setTab] = useState<Tab | null>(null);
+  const tab: Tab = chosenTab ?? (settings?.homeExhibition === "on" ? "exhibition" : "portrait");
   // 表紙の並び（保存しようとしている物）。保存して読み直すまでの間、画面はこちらを見る。
   const [localCover, setLocalCover] = useState<number[] | null>(null);
   // 保存した（保存しようとしている）値。設定を読み直すまでの間、画面はこちらを見る。
@@ -181,6 +200,14 @@ export default function AdminPagesPage() {
     }),
     [photos, savedValue],
   );
+  // 展示の候補は、同梱の写真＋公開中の写真。
+  const exhibitionCatalog = useMemo(() => [...EXHIBITION_BUILT_IN, ...photos] as PagePhoto[], [photos]);
+  const exhibitionPhotos = useMemo(
+    () => exhibitionPhotoList(savedValue("exhibitionPhotoIds"), photos) as PagePhoto[],
+    [photos, savedValue],
+  );
+  const exhibitionIds = useMemo(() => exhibitionPhotos.map((p) => p.id), [exhibitionPhotos]);
+  const usedOnExhibition = useMemo(() => new Set<number>(exhibitionIds), [exhibitionIds]);
   const used = useMemo(() => new Set([...lists.portrait, ...lists.life]), [lists]);
   const usedOnCover = useMemo(() => new Set<number>(coverIds), [coverIds]);
   const series = useMemo(
@@ -208,17 +235,35 @@ export default function AdminPagesPage() {
       </p>,
     );
 
-  const key = tab === "cover" ? null : LIST_KEY[tab];
+  const key = tab === "cover" || tab === "exhibition" ? null : LIST_KEY[tab];
   const picked = key ? parsePhotoIdList(savedValue(key)).length > 0 : coverIds.length > 0;
   // 表紙の出し方。今までの設定 heroMode をそのまま使う（1枚＝single、それ以外はスライドとして出る）。
   const heroMode = savedValue("heroMode") || "carousel";
   const coverSingle = heroMode === "single";
-  const counts = { cover: coverIds.length, portrait: lists.portrait.length, life: lists.life.length };
+  const counts = {
+    exhibition: exhibitionIds.length,
+    cover: coverIds.length,
+    portrait: lists.portrait.length,
+    life: lists.life.length,
+  };
   // タブの名前は、扉の名前に合わせる（名前を変えたら、ここも変わる）。
   const doorCopy = developDoorCopy(savedValue("developDoors"));
-  const pageName = { cover: COVER_NAME, portrait: doorCopy.portrait.label, life: doorCopy.life.label };
+  const pageName = {
+    exhibition: EXHIBITION_NAME,
+    cover: COVER_NAME,
+    portrait: doorCopy.portrait.label,
+    life: doorCopy.life.label,
+  };
   const design = savedValue("siteDesign");
   const isDevelop = isDevelopDesignValue(design);
+  const exhibitionShown = savedValue("homeExhibition") === "on";
+  // 同梱の写真は持ち主の物なので、配布版の管理画面には展示のタブを出さない。
+  const tabs = TABS.filter(
+    (kind) =>
+      kind !== "exhibition" ||
+      exhibitionShown ||
+      isServiceOwnerSite(settings?.siteUrl as string | undefined, window.location.hostname),
+  );
 
   return frame(
     <>
@@ -234,7 +279,7 @@ export default function AdminPagesPage() {
         {/* いま並べているページを、新しい構成で開く（保存した構成が今までの物でも、下見できる）。 */}
         <a
           className="pp-back pp-back--view"
-          href={`/${tab === "cover" ? "" : tab}?design=develop`}
+          href={`/${tab === "cover" || tab === "exhibition" ? "" : tab}?design=develop`}
           target="_blank"
           rel="noopener"
         >
@@ -246,7 +291,7 @@ export default function AdminPagesPage() {
       </header>
 
       <div className="pp-tabs" role="tablist" aria-label="ページ">
-        {TABS.map((kind) => (
+        {tabs.map((kind) => (
           <button
             key={kind}
             type="button"
@@ -265,7 +310,64 @@ export default function AdminPagesPage() {
           {error}
         </p>
       )}
-      {tab === "cover" ? (
+      {tab === "exhibition" ? (
+        <>
+          {/* トップに展示を出すか。止めると、いつものトップ（表紙＋扉）に戻る。写真と文は残る。 */}
+          <fieldset className="pp-cover-mode">
+            <legend className="sr-only">トップの出し方</legend>
+            <span className="pp-cover-mode__label" aria-hidden="true">
+              トップ
+            </span>
+            <button
+              type="button"
+              aria-pressed={exhibitionShown}
+              data-pp-exhibition-mode="on"
+              onClick={() => {
+                if (exhibitionShown) return;
+                setTab("exhibition");
+                save("homeExhibition", "on", "トップを展示にしました", "off");
+              }}
+            >
+              展示
+            </button>
+            <button
+              type="button"
+              aria-pressed={!exhibitionShown}
+              data-pp-exhibition-mode="off"
+              onClick={() => {
+                if (!exhibitionShown) return;
+                setTab("exhibition");
+                save("homeExhibition", "off", "いつものトップに戻しました", "on");
+              }}
+            >
+              いつもの
+            </button>
+          </fieldset>
+          <p className="pp-note">先頭の写真が表紙になります。この順に、続けて並びます。</p>
+          <PagePhotoEditor
+            key="exhibition"
+            photos={exhibitionCatalog}
+            value={exhibitionIds}
+            used={usedOnExhibition}
+            series={series}
+            name={EXHIBITION_NAME}
+            onChange={(next, message) =>
+              save("exhibitionPhotoIds", next.join(","), message, savedValue("exhibitionPhotoIds"))
+            }
+          />
+          <ExhibitionCopy
+            title={savedValue("exhibitionTitle")}
+            dates={savedValue("exhibitionDates")}
+            text={savedValue("exhibitionText")}
+            onSave={(field, next, message) => save(field, next, message, savedValue(field))}
+          />
+          <ExhibitionCaptions
+            photos={exhibitionPhotos}
+            value={savedValue("exhibitionCaptions")}
+            onSave={(next, message) => save("exhibitionCaptions", next, message, savedValue("exhibitionCaptions"))}
+          />
+        </>
+      ) : tab === "cover" ? (
         <>
           {/* 表紙の出し方：1枚だけ出すか、選んだ順に入れ替えるか（今までの設定と同じ物）。 */}
           <fieldset className="pp-cover-mode">
@@ -291,13 +393,15 @@ export default function AdminPagesPage() {
             </button>
           </fieldset>
           <p className="pp-note">
-            {!picked
-              ? "まだ選んでいないので、写真の並びの先頭が表紙になっています。足すと、その写真が表紙になります。"
-              : coverSingle
-                ? coverIds.length > 1
-                  ? "いまは「1枚」なので、先頭の写真だけが出ます。「スライド」にすると、この順に入れ替わります。"
-                  : "この写真が、トップを開いたときの表紙です。"
-                : "この順に入れ替わります。"}
+            {exhibitionShown
+              ? "いまはトップに展示を出しているので、ここで選んだ表紙は出ません。「展示」のタブで「いつもの」に戻すと出ます。"
+              : !picked
+                ? "まだ選んでいないので、写真の並びの先頭が表紙になっています。足すと、その写真が表紙になります。"
+                : coverSingle
+                  ? coverIds.length > 1
+                    ? "いまは「1枚」なので、先頭の写真だけが出ます。「スライド」にすると、この順に入れ替わります。"
+                    : "この写真が、トップを開いたときの表紙です。"
+                  : "この順に入れ替わります。"}
           </p>
           <PagePhotoEditor
             key="cover"

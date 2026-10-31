@@ -11,6 +11,7 @@ import { expect, test, type Page, type Route } from "./fixtures.ts";
 //   6. 保存に失敗したら、並びを元へ戻して、画面で知らせる
 //   7. サイトの構成の切り替えは、一度確かめてから保存する
 //   8. ログインしていなければ、ログインを案内する
+//   9. 展示：同梱の写真の並び・トップに出すか・題と写真の題を、その場で保存する
 
 const MONTHS = ["2026-08", "2026-03", "2025-10", "2025-08", "2025-02", "2024-12", "2024-08", "2024-01", "2023-11", "2023-03"];
 const PHOTOS = Array.from({ length: 30 }, (_, index) => {
@@ -52,7 +53,14 @@ const PNG = Buffer.from(
 
 async function installMocks(
   page: Page,
-  options: { authenticated?: boolean; failSave?: boolean; cover?: number[]; heroMode?: string } = {},
+  options: {
+    authenticated?: boolean;
+    failSave?: boolean;
+    cover?: number[];
+    heroMode?: string;
+    exhibition?: string;
+    siteUrl?: string;
+  } = {},
 ) {
   const settings: Record<string, string> = {
     setupCompleted: "true",
@@ -64,6 +72,13 @@ async function installMocks(
     developDoors: "",
     servicePageMode: "off",
     heroMode: options.heroMode ?? "single",
+    siteUrl: options.siteUrl ?? "",
+    homeExhibition: options.exhibition ?? "off",
+    exhibitionTitle: "日藝祭 2026 展示作品",
+    exhibitionDates: "2026年11月1日〜3日",
+    exhibitionText: "",
+    exhibitionPhotoIds: "",
+    exhibitionCaptions: "",
   };
   // 表紙の登録（今までの管理画面の「トップに出す」と同じ API）。呼ばれた順に記録する。
   const row = (photoId: number, i: number) => ({ id: i + 1, photoId, sortOrder: i, focalX: null, focalY: null });
@@ -404,6 +419,59 @@ test.describe("admin — ページの写真（選んで並べる）", () => {
     await expect(page.getByRole("alert")).toContainText("保存できませんでした");
     await expect.poll(() => shownIds(page)).toEqual(PORTRAIT);
     expect(mocks.saved).toEqual([]);
+  });
+
+  test("展示：配布版の管理画面にはタブを出さない", async ({ page }) => {
+    await installMocks(page, { siteUrl: "https://someone-else.example" });
+    await open(page);
+    await expect(page.locator('[data-pp-tab="exhibition"]')).toHaveCount(0);
+    await expect(page.locator('[data-pp-tab="portrait"]')).toHaveAttribute("aria-selected", "true");
+  });
+
+  test("展示：同梱の写真を並べ替え、ライブラリの写真を足せる", async ({ page }) => {
+    const mocks = await installMocks(page, { siteUrl: "https://akieguchi.com" });
+    await open(page);
+    await page.locator('[data-pp-tab="exhibition"]').click();
+    await expect(page.locator('[data-pp-tab="exhibition"] small')).toHaveText("5");
+    await expect.poll(() => shownIds(page)).toEqual([-1, -2, -3, -4, -5]);
+    // 並べ替えると、そのまま保存される（先頭が表紙になる）。
+    await page.locator(".pp-grid .pp-tile").nth(1).click();
+    await page.getByRole("button", { name: "先頭へ" }).click();
+    await expect.poll(() => mocks.saved.at(-1)).toEqual({ exhibitionPhotoIds: "-2,-1,-3,-4,-5" });
+    await expect.poll(() => shownIds(page)).toEqual([-2, -1, -3, -4, -5]);
+    expect(await noSideScroll(page)).toBeLessThanOrEqual(0);
+  });
+
+  test("展示：止めるといつものトップへ。題と写真の題は欄を出ると保存される", async ({ page }) => {
+    const mocks = await installMocks(page, { exhibition: "on", siteUrl: "https://akieguchi.com" });
+    await open(page);
+    // 展示を出している間は、展示のタブから開く。
+    await expect(page.locator('[data-pp-tab="exhibition"]')).toHaveAttribute("aria-selected", "true");
+    await expect(page.locator('[data-pp-exhibition-mode="on"]')).toHaveAttribute("aria-pressed", "true");
+    await page.locator('[data-pp-exhibition-mode="off"]').click();
+    await expect.poll(() => mocks.saved.at(-1)).toEqual({ homeExhibition: "off" });
+    await page.locator('[data-pp-exhibition-mode="on"]').click();
+    await expect.poll(() => mocks.saved.at(-1)).toEqual({ homeExhibition: "on" });
+
+    await page.locator('[data-pp-exhibition="title"]').fill("次の展示");
+    await page.locator('[data-pp-exhibition="title"]').blur();
+    await expect.poll(() => mocks.saved.at(-1)).toEqual({ exhibitionTitle: "次の展示" });
+    await page.locator('[data-pp-exhibition="dates"]').fill("");
+    await page.locator('[data-pp-exhibition="dates"]').blur();
+    await expect.poll(() => mocks.saved.at(-1)).toEqual({ exhibitionDates: "" });
+
+    await page.getByText("写真ごとの題").click();
+    const caption = page.locator('[data-pp-exhibition-caption="-2"] input');
+    await caption.fill("部屋");
+    await caption.blur();
+    await expect.poll(() => mocks.saved.at(-1)).toEqual({ exhibitionCaptions: JSON.stringify({ "-2": "部屋" }) });
+  });
+
+  test("展示を出している間は、表紙のタブでそのことを知らせる", async ({ page }) => {
+    await installMocks(page, { exhibition: "on" });
+    await open(page);
+    await page.locator('[data-pp-tab="cover"]').click();
+    await expect(page.locator(".pp-note")).toContainText("ここで選んだ表紙は出ません");
   });
 
   test("サイトの構成は、一度確かめてから切り替える", async ({ page }) => {

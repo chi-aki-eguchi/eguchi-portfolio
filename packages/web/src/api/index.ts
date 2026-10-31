@@ -94,6 +94,8 @@ import {
   normalizeContactSettingValue,
 } from "../shared/contact-settings";
 import { SETTINGS_PREVIEW_KEYS } from "../shared/settings-keys";
+import { EXHIBITION_ASSET_KEYS, EXHIBITION_DEFAULTS, exhibitionStatus } from "../shared/exhibition";
+import { readExhibitionAsset } from "./exhibition-assets";
 import {
   StorageConfigError,
   STORAGE_NOT_CONFIGURED_CODE,
@@ -390,6 +392,8 @@ const origInFlight = new Map<string, Promise<{ buf: Buffer; type: string }>>();
 export async function getOriginal(
   key: string,
 ): Promise<{ buf: Buffer; type: string }> {
+  // 同梱の写真は保存先に無い。リポジトリから読む（変換と控えは、ほかの写真と同じ）。
+  if (EXHIBITION_ASSET_KEYS.has(key)) return readExhibitionAsset(key);
   const now = Date.now();
   const cached = origCache.get(key);
   if (cached && now - cached.ts < ORIG_TTL_MS) {
@@ -1583,6 +1587,14 @@ const app = new Hono()
         developLifeIds: settings.developLifeIds ?? "",
         // 扉の名前と添え書き（JSON。空なら初めの値）。読み方は shared/develop-structure.ts。
         developDoors: settings.developDoors ?? "",
+        // トップの展示。出すかどうかの既定は shared/exhibition.ts の exhibitionStatus（持ち主のサイトだけ on）。
+        // 題・会期は保存値があれば空でもそのまま（空にすれば出さない）。
+        homeExhibition: exhibitionStatus(settings.homeExhibition, settings.siteUrl),
+        exhibitionTitle: settings.exhibitionTitle ?? EXHIBITION_DEFAULTS.title,
+        exhibitionDates: settings.exhibitionDates ?? EXHIBITION_DEFAULTS.dates,
+        exhibitionText: settings.exhibitionText ?? EXHIBITION_DEFAULTS.text,
+        exhibitionPhotoIds: settings.exhibitionPhotoIds ?? "",
+        exhibitionCaptions: settings.exhibitionCaptions ?? "",
         // ── O6: smart albums (admin-only) — JSON array of saved photo filters ──
         smartAlbums: settings.smartAlbums ?? "[]",
         // ── I: series navigation toggle (JS-driven, like gallery) ──

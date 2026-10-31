@@ -12,10 +12,12 @@
 // - `vite/try-settings.local.json`（git に入れない）があれば、その値も差し替える。
 //   書体などを本番を変えずに試すため。ファイルは毎回読むので、書き換えたら再読み込みだけでよい。
 import { defineConfig, type Plugin } from "vite";
+import sharp from "sharp";
 import { existsSync, readFileSync } from "fs";
 import react from "@vitejs/plugin-react";
 import tailwind from "@tailwindcss/vite";
 import path from "path";
+import { EXHIBITION_DEFAULTS, exhibitionStatus } from "./src/shared/exhibition";
 
 const TARGET = (process.env.TRY_TARGET || "https://akieguchi.com").replace(/\/$/, "");
 const KIT_PREVIEW = process.env.TRY_KIT === "1";
@@ -32,6 +34,20 @@ function localSettings(): Record<string, string> {
   } catch {
     return {};
   }
+}
+
+/** 展示の同梱写真は本番の保存先に無いので、手元のファイルから返す（本番と同じ幅・形式で）。 */
+async function exhibitionImage(url: string): Promise<{ body: Buffer; type: string } | null> {
+  const parsed = new URL(url, "http://try.local");
+  const file = path.resolve(__dirname, "assets", decodeURIComponent(parsed.pathname.replace("/api/images/", "")));
+  if (!file.startsWith(path.resolve(__dirname, "assets/exhibition") + path.sep) || !existsSync(file)) return null;
+  const width = Number(parsed.searchParams.get("w")) || undefined;
+  const quality = Number(parsed.searchParams.get("q")) || 80;
+  const format = parsed.searchParams.get("fmt");
+  const image = sharp(file).resize({ width, withoutEnlargement: true });
+  if (format === "avif") return { body: await image.avif({ quality: Math.max(40, quality - 10), effort: 2 }).toBuffer(), type: "image/avif" };
+  if (format === "webp") return { body: await image.webp({ quality }).toBuffer(), type: "image/webp" };
+  return { body: await image.jpeg({ quality, mozjpeg: true }).toBuffer(), type: "image/jpeg" };
 }
 
 function readOnlyApi(): Plugin {
@@ -71,6 +87,14 @@ function readOnlyApi(): Plugin {
           return;
         }
         try {
+          if (url.startsWith("/api/images/exhibition/")) {
+            const local = await exhibitionImage(url);
+            res.statusCode = local ? 200 : 404;
+            if (local) res.setHeader("content-type", local.type);
+            res.setHeader("cache-control", "no-store");
+            res.end(local?.body);
+            return;
+          }
           const upstream = await fetch(TARGET + url, {
             method,
             headers: { accept: req.headers.accept ?? "*/*" },
@@ -81,7 +105,16 @@ function readOnlyApi(): Plugin {
           res.setHeader("cache-control", "no-store");
           if (url.startsWith("/api/settings") && type.includes("json") && upstream.ok) {
             const json = (await upstream.json()) as Record<string, unknown>;
-            res.end(JSON.stringify({ ...json, siteDesign: DESIGN, ...localSettings() }));
+            // 展示の設定は、本番へ出るまで本番の応答に無い。無ければ本番へ出たときと同じ値で補う。
+            const exhibition = {
+              homeExhibition: exhibitionStatus(undefined, json.siteUrl as string | undefined),
+              exhibitionTitle: EXHIBITION_DEFAULTS.title,
+              exhibitionDates: EXHIBITION_DEFAULTS.dates,
+              exhibitionText: EXHIBITION_DEFAULTS.text,
+              exhibitionPhotoIds: "",
+              exhibitionCaptions: "",
+            };
+            res.end(JSON.stringify({ ...exhibition, ...json, siteDesign: DESIGN, ...localSettings() }));
             return;
           }
           res.end(Buffer.from(await upstream.arrayBuffer()));

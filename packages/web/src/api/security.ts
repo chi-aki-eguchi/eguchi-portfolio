@@ -36,6 +36,8 @@ export const IMAGE_PROXY_ALLOWED_PREFIXES = [
   "hero/",
   "profile/",
   "fonts/",
+  // トップの展示の同梱写真（api/exhibition-assets.ts）。保存先ではなくリポジトリから読む。
+  "exhibition/",
 ];
 
 export function isAllowedImageKey(decodedKey: string): boolean {

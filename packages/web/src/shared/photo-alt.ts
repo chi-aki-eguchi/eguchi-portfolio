@@ -3,6 +3,8 @@
 // and search engines — fall back through description, then a Japanese sentence
 // built from whatever context (series / category / photographer) is available.
 export interface AltTextPhoto {
+  /** 読み上げ専用の言葉（画面には出さない）。題が無いときは、これを使う。 */
+  alt?: string | null;
   title?: string | null;
   description?: string | null;
   /** 撮影日。題も説明も無い写真を、せめて撮った時期で見分けられるようにする。 */
@@ -31,6 +33,8 @@ export function photoAltText(
 ): string {
   const title = photo.title?.trim();
   if (title) return title;
+  const alt = photo.alt?.trim();
+  if (alt) return alt;
   const description = photo.description?.trim();
   if (description) return description;
   const photographer = ctx.photographerName?.trim();

@@ -88,8 +88,8 @@ export function introNameLayout(
 ): Pick<IntroLayout, "name" | "caption"> {
   const narrow = stage.w < 640;
   const fontSize = narrow ? 28 : 36;
-  // 縦の名前は、字の高さに字間（0.42em、develop-intro.css）を足した長さ。
-  const height = length * fontSize * 1.42;
+  // 縦の名前は、字の高さに字間（0.7em、名刺の表と同じ。develop-intro.css）を足した長さ。
+  const height = length * fontSize * 1.7;
   const top = Math.max(0, (stage.h - height) / 2 - 18);
   return {
     name: { left: (stage.w - fontSize) / 2, top, fontSize },

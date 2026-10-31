@@ -3,6 +3,7 @@ import {
   EXHIBITION_BUILT_IN,
   EXHIBITION_POEM,
   EXHIBITION_WALL,
+  exhibitionIsTop,
   exhibitionNeedsLibrary,
   exhibitionPhotoList,
   exhibitionShape,
@@ -30,6 +31,14 @@ describe("トップの展示の決まり", () => {
     expect(exhibitionStatus("off", "https://akieguchi.com")).toBe("off");
     expect(exhibitionStatus("on", "https://someone-else.example")).toBe("on");
     expect(exhibitionStatus("???", "https://someone-else.example")).toBe("off");
+  });
+
+  test("展示がトップかどうかは、新しい構成で、止めていないときだけ（名刺の QR の通し先を決める）", () => {
+    const site = "https://akieguchi.com";
+    expect(exhibitionIsTop({ siteDesign: "develop" }, site)).toBe(true);
+    expect(exhibitionIsTop({ siteDesign: "develop", homeExhibition: "off" }, site)).toBe(false);
+    expect(exhibitionIsTop({ siteDesign: "classic" }, site)).toBe(false);
+    expect(exhibitionIsTop({ siteDesign: "develop" }, "https://someone-else.example")).toBe(false);
   });
 
   const WALL_ORDER = [-4, -3, -2, -1, -5];

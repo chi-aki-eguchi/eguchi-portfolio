@@ -13,7 +13,7 @@
  * 同梱の写真は負の ID を持ち、ライブラリの写真（正の ID）と同じ並びに入れられる。
  * 公開の写真一覧（/api/photos）には入らないので、Gallery には出ない。
  */
-import { parsePhotoIdList } from "./develop-structure";
+import { isDevelopDesignValue, parsePhotoIdList } from "./develop-structure";
 import { isServiceOwnerSite } from "./service-visibility";
 
 export const EXHIBITION_ASSET_PREFIX = "exhibition/";
@@ -112,6 +112,12 @@ export const EXHIBITION_DEFAULTS = {
   text: EXHIBITION_POEM,
 } as const;
 
+/**
+ * 名刺の裏の言葉（`~/01_simple_square_55x55_print.pdf`）。電話番号とメールはサイトに載せない。
+ * 名刺の QR の行き先は `/card.html`（印刷済みで変えられない）。展示がトップの間は、そこから展示へ通す（`server.ts`）。
+ */
+export const EXHIBITION_CARD_PLACES = "TOKYO / FUKUOKA / TAIPEI";
+
 /** 詩の書体。原稿と同じ。 */
 export const EXHIBITION_POEM_FONT = "Zen Old Mincho";
 
@@ -136,6 +142,14 @@ export const EXHIBITION_CAPTION_MAX = 60;
 export function exhibitionStatus(value: string | null | undefined, siteUrl: string | null | undefined): "on" | "off" {
   if (value === "on" || value === "off") return value;
   return isServiceOwnerSite(siteUrl ?? undefined, undefined) ? "on" : "off";
+}
+
+/** トップが展示になっているか（`server.ts` の判定。新しい構成のときだけ展示のトップがある）。 */
+export function exhibitionIsTop(
+  settings: { siteDesign?: string | null; homeExhibition?: string | null },
+  siteUrl: string | null | undefined,
+): boolean {
+  return isDevelopDesignValue(settings.siteDesign) && exhibitionStatus(settings.homeExhibition, siteUrl) === "on";
 }
 
 /** 並びにライブラリの写真が入っているか（入っていれば、写真の一覧を待ってから表紙を決める）。 */

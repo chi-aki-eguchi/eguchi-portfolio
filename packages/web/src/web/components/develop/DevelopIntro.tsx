@@ -224,7 +224,13 @@ export function DevelopIntro({
   const step = Math.min(180, 720 / Math.max(1, chars.length - 1));
 
   return (
-    <div ref={rootRef} className="dv-intro" data-phase={phase} aria-hidden="true">
+    <div
+      ref={rootRef}
+      className="dv-intro"
+      data-phase={phase}
+      data-name-only={nameOnly && vertical ? "" : undefined}
+      aria-hidden="true"
+    >
       {layout?.plate && boxes && plate && (
         <div
           className="dv-intro__plate"

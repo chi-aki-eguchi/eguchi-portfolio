@@ -5,16 +5,9 @@ import { sortPhotosBySetting } from "../../lib/photo-sort";
 import { galleryExcludesSeries } from "../../lib/book";
 import { galleryHasPhotos } from "../../lib/work-entries";
 import { InquiryCta } from "../InquiryCta";
-import { safeHref } from "../../lib/utils";
-import { DevelopHome, type DevelopDoor, type DevelopPhoto } from "./DevelopHome";
+import { DevelopHome, type DevelopPhoto } from "./DevelopHome";
 
 type Settings = Record<string, string | null | undefined> | undefined;
-
-/** "https://www.instagram.com/chi._.aki._/" → "@chi._.aki._"。読めない住所なら空。 */
-function instagramHandle(url: string): string {
-  const name = url.match(/instagram\.com\/([^/?#]+)/i)?.[1];
-  return name ? `@${name}` : "";
-}
 
 /**
  * 新しい構成のトップの、表紙より下に要る物を集める（扉の目次・すべての写真への入口・撮影依頼の案内）。
@@ -53,24 +46,6 @@ export function DevelopTop({ settings, exhibition = false }: { settings: Setting
         : null,
     [first?.coverUrl, first?.coverRotationDeg, first?.coverFocalX, first?.coverFocalY],
   );
-  // 展示のトップでは、扉の目次の最後に Instagram を並べる（フッターの小さな文字だけにしない）。
-  const instagramUrl = exhibition ? safeHref(settings?.profileInstagram ?? "") : "";
-  const extraDoors = useMemo<DevelopDoor[]>(
-    () =>
-      instagramUrl
-        ? [
-            {
-              key: "instagram",
-              href: instagramUrl,
-              title: settings?.snsLabelInstagram || "Instagram",
-              note: instagramHandle(instagramUrl),
-              photo: null,
-              external: true,
-            },
-          ]
-        : [],
-    [instagramUrl, settings?.snsLabelInstagram],
-  );
   return (
     <DevelopHome
       settings={settings}
@@ -81,7 +56,6 @@ export function DevelopTop({ settings, exhibition = false }: { settings: Setting
       // 展示のトップでは、詩の余韻のあとに料金を置かない。依頼の入口は Info にある。
       after={exhibition ? undefined : <InquiryCta />}
       plain={exhibition}
-      extraDoors={extraDoors}
     />
   );
 }

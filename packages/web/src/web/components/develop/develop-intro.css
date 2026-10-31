@@ -99,6 +99,10 @@
 .dv-intro__caption[data-center] {
   transform: translateX(-50%);
 }
+/* 名前だけの回は、名刺の表と同じ字間（1字ぶんの高さの 1.7 倍の送り）。 */
+.dv-intro[data-name-only] .dv-intro__name[data-vertical] {
+  letter-spacing: 0.7em;
+}
 .dv-intro__name span,
 .dv-intro__caption span {
   display: inline-block;

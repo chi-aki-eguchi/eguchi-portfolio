@@ -22,13 +22,11 @@ export type DevelopPhoto = {
 };
 
 export type DevelopDoor = {
-  key: "portrait" | "life" | "series" | "info" | "instagram";
+  key: "portrait" | "life" | "series" | "info";
   href: string;
   title: string;
   note: string;
   photo: DevelopPhoto | null;
-  /** サイトの外へ出るリンク（別の窓で開く）。 */
-  external?: boolean;
 };
 
 
@@ -83,9 +81,15 @@ function Doors({ doors, plain = false }: { doors: DevelopDoor[]; plain?: boolean
   return (
     <section className="dv-doors" data-plain={plain ? "" : undefined} aria-label="目次" ref={fadeRef}>
       <ul className="dv-doors__list">
-        {doors.map((door, i) => {
-          const body = (
-            <>
+        {doors.map((door, i) => (
+          <li key={door.key}>
+            <Link
+              to={door.href}
+              className="dv-door"
+              data-active={i === active ? "true" : undefined}
+              onMouseEnter={() => setActive(i)}
+              onFocus={() => setActive(i)}
+            >
               {door.photo && !plain && (
                 <span className="dv-door__photo fade-in-item">
                   <Picture
@@ -109,29 +113,9 @@ function Doors({ doors, plain = false }: { doors: DevelopDoor[]; plain?: boolean
               )}
               <span className="dv-door__title font-en">{door.title}</span>
               {door.note && <span className="dv-door__note">{door.note}</span>}
-            </>
-          );
-          const shared = {
-            className: "dv-door",
-            "data-active": i === active ? "true" : undefined,
-            // 写真の無い扉（Instagram）に触れても、隣の写真は替えない。
-            onMouseEnter: () => door.photo && setActive(i),
-            onFocus: () => door.photo && setActive(i),
-          };
-          return (
-            <li key={door.key}>
-              {door.external ? (
-                <a href={door.href} target="_blank" rel="noopener noreferrer" {...shared}>
-                  {body}
-                </a>
-              ) : (
-                <Link to={door.href} {...shared}>
-                  {body}
-                </Link>
-              )}
-            </li>
-          );
-        })}
+            </Link>
+          </li>
+        ))}
       </ul>
       {staged.length > 0 && (
         <div className="dv-stage" aria-hidden="true">
@@ -178,7 +162,6 @@ export function DevelopHome({
   showGallery,
   after,
   plain = false,
-  extraDoors,
 }: {
   settings: Settings;
   photos: DevelopPhoto[];
@@ -188,8 +171,6 @@ export function DevelopHome({
   after?: React.ReactNode;
   /** スマホで扉の写真を出さず、言葉の目次にする（展示の後ろ。白黒の写真の続きに色の写真を並べない）。 */
   plain?: boolean;
-  /** 扉の後ろに足す入口（展示のトップの Instagram）。 */
-  extraDoors?: DevelopDoor[];
 }) {
   const profilePhoto = useMemo<DevelopPhoto | null>(
     () => (settings?.profilePhotoUrl ? { url: settings.profilePhotoUrl } : null),
@@ -215,11 +196,10 @@ export function DevelopHome({
       settings?.developDoors,
     ],
   );
-  const shown = useMemo(() => [...doors, ...(extraDoors ?? [])], [doors, extraDoors]);
   return (
     <div className="dv-home site-page">
       {/* 下の余白は置かない（フッターの上の余白の設定に任せる）。見出し（h1）は、上の表紙の名前。 */}
-      <Doors doors={shown} plain={plain} />
+      <Doors doors={doors} plain={plain} />
       {showGallery && (
         <p className="dv-archive">
           <Link to="/gallery" className="dv-archive__link">

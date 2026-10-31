@@ -4,7 +4,9 @@ import { JaPhrases } from "../JaPhrases";
 import type { GalleryPhoto } from "../PhotoGallery";
 import { useScrollFadeIn } from "../../hooks/useScrollFadeIn";
 import { orientedDimensions } from "../../../shared/image-url";
+import { safeHref } from "../../lib/utils";
 import {
+  EXHIBITION_CARD_PLACES,
   EXHIBITION_POEM_FONT,
   EXHIBITION_WALL,
   exhibitionShape,
@@ -58,12 +60,15 @@ export function ExhibitionWall({
   viewer,
   text,
   on,
+  name,
   photographerName,
 }: {
   photos: ExhibitionItem[];
   viewer: PhotoViewerState;
   text: string;
   on: boolean;
+  /** 札に小さく置く名前。 */
+  name?: string;
   photographerName?: string;
 }) {
   const fits = text && exhibitionTextFitsSheet(text);
@@ -132,13 +137,17 @@ export function ExhibitionWall({
         </a>
       )}
       {EXHIBITION_WALL.cards.map((card, i) => (
-        <span
+        <a
           // 札は2枚の決まった並び。
           // eslint-disable-next-line react/no-array-index-key
           key={i}
           className="ex-wall__card"
+          href="#ex-cards"
+          aria-label="名刺へ"
           style={{ left: `${card.x}%`, top: `${card.y}%`, width: `${card.w}%`, height: `${card.h}%` }}
-        />
+        >
+          {i === 0 && name && <span aria-hidden="true">{name}</span>}
+        </a>
       ))}
     </div>
   );
@@ -203,9 +212,47 @@ function ExhibitionSheet({ text }: { text: string }) {
 }
 
 /**
+ * 名刺の表と裏。会場の壁と同じく、詩の紙の下に2枚並べる。表は名刺の組みのまま縦書きの名前。
+ * 裏は名刺と同じ並びで、QR の場所を押せる言葉にする（スマホの中の QR は読めない）。
+ * 電話番号とメールは載せない（連絡は Info のフォーム）。
+ */
+function ExhibitionCards({
+  name,
+  nameEn,
+  links,
+}: {
+  name: string;
+  nameEn: string;
+  links: { label: string; href: string }[];
+}) {
+  return (
+    <div id="ex-cards" className="ex-cards">
+      <div className="ex-card">
+        <p className="ex-card__name" lang="ja">
+          {name}
+        </p>
+      </div>
+      <div className="ex-card ex-card--back" lang="en">
+        <p className="ex-card__en">{nameEn}</p>
+        {links.length > 0 && (
+          <div className="ex-card__links">
+            {links.map((link) => (
+              <a key={link.href} href={link.href} target="_blank" rel="noopener noreferrer">
+                {link.label}
+              </a>
+            ))}
+          </div>
+        )}
+        <p className="ex-card__where">{EXHIBITION_CARD_PLACES}</p>
+      </div>
+    </div>
+  );
+}
+
+/**
  * 写真の続き。1枚ずつ、切り抜かず、地の紙の上に置く。写真の上には何も重ねない。
  * 枚数が増えても同じ規則で並ぶ（置き方は写真の形と順番から決まる。exhibition.css）。
- * 押すといつものビューアが開く。最後に詩。
+ * 押すといつものビューアが開く。最後に詩の紙と名刺（会場の壁の右下と同じ並び）。
  */
 export function ExhibitionWorks({
   photos,
@@ -213,8 +260,18 @@ export function ExhibitionWorks({
   viewer,
   label,
   text,
+  name,
+  nameEn,
+  instagram,
+  x,
   photographerName,
 }: {
+  /** 名刺の名前。 */
+  name: string;
+  nameEn: string;
+  /** 名刺の裏のリンク（設定の住所。無い物は出さない）。 */
+  instagram?: { label: string; href?: string | null };
+  x?: { label: string; href?: string | null };
   /** 表紙も含めた全部の写真。 */
   photos: ExhibitionItem[];
   /** ここに並べる最初の写真（表紙に1枚使っていれば 1）。 */
@@ -228,6 +285,10 @@ export function ExhibitionWorks({
 }) {
   const fadeRef = useScrollFadeIn([photos.length]);
   usePoemFont(text);
+  const links = [instagram, x].flatMap((link) => {
+    const href = link?.href ? safeHref(link.href) : "";
+    return link && href ? [{ label: link.label, href }] : [];
+  });
   return (
     <section className="ex-works" aria-label={label} ref={fadeRef}>
       <ol className="ex-works__list">
@@ -281,6 +342,7 @@ export function ExhibitionWorks({
             <JaPhrases>{text}</JaPhrases>
           </p>
         ))}
+      <ExhibitionCards name={name} nameEn={nameEn} links={links} />
     </section>
   );
 }

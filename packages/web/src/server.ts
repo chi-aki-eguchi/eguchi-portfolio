@@ -68,9 +68,9 @@ import { PORTFOLIO_DISCOVERY_GUIDE } from "./shared/portfolio-guide";
 import {
   EXHIBITION_DEFAULTS,
   exhibitionNeedsLibrary,
+  exhibitionIsTop,
   exhibitionPhotoList,
   exhibitionShowsWall,
-  exhibitionStatus,
 } from "./shared/exhibition";
 import { srcFor, srcSetFor } from "./shared/image-presets";
 import { INDEXABLE_POLICY_PATHS } from "./shared/policy-content";
@@ -1041,6 +1041,15 @@ async function serveNonApi(request: Request, url: URL): Promise<Response> {
       });
   }
 
+  // 名刺の QR の行き先は /card.html（印刷済み）。展示がトップの間は、そのまま展示へ通す。
+  // リンク集で「Website」を押さないと展示に着かないと、会場で読んだ人が展示まで来ない。
+  // 展示を止めれば、今までのリンク集に戻る。
+  if (url.pathname === "/card.html") {
+    const settings = await getSettings();
+    if (exhibitionIsTop(settings, siteUrlFrom(settings, publicOrigin)))
+      return new Response(null, { status: 302, headers: { Location: "/", "Cache-Control": "no-store" } });
+  }
+
   // Always inject OGP for HTML pages (root and SPA routes)
   const isHtmlRequest = url.pathname === "/" || !url.pathname.includes(".");
   if (!isHtmlRequest) {
@@ -1079,10 +1088,7 @@ async function serveNonApi(request: Request, url: URL): Promise<Response> {
     const html = await index.text();
     const settings = await getSettings();
     // 展示のトップでは、表紙（共有の写真・先読み）は展示の先頭の写真。トップだけ差し替える。
-    const exhibitionOn =
-      routePathname === "/" &&
-      isDevelopDesignValue(settings.siteDesign) &&
-      exhibitionStatus(settings.homeExhibition, siteUrlFrom(settings, publicOrigin)) === "on";
+    const exhibitionOn = routePathname === "/" && exhibitionIsTop(settings, siteUrlFrom(settings, publicOrigin));
     const exhibitionCover = exhibitionOn ? await getExhibitionCover(settings.exhibitionPhotoIds) : null;
     const heroImg = exhibitionCover ?? (await getHeroOgImage());
     // 壁の配置を出す間は大きな表紙が無いので、表紙の写真を先読みさせない（共有の写真には使う）。

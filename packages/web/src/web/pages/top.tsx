@@ -1826,6 +1826,7 @@ export default function TopPage() {
                   viewer={exhibitionViewer}
                   text={exhibitionText}
                   on={!introPlaying}
+                  name={settings?.siteName ?? CLIENT_SITE_FALLBACKS.siteName}
                   photographerName={photographerName}
                 />
               ) : (
@@ -1877,6 +1878,10 @@ export default function TopPage() {
           viewer={exhibitionViewer}
           label={exhibitionTitle || "展示の写真"}
           text={exhibitionText}
+          name={settings?.siteName ?? CLIENT_SITE_FALLBACKS.siteName}
+          nameEn={settings?.siteNameEn ?? CLIENT_SITE_FALLBACKS.siteNameEn}
+          instagram={{ label: "INSTAGRAM", href: settings?.profileInstagram }}
+          x={{ label: "X", href: settings?.profileTwitter }}
           photographerName={photographerName}
         />
         <DevelopTop settings={settings} exhibition />

@@ -106,7 +106,29 @@
   transition: opacity 0.9s var(--ease-reveal) 1.1s;
 }
 .ex-wall__card {
+  container-type: inline-size;
   border-radius: 12%;
+  color: #1a1a1a;
+  text-decoration: none;
+}
+.ex-wall__card span {
+  position: absolute;
+  left: 50%;
+  top: 46%;
+  transform: translate(-50%, -50%);
+  font-family: var(--font-ja);
+  font-size: 9cqw;
+  line-height: 1;
+  letter-spacing: 0.7em;
+  writing-mode: vertical-rl;
+  text-orientation: upright;
+}
+/* 裏の QR の位置に、小さな濃い四角。 */
+.ex-wall__card:not(:has(span))::after {
+  content: "";
+  position: absolute;
+  inset: 26% 37% 50%;
+  background: rgba(26, 26, 26, 0.78);
 }
 .ex-wall[data-on] :is(.ex-wall__sheet, .ex-wall__card) {
   opacity: 1;
@@ -239,6 +261,81 @@ body[data-reveal="none"] .ex-wall__img {
 body[data-reveal="none"] .ex-sheet .ex-poem span {
   opacity: 1;
   animation: none;
+}
+
+/* ── 名刺：詩の紙の下に、表と裏の2枚 ──────────────────────
+   寸法は実物と同じ比（角の丸い正方形）。表の名前は名刺どおり、幅の 8.3% の字を 1.7 倍の送りで、
+   少し上寄りの真ん中に。裏は名刺の並びのまま、QR の場所に押せる言葉を置く。 */
+.ex-cards {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin: 3rem var(--page-inset) 0;
+  scroll-margin-top: calc(var(--header-h) + 1rem);
+}
+.ex-card {
+  position: relative;
+  container-type: inline-size;
+  aspect-ratio: 1;
+  overflow: hidden;
+  border-radius: 9%;
+  background: #fff;
+  color: #1a1a1a;
+  box-shadow: 0 0 0 1px rgba(var(--foreground-rgb), 0.06), 0 1px 12px rgba(0, 0, 0, 0.05);
+}
+.ex-card__name {
+  position: absolute;
+  left: 50%;
+  top: 46%;
+  transform: translate(-50%, -50%);
+  margin: 0;
+  font-family: var(--font-ja);
+  font-size: 8.3cqw;
+  line-height: 1;
+  letter-spacing: 0.7em;
+  writing-mode: vertical-rl;
+  text-orientation: upright;
+}
+/* 裏は名刺と同じ、飾りの無いゴシックを真ん中にそろえる。 */
+.ex-card--back {
+  font-family: "Helvetica Neue", Arial, "Liberation Sans", sans-serif;
+  font-weight: 400;
+  text-align: center;
+}
+.ex-card__en {
+  position: absolute;
+  inset: 13% 0 auto;
+  margin: 0;
+  font-size: 7.4cqw;
+  line-height: 1.2;
+}
+.ex-card__where {
+  position: absolute;
+  inset: auto 0 11%;
+  margin: 0;
+  font-size: max(8px, 4.3cqw);
+  line-height: 1.2;
+}
+/* QR の場所。押せる高さ（44px 以上）を、小さい画面でも確保する。 */
+.ex-card__links {
+  position: absolute;
+  inset: 27% 0 22%;
+  display: grid;
+  grid-auto-rows: minmax(44px, 1fr);
+  align-content: center;
+}
+.ex-card__links a {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 6.4cqw;
+  letter-spacing: 0.04em;
+  color: inherit;
+  text-decoration: none;
+}
+.ex-card__links a:focus-visible {
+  outline: 1px solid currentColor;
+  outline-offset: -4px;
 }
 
 .ex-works__text {
@@ -400,6 +497,12 @@ body[data-reveal="none"] .ex-work__open.fade-in-item .ex-work__img {
   }
   .ex-work__title {
     padding-inline: 0;
+  }
+  /* 名刺は詩の紙の下、右寄せ（会場の位置）。 */
+  .ex-cards {
+    grid-template-columns: repeat(2, 9.5rem);
+    justify-content: end;
+    margin: 2rem 0 0;
   }
   /* 詩の紙は、会場と同じく最後の写真の右へ。1画面に全体が入る大きさで、原稿と同じ比の字になる。 */
   .ex-sheet {

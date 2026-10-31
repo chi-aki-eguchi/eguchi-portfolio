@@ -3,7 +3,7 @@ import { test, expect, type Page, type SmokeApi } from "./fixtures.ts";
 /**
  * トップの展示（shared/exhibition.ts）。人工データの上で、設定だけこの spec の中で差し替えて見る（保存はしない）。
  *
- * 1. 会場の壁の配置から始まり、同じ順に切り抜かない写真が続き、最後が縦書きの詩、言葉の目次・Instagram
+ * 1. 会場の壁の配置から始まり、同じ順に切り抜かない写真が続き、最後が縦書きの詩と名刺、言葉の目次
  * 2. 同梱の写真が、いつもの画像の経路（/api/images/…）で配信される
  * 3. 押すといつものビューアが、その写真から順に開く
  * 4. 5枚から外すと1枚の表紙になる。写真・文を足すと出る。書いていない文の場所は取らない
@@ -22,6 +22,7 @@ async function withSettings(page: Page, api: SmokeApi, patch: Record<string, str
           siteDesign: "develop",
           homeExhibition: "on",
           profileInstagram: "https://www.instagram.com/example_user/",
+          profileTwitter: "https://x.com/example_user",
           ...patch,
         }),
       }),
@@ -84,13 +85,19 @@ test("展示のトップ › 会場の壁の配置から始まり、同じ順に
   expect(await poem.evaluate((el) => getComputedStyle(el).writingMode)).toBe("vertical-rl");
   await expect(page.locator(".inquiry-note")).toHaveCount(0);
 
-  // 続きは言葉の目次。写真を挟まず、最後に Instagram。
+  // 詩の下に名刺の表と裏。裏の QR の場所は、押せる言葉。電話番号とメールは載せない。
+  await expect(page.locator(".ex-card")).toHaveCount(2);
+  await expect(page.locator(".ex-card__name")).toBeVisible();
+  const instagram = page.locator('.ex-card__links a[href="https://www.instagram.com/example_user/"]');
+  await expect(instagram).toHaveText("INSTAGRAM");
+  await expect(instagram).toHaveAttribute("target", "_blank");
+  await expect(page.locator('.ex-card__links a[href="https://x.com/example_user"]')).toHaveText("X");
+  await expect(page.locator(".ex-cards")).toContainText("TOKYO / FUKUOKA / TAIPEI");
+  await expect(page.locator(".ex-cards")).not.toContainText("@");
+
+  // 続きは言葉の目次。色の写真を挟まない。
   await expect(page.locator(".dv-doors[data-plain]")).toBeVisible();
   await expect(page.locator(".dv-door__photo")).toHaveCount(0);
-  const instagram = page.locator('.dv-door[href="https://www.instagram.com/example_user/"]');
-  await expect(instagram).toContainText("Instagram");
-  await expect(instagram).toContainText("@example_user");
-  await expect(instagram).toHaveAttribute("target", "_blank");
   expect(await noSideScroll(page)).toBeLessThanOrEqual(0);
 });
 

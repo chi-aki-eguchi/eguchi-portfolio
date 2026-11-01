@@ -423,6 +423,116 @@ body[data-reveal="none"] .ex-sheet .ex-poem span {
   outline-offset: -4px;
 }
 
+/* ── 名刺の QR から来た人へ ─────────────────────────
+   詩の余韻のあと、掛けなかった1枚を、白い縁の残る手札のプリントのように手渡す。少し傾けて、壁の作品ではなく
+   手の中の物に見せる。文字は写真の外。 */
+.ex-thanks {
+  display: grid;
+  justify-items: center;
+  margin: calc(var(--ex-gap) * 1.45) var(--page-inset) 0;
+  scroll-margin-top: calc(var(--header-h) + 1rem);
+}
+.ex-thanks + .ex-cards {
+  margin-top: var(--ex-gap);
+}
+.ex-thanks__print {
+  width: min(78%, 22rem);
+  box-sizing: border-box;
+  padding: 0.875rem;
+  background: var(--ex-paper);
+  box-shadow: var(--ex-object-shadow);
+  /* transform は現れる動き（.fade-in-item）が使うので、傾きは別の指定で持つ。 */
+  rotate: -1.6deg;
+}
+.ex-thanks__print picture,
+.ex-thanks__img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.ex-thanks__word {
+  margin: 2rem 0 0;
+  font-family: var(--font-ja);
+  font-size: 1.0625rem;
+  line-height: 1.9;
+  letter-spacing: 0.1em;
+  text-align: center;
+  white-space: pre-line;
+}
+.ex-reply {
+  position: relative;
+  width: min(100%, 24rem);
+  margin-top: 1.5rem;
+}
+/* 機械だけが埋める欄。 */
+.ex-reply__trap {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+/* 字は 16px 以上（iPhone は小さい字の欄を押すと画面を拡大する）。 */
+.ex-reply textarea {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  padding: 0.625rem 0;
+  border: 0;
+  border-bottom: 1px solid rgba(var(--foreground-rgb), 0.28);
+  border-radius: 0;
+  background: none;
+  color: var(--foreground);
+  font-family: var(--font-ja);
+  font-size: 1rem;
+  line-height: 1.75;
+  letter-spacing: 0.04em;
+  resize: none;
+  outline: none;
+  transition: border-color 0.3s ease;
+}
+.ex-reply textarea::placeholder {
+  color: var(--text-quiet);
+  opacity: 1;
+}
+.ex-reply textarea:focus {
+  border-bottom-color: var(--foreground);
+}
+.ex-reply__foot {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 1rem;
+}
+.ex-reply__foot p {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: var(--text-quiet);
+}
+.ex-reply__foot button {
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0 0 0 0.75rem;
+  border: 0;
+  background: none;
+  color: var(--foreground);
+  font-family: var(--font-ja);
+  font-size: 0.9375rem;
+  letter-spacing: 0.16em;
+  cursor: pointer;
+}
+.ex-reply__foot button:disabled {
+  color: var(--text-quiet);
+  cursor: default;
+}
+.ex-reply__sent {
+  display: block;
+  margin: 1.5rem 0 0;
+  font-size: 0.9375rem;
+  letter-spacing: 0.08em;
+  color: var(--text-quiet);
+}
+
 .ex-works__text {
   max-width: 34em;
   margin: var(--ex-gap) 0 0;
@@ -435,14 +545,17 @@ body[data-reveal="none"] .ex-sheet .ex-poem span {
 
 /* 現像されるように現れる（扉の写真・一覧の写真と同じ変化）。白黒の写真では、印画紙に像が
    起きてくるように見える。 */
-.ex-work__open.fade-in-item .ex-work__img {
+.ex-work__open.fade-in-item .ex-work__img,
+.ex-thanks__print.fade-in-item .ex-thanks__img {
   filter: grayscale(1) sepia(0.32) contrast(0.78) brightness(1.18);
   transition: filter 1.35s var(--ease-reveal) 0.12s;
 }
-.ex-work__open.fade-in-item.visible .ex-work__img {
+.ex-work__open.fade-in-item.visible .ex-work__img,
+.ex-thanks__print.fade-in-item.visible .ex-thanks__img {
   filter: none;
 }
-body[data-reveal="none"] .ex-work__open.fade-in-item .ex-work__img {
+body[data-reveal="none"] .ex-work__open.fade-in-item .ex-work__img,
+body[data-reveal="none"] .ex-thanks__print.fade-in-item .ex-thanks__img {
   filter: none;
   transition: none;
 }
@@ -627,6 +740,15 @@ body[data-reveal="none"] .ex-work__open.fade-in-item .ex-work__img {
     justify-content: end;
     margin: 2rem 0 0;
   }
+  /* 手渡す1枚は、詩の紙と同じ列に。 */
+  .ex-thanks {
+    width: min(100%, calc(var(--ex-fit) * 210 / 297));
+    margin-left: auto;
+    margin-right: 0;
+  }
+  .ex-thanks + .ex-cards {
+    margin-top: 3rem;
+  }
   /* 詩の紙は、会場と同じく最後の写真の右へ。1画面に全体が入る大きさで、原稿と同じ比の字になる。 */
   .ex-sheet {
     width: min(100%, calc(var(--ex-fit) * 210 / 297));
@@ -636,7 +758,8 @@ body[data-reveal="none"] .ex-work__open.fade-in-item .ex-work__img {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .ex-work__open.fade-in-item .ex-work__img {
+  .ex-work__open.fade-in-item .ex-work__img,
+  .ex-thanks__print.fade-in-item .ex-thanks__img {
     filter: none;
     transition: none;
   }

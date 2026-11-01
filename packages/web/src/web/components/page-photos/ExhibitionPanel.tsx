@@ -5,6 +5,7 @@ import {
   EXHIBITION_CAPTION_MAX,
   EXHIBITION_DATES_MAX,
   EXHIBITION_TEXT_MAX,
+  EXHIBITION_THANKS_MAX,
   EXHIBITION_TITLE_MAX,
   readExhibitionCaptions,
   writeExhibitionCaptions,
@@ -65,12 +66,18 @@ export function ExhibitionCopy({
   title,
   dates,
   text,
+  thanks,
   onSave,
 }: {
   title: string;
   dates: string;
   text: string;
-  onSave: (key: "exhibitionTitle" | "exhibitionDates" | "exhibitionText", next: string, message: string) => void;
+  thanks: string;
+  onSave: (
+    key: "exhibitionTitle" | "exhibitionDates" | "exhibitionText" | "exhibitionThanks",
+    next: string,
+    message: string,
+  ) => void;
 }) {
   return (
     <div className="pp-exhibition-copy">
@@ -95,6 +102,14 @@ export function ExhibitionCopy({
         max={EXHIBITION_TEXT_MAX}
         multiline
         onSave={(next) => onSave("exhibitionText", next, "詩・添える文を変えました")}
+      />
+      <CopyField
+        label="名刺のQRから来た人へのひとこと（空にすると、この部分ごと出ません）"
+        field="thanks"
+        value={thanks}
+        max={EXHIBITION_THANKS_MAX}
+        multiline
+        onSave={(next) => onSave("exhibitionThanks", next, "ひとことを変えました")}
       />
     </div>
   );

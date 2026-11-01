@@ -44,6 +44,7 @@ type SavedKey =
   | "exhibitionTitle"
   | "exhibitionDates"
   | "exhibitionText"
+  | "exhibitionThanks"
   | "exhibitionPhotoIds"
   | "exhibitionCaptions";
 type Toast = { text: string; undo?: () => void };
@@ -363,6 +364,7 @@ export default function AdminPagesPage() {
             title={savedValue("exhibitionTitle")}
             dates={savedValue("exhibitionDates")}
             text={savedValue("exhibitionText")}
+            thanks={savedValue("exhibitionThanks")}
             onSave={(field, next, message) => save(field, next, message, savedValue(field))}
           />
           <ExhibitionCaptions

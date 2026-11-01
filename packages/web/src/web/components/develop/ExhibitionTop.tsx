@@ -6,10 +6,13 @@ import { useScrollFadeIn } from "../../hooks/useScrollFadeIn";
 import { orientedDimensions } from "../../../shared/image-url";
 import { safeHref } from "../../lib/utils";
 import { sendAnalyticsEvent } from "../../lib/analytics";
+import { assertOk } from "../../lib/api";
 import {
   EXHIBITION_CARD_COOKIE,
   EXHIBITION_CARD_PLACES,
   EXHIBITION_POEM_FONT,
+  EXHIBITION_REPLY_MAX,
+  EXHIBITION_THANKS_PHOTO,
   EXHIBITION_WALL,
   exhibitionCardVisitor,
   exhibitionShape,
@@ -293,6 +296,89 @@ function ExhibitionCards({
   );
 }
 
+/** 本人へ届く、ひとことの欄。名前も連絡先も聞かない（在廊できない展示の、感想ノートの代わり）。 */
+function ExhibitionReply({ endpoint, name }: { endpoint: string; name: string }) {
+  const [status, setStatus] = useState<"idle" | "sending" | "sent" | "failed">("idle");
+  if (status === "sent") {
+    return (
+      <output className="ex-reply__sent">届きました。ありがとう。</output>
+    );
+  }
+  const send = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const body = new FormData(event.currentTarget);
+    // 人には見えない欄。埋まっていたら機械の送信なので、送ったふりだけする。
+    if (String(body.get("_gotcha") ?? "").trim()) return setStatus("sent");
+    if (!String(body.get("message") ?? "").trim()) return;
+    setStatus("sending");
+    try {
+      const res = await fetch(endpoint, { method: "POST", headers: { Accept: "application/json" }, body });
+      assertOk(res);
+      setStatus("sent");
+      sendAnalyticsEvent("exhibition_reply_sent");
+    } catch {
+      setStatus("failed");
+    }
+  };
+  return (
+    <form className="ex-reply" onSubmit={(event) => void send(event)}>
+      <input type="hidden" name="_subject" value="展示のQRから、ひとこと" />
+      <input className="ex-reply__trap" type="text" name="_gotcha" tabIndex={-1} autoComplete="off" aria-hidden="true" />
+      <textarea
+        name="message"
+        rows={2}
+        required
+        maxLength={EXHIBITION_REPLY_MAX}
+        aria-label={`${name}へひとこと`}
+        placeholder="この写真好きです！も、お待ちしております"
+      />
+      <div className="ex-reply__foot">
+        {status === "failed" && <p role="alert">送れませんでした。少しあとで、もう一度お願いします。</p>}
+        <button type="submit" disabled={status === "sending"}>
+          {status === "sending" ? "送っています" : "送る"}
+        </button>
+      </div>
+    </form>
+  );
+}
+
+/**
+ * 名刺の QR から来た人にだけ出す、最後のやりとり（2026-11-01）。在廊できないので、本人の代わりにここで迎える。
+ * 壁に掛けなかった1枚を、紙に焼いた1枚のように渡し、ひとことと、本人へ返せる欄を添える。
+ */
+function ExhibitionThanks({
+  text,
+  replyEndpoint,
+  name,
+}: {
+  text: string;
+  replyEndpoint: string;
+  name: string;
+}) {
+  const photo = EXHIBITION_THANKS_PHOTO;
+  return (
+    <section id="ex-thanks" className="ex-thanks" aria-label="名刺を読んでくれた人へ">
+      <div className="ex-thanks__print fade-in-item">
+        <Picture
+          url={photo.url}
+          width={photo.width}
+          height={photo.height}
+          alt={photo.alt}
+          preset="grid"
+          sizes="(min-width: 768px) 22rem, 78vw"
+          fallbackW={800}
+          fallbackQ={84}
+          className="ex-thanks__img"
+          loading="lazy"
+          draggable={false}
+        />
+      </div>
+      <p className="ex-thanks__word">{text}</p>
+      {replyEndpoint && <ExhibitionReply endpoint={replyEndpoint} name={name} />}
+    </section>
+  );
+}
+
 /**
  * 写真の続き。1枚ずつ、切り抜かず、地の紙の上に置く。写真の上には何も重ねない。
  * 枚数が増えても同じ規則で並ぶ（置き方は写真の形と順番から決まる。exhibition.css）。
@@ -304,6 +390,8 @@ export function ExhibitionWorks({
   viewer,
   label,
   text,
+  thanks,
+  replyEndpoint,
   name,
   nameEn,
   instagram,
@@ -325,11 +413,15 @@ export function ExhibitionWorks({
   label: string;
   /** 詩・添える文。空なら出さない。 */
   text: string;
+  /** 名刺の QR から来た人へのひとこと。空なら、写真と欄ごと出さない。 */
+  thanks: string;
+  /** ひとことの送り先（お問い合わせと同じ）。無ければ欄を出さない。 */
+  replyEndpoint: string;
   photographerName?: string;
 }) {
   const fadeRef = useScrollFadeIn([photos.length]);
   usePoemFont(text);
-  useExhibitionCardVisitor();
+  const cardVisitor = useExhibitionCardVisitor();
   const links = [instagram, x].flatMap((link) => {
     const href = link?.href ? safeHref(link.href) : "";
     return link && href ? [{ label: link.label, href }] : [];
@@ -387,6 +479,7 @@ export function ExhibitionWorks({
             <JaPhrases>{text}</JaPhrases>
           </p>
         ))}
+      {cardVisitor && thanks.trim() && <ExhibitionThanks text={thanks} replyEndpoint={replyEndpoint} name={name} />}
       <ExhibitionCards name={name} nameEn={nameEn} links={links} />
     </section>
   );

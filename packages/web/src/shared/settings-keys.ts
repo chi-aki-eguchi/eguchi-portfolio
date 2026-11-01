@@ -178,6 +178,7 @@ export const SETTINGS_PREVIEW_KEYS = [
   "exhibitionTitle",
   "exhibitionDates",
   "exhibitionText",
+  "exhibitionThanks",
   "exhibitionPhotoIds",
   "exhibitionCaptions",
   "seriesGridColumns",

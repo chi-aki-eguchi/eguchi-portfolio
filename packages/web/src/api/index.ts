@@ -1593,6 +1593,7 @@ const app = new Hono()
         exhibitionTitle: settings.exhibitionTitle ?? EXHIBITION_DEFAULTS.title,
         exhibitionDates: settings.exhibitionDates ?? EXHIBITION_DEFAULTS.dates,
         exhibitionText: settings.exhibitionText ?? EXHIBITION_DEFAULTS.text,
+        exhibitionThanks: settings.exhibitionThanks ?? EXHIBITION_DEFAULTS.thanks,
         exhibitionPhotoIds: settings.exhibitionPhotoIds ?? "",
         exhibitionCaptions: settings.exhibitionCaptions ?? "",
         // ── O6: smart albums (admin-only) — JSON array of saved photo filters ──

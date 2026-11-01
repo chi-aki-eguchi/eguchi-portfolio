@@ -52,6 +52,7 @@ import {
   readExhibitionCaptions,
 } from "../../shared/exhibition";
 import { DevelopIntro } from "../components/develop/DevelopIntro";
+import { usableContactEndpoint } from "../../shared/contact-settings";
 import { INTRO_SEEN_KEY, shouldPlayIntro } from "../lib/develop-intro";
 import { isDarkTextColor, textShadowOverPhoto } from "../lib/color-contrast";
 import { JaPhrases } from "../components/JaPhrases";
@@ -1886,6 +1887,8 @@ export default function TopPage() {
           viewer={exhibitionViewer}
           label={exhibitionTitle || "展示の写真"}
           text={exhibitionText}
+          thanks={settings?.exhibitionThanks ?? EXHIBITION_DEFAULTS.thanks}
+          replyEndpoint={usableContactEndpoint(settings?.formspreeUrl)}
           name={settings?.siteName ?? CLIENT_SITE_FALLBACKS.siteName}
           nameEn={settings?.siteNameEn ?? CLIENT_SITE_FALLBACKS.siteNameEn}
           instagram={{ label: "INSTAGRAM", href: settings?.profileInstagram }}

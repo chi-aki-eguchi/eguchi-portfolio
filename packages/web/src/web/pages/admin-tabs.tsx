@@ -251,6 +251,7 @@ export const SETTINGS_SECTION_KEYS = {
     "exhibitionTitle",
     "exhibitionDates",
     "exhibitionText",
+    "exhibitionThanks",
     "exhibitionPhotoIds",
     "exhibitionCaptions",
   ],

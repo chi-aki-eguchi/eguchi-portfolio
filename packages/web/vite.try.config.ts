@@ -111,6 +111,7 @@ function readOnlyApi(): Plugin {
               exhibitionTitle: EXHIBITION_DEFAULTS.title,
               exhibitionDates: EXHIBITION_DEFAULTS.dates,
               exhibitionText: EXHIBITION_DEFAULTS.text,
+              exhibitionThanks: EXHIBITION_DEFAULTS.thanks,
               exhibitionPhotoIds: "",
               exhibitionCaptions: "",
             };

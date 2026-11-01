@@ -56,6 +56,18 @@ export const EXHIBITION_BUILT_IN: readonly ExhibitionPhoto[] = [
   builtIn(-5, "hair", 2800, 1866, "白い布を背にした、髪の先"),
 ];
 
+/**
+ * 名刺の QR から来た人にだけ出す、壁に掛けなかった1枚（2026-11-01。原本は `距離感/_A1K0738.jpg`）。
+ * 詩のあとに、ドアから腕だけ出して親指を立てる。公開の写真一覧にも Gallery にも入れない。
+ */
+export const EXHIBITION_THANKS_PHOTO = builtIn(
+  -6,
+  "thanks",
+  2000,
+  2000,
+  "ドアの向こうから腕だけ出して、親指を立てている",
+);
+
 export type WallBox = { x: number; y: number; w: number; h: number };
 
 /**
@@ -128,7 +140,7 @@ export function exhibitionShowsWall(ids: string | null | undefined): boolean {
 }
 
 export const EXHIBITION_ASSET_KEYS: ReadonlySet<string> = new Set(
-  EXHIBITION_BUILT_IN.map((photo) => photo.url.replace("/api/images/", "")),
+  [...EXHIBITION_BUILT_IN, EXHIBITION_THANKS_PHOTO].map((photo) => photo.url.replace("/api/images/", "")),
 );
 
 /** 会場の壁の詩（原稿 `~/Downloads/poem_A4_tate_vector.pdf`）。一字も変えない。 */
@@ -148,6 +160,8 @@ export const EXHIBITION_DEFAULTS = {
   title: "無題",
   dates: "日藝祭 2026年11月1日〜3日",
   text: EXHIBITION_POEM,
+  /** 名刺の QR から来た人へのひとこと。空にすると、写真と欄ごと出さない。 */
+  thanks: "きてくれてありがとう。",
 } as const;
 
 /**
@@ -182,6 +196,9 @@ export const EXHIBITION_TITLE_MAX = 40;
 export const EXHIBITION_DATES_MAX = 40;
 export const EXHIBITION_TEXT_MAX = 600;
 export const EXHIBITION_CAPTION_MAX = 60;
+export const EXHIBITION_THANKS_MAX = 120;
+/** 本人へ送る、ひとことの長さ。 */
+export const EXHIBITION_REPLY_MAX = 600;
 
 /**
  * 展示のトップを出すか。保存値が無いときは持ち主のサイトだけ出す（配布版のサイトに、

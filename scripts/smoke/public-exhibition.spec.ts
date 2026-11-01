@@ -137,6 +137,56 @@ test("展示のトップ › 開いた瞬間の名刺が壁の札まで戻り、
   expect(await noSideScroll(page)).toBeLessThanOrEqual(0);
 });
 
+test("展示のトップ › 名刺の QR から来た人にだけ、掛けなかった1枚とひとことの欄が出て、本人へ送れる", async ({ page, api }) => {
+  await withSettings(page, api, { formspreeUrl: "https://formspree.example.test/f/smoke" });
+  const sent: string[] = [];
+  let fail = true;
+  await page.route("https://formspree.example.test/**", (route) => {
+    sent.push(route.request().postData() ?? "");
+    return fail
+      ? route.fulfill({ status: 500, body: "{}" })
+      : route.fulfill({ status: 200, contentType: "application/json", body: '{"ok":true}' });
+  });
+
+  // ふつうに開いた人には出ない。
+  await page.goto("/", { waitUntil: "networkidle" });
+  await expect(page.locator(".ex-work__open")).toHaveCount(5);
+  await expect(page.locator(".ex-thanks")).toHaveCount(0);
+
+  // 印を持っている人には、詩と名刺のあいだに出る。写真は Gallery の一覧には入らない。
+  await page.context().addCookies([{ name: "ex_card", value: "1", url: new URL(page.url()).origin }]);
+  await page.goto("/", { waitUntil: "networkidle" });
+  const thanks = page.locator(".ex-thanks");
+  await expect(thanks).toContainText("きてくれてありがとう。");
+  await expect(thanks.locator("img")).toHaveAttribute("alt", /親指/);
+  expect(
+    await page.evaluate(() => {
+      const [sheet, gift, cards] = ["#ex-sheet", "#ex-thanks", "#ex-cards"].map(
+        (selector) => document.querySelector(selector)!.getBoundingClientRect().top,
+      );
+      return sheet! < gift! && gift! < cards!;
+    }),
+  ).toBe(true);
+
+  // 送れないときは画面で分かり、書いた文は消えない。送れたら、お礼に替わる。
+  const box = thanks.locator("textarea");
+  await box.fill("背中の写真が好きでした");
+  await thanks.getByRole("button", { name: "送る" }).click();
+  await expect(thanks.getByRole("alert")).toContainText("送れませんでした");
+  await expect(box).toHaveValue("背中の写真が好きでした");
+  fail = false;
+  await thanks.getByRole("button", { name: "送る" }).click();
+  await expect(thanks.getByRole("status")).toContainText("届きました");
+  expect(sent.at(-1)).toContain("背中の写真が好きでした");
+  expect(await noSideScroll(page)).toBeLessThanOrEqual(0);
+
+  // ひとことを空にすると、部分ごと出ない。
+  await withSettings(page, api, { exhibitionThanks: "" });
+  await page.goto("/", { waitUntil: "networkidle" });
+  await expect(page.locator(".ex-work__open")).toHaveCount(5);
+  await expect(page.locator(".ex-thanks")).toHaveCount(0);
+});
+
 test("展示のトップ › 同梱の写真は、いつもの画像の経路で配信される", async ({ api }) => {
   const small = await api.get("/api/images/exhibition/2026-nichigei/back.jpg?w=400&q=80&fmt=jpeg");
   expect(small.status()).toBe(200);

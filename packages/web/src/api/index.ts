@@ -94,8 +94,14 @@ import {
   normalizeContactSettingValue,
 } from "../shared/contact-settings";
 import { SETTINGS_PREVIEW_KEYS } from "../shared/settings-keys";
-import { EXHIBITION_ASSET_KEYS, EXHIBITION_DEFAULTS, exhibitionStatus } from "../shared/exhibition";
+import {
+  EXHIBITION_ASSET_KEYS,
+  EXHIBITION_DEFAULTS,
+  cleanExhibitionNote,
+  exhibitionStatus,
+} from "../shared/exhibition";
 import { readExhibitionAsset } from "./exhibition-assets";
+import { addExhibitionNote, readExhibitionVisits } from "./exhibition-visits";
 import {
   StorageConfigError,
   STORAGE_NOT_CONFIGURED_CODE,
@@ -144,6 +150,7 @@ import {
   isAllowedImageKey,
   isAllowedUploadImageFile,
   clientIpFrom,
+  createWindowLimiter,
   sanitizeUploadBaseName,
   passwordMatches as _passwordMatches,
   isHttpsRequest,
@@ -901,6 +908,8 @@ function passwordMatches(input: unknown): boolean {
 }
 
 const loginFails = new Map<string, { count: number; first: number }>();
+/** 展示のひとことは、1つの IP から10分に6件まで（機械の連投を止める）。 */
+const allowExhibitionNote = createWindowLimiter({ windowMs: 10 * 60 * 1000, max: 6 });
 function clientIp(c: any): string {
   return clientIpFrom(
     c.req.header("x-forwarded-for"),
@@ -1816,6 +1825,22 @@ const app = new Hono()
   })
 
   // ── Admin: Settings update ──────────────────────────────
+  // 名刺の QR から来た人のひとこと。名前・連絡先・IP は保存しない。
+  .post("/exhibition/notes", async (c) => {
+    if (!allowExhibitionNote(clientIp(c))) {
+      return c.json({ error: "少し時間をおいて、もう一度お願いします。" }, 429);
+    }
+    const body = (await c.req.json().catch(() => null)) as { message?: unknown; _gotcha?: unknown } | null;
+    // 人には見えない欄が埋まっていたら機械なので、受け取ったふりだけする。
+    if (typeof body?._gotcha === "string" && body._gotcha.trim()) return c.json({ ok: true });
+    const message = cleanExhibitionNote(body?.message);
+    if (!message) return c.json({ error: "ひとことが空です。" }, 400);
+    if (!(await addExhibitionNote(message))) {
+      return c.json({ error: "いまは受け付けられません。" }, 429);
+    }
+    return c.json({ ok: true });
+  })
+  .get("/admin/exhibition-visits", requireAdmin, async (c) => c.json(await readExhibitionVisits()))
   .post("/admin/settings", requireAdmin, async (c) => {
     const body = await c.req.json();
     if (!isSettingsPayload(body))

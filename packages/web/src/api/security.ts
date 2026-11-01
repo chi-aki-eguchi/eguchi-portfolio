@@ -128,3 +128,35 @@ export function clampImageQuality(raw: string | undefined): number {
   const n = parseInt(raw ?? "", 10);
   return Number.isFinite(n) ? Math.min(Math.max(n, 10), 100) : 90;
 }
+
+/**
+ * 公開の書き込みの回数を、IP ごとに区切る。覚える数が増えすぎたら、窓の切れたものから捨てる。
+ * サーバーの再起動で忘れるが、機械の連投を止めるにはこれで足りる。
+ */
+export function createWindowLimiter({
+  windowMs,
+  max,
+  maxKeys = 2000,
+  now = Date.now,
+}: {
+  windowMs: number;
+  max: number;
+  maxKeys?: number;
+  now?: () => number;
+}): (key: string) => boolean {
+  const seen = new Map<string, { first: number; count: number }>();
+  return (key) => {
+    const at = now();
+    const entry = seen.get(key);
+    if (!entry || at - entry.first >= windowMs) {
+      if (seen.size >= maxKeys) {
+        for (const [k, v] of seen) if (at - v.first >= windowMs) seen.delete(k);
+        if (seen.size >= maxKeys) return false;
+      }
+      seen.set(key, { first: at, count: 1 });
+      return true;
+    }
+    entry.count += 1;
+    return entry.count <= max;
+  };
+}

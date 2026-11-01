@@ -180,6 +180,23 @@ export function exhibitionCardVisitor(cookie: string, search: string): boolean {
   return cookie.split(";").some((part) => part.trim() === `${EXHIBITION_CARD_COOKIE}=1`);
 }
 
+/** QR の数を分ける日付（日本時間。会場の日付で見るため）。 */
+export function exhibitionDay(now: Date): string {
+  return new Date(now.getTime() + 9 * 60 * 60 * 1000).toISOString().slice(0, 10);
+}
+
+/** 人が読んだのではなさそうな開き方（リンクの下見、検索の巡回、確認用の自動ブラウザ）。QR の数に入れない。 */
+export function exhibitionAutomatedVisit(userAgent: string, purpose: string): boolean {
+  if (/prefetch|preview/i.test(purpose)) return true;
+  return !userAgent || /bot|crawl|spider|slurp|preview|headless|curl|wget|python|axios|node-fetch/i.test(userAgent);
+}
+
+/** 送られたひとことを保存できる形に。空・文字列でないものは空を返す。 */
+export function cleanExhibitionNote(value: unknown): string {
+  if (typeof value !== "string") return "";
+  return value.trim().slice(0, EXHIBITION_REPLY_MAX);
+}
+
 /** 詩の書体。原稿と同じ。 */
 export const EXHIBITION_POEM_FONT = "Zen Old Mincho";
 

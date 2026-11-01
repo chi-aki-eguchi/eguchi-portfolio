@@ -71,6 +71,13 @@
       "when": 1791181813490,
       "tag": "0009_series_content",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "6",
+      "when": 1793512135116,
+      "tag": "0010_exhibition_visits",
+      "breakpoints": true
     }
   ]
 }

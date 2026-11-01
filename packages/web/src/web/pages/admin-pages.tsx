@@ -13,7 +13,7 @@ import {
 import { EXHIBITION_BUILT_IN, exhibitionPhotoList, exhibitionShowsWall } from "../../shared/exhibition";
 import { isServiceOwnerSite } from "../../shared/service-visibility";
 import { DoorNames } from "../components/page-photos/DoorNames";
-import { ExhibitionCaptions, ExhibitionCopy } from "../components/page-photos/ExhibitionPanel";
+import { ExhibitionCaptions, ExhibitionCopy, ExhibitionVisits } from "../components/page-photos/ExhibitionPanel";
 import { PagePhotoEditor } from "../components/page-photos/PagePhotoEditor";
 import {
   assertOk,
@@ -344,6 +344,7 @@ export default function AdminPagesPage() {
               いつもの
             </button>
           </fieldset>
+          <ExhibitionVisits />
           <p className="pp-note">
             {exhibitionShowsWall(savedValue("exhibitionPhotoIds"))
               ? "この順に並びます。同梱の5枚が揃っている間は、トップの最初に会場の壁の配置が出ます。"

@@ -2,6 +2,7 @@ import { resolve as pathResolve } from "node:path";
 import app, { getOriginal, photoWithThumbs } from "./api";
 import { db, withRetry, schema } from "./api/database";
 import { runStartupMigrations } from "./api/database/migrate";
+import { recordCardScan } from "./api/exhibition-visits";
 import { seriesMembership } from "./api/series-membership";
 import { eq, and, isNull, inArray } from "drizzle-orm";
 import {
@@ -69,6 +70,8 @@ import {
   EXHIBITION_CARD_COOKIE,
   EXHIBITION_CARD_COOKIE_MAX_AGE,
   EXHIBITION_DEFAULTS,
+  exhibitionAutomatedVisit,
+  exhibitionCardVisitor,
   exhibitionNeedsLibrary,
   exhibitionIsTop,
   exhibitionPhotoList,
@@ -1048,7 +1051,18 @@ async function serveNonApi(request: Request, url: URL): Promise<Response> {
   // 展示を止めれば、今までのリンク集に戻る。
   if (url.pathname === "/card.html") {
     const settings = await getSettings();
-    if (exhibitionIsTop(settings, siteUrlFrom(settings, publicOrigin)))
+    if (exhibitionIsTop(settings, siteUrlFrom(settings, publicOrigin))) {
+      const headers = request.headers;
+      const automated = exhibitionAutomatedVisit(
+        headers.get("user-agent") ?? "",
+        headers.get("sec-purpose") ?? headers.get("purpose") ?? "",
+      );
+      // 数え損ねても、QR の転送は止めない。
+      if (request.method === "GET" && !automated) {
+        void recordCardScan(!exhibitionCardVisitor(headers.get("cookie") ?? "", "")).catch((e) =>
+          console.warn("[card] QR の数を保存できません:", e),
+        );
+      }
       return new Response(null, {
         status: 302,
         headers: {
@@ -1057,6 +1071,7 @@ async function serveNonApi(request: Request, url: URL): Promise<Response> {
           "Set-Cookie": `${EXHIBITION_CARD_COOKIE}=1; Path=/; Max-Age=${EXHIBITION_CARD_COOKIE_MAX_AGE}; SameSite=Lax`,
         },
       });
+    }
   }
 
   // Always inject OGP for HTML pages (root and SPA routes)

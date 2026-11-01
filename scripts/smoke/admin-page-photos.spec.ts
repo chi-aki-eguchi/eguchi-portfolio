@@ -91,6 +91,17 @@ async function installMocks(
   await page.route("**/api/**", (route) => route.fulfill({ status: 200, contentType: "application/json", body: "{}" }));
   await page.route("**/api/images/**", (route) => route.fulfill({ status: 200, contentType: "image/png", body: PNG }));
   await page.route("**/api/admin/me**", json({ authenticated: options.authenticated ?? true }));
+  await page.route(
+    "**/api/admin/exhibition-visits**",
+    json({
+      days: [
+        { day: "2026-11-02", people: 2, opens: 3 },
+        { day: "2026-11-01", people: 5, opens: 6 },
+      ],
+      notes: [{ id: 1, message: "背中の写真が好きでした", createdAt: "2026-11-01T05:22:00.000Z" }],
+      noteTotal: 1,
+    }),
+  );
   await page.route("**/api/photos**", (route) =>
     new URL(route.request().url()).pathname.endsWith("/availability")
       ? json({ total: PHOTOS.length, standalone: PHOTOS.length })(route)
@@ -449,6 +460,11 @@ test.describe("admin — ページの写真（選んで並べる）", () => {
     // 展示を出している間は、展示のタブから開く。
     await expect(page.locator('[data-pp-tab="exhibition"]')).toHaveAttribute("aria-selected", "true");
     await expect(page.locator('[data-pp-exhibition-mode="on"]')).toHaveAttribute("aria-pressed", "true");
+    // 名刺の QR の数と、届いたひとことが読める。
+    await expect(page.locator(".pp-visits__numbers")).toContainText("7人");
+    await expect(page.locator(".pp-visits__numbers")).toContainText("9回");
+    await expect(page.locator(".pp-visits__days")).toContainText("11月1日 5人");
+    await expect(page.locator(".pp-visits__notes")).toContainText("背中の写真が好きでした");
     await page.locator('[data-pp-exhibition-mode="off"]').click();
     await expect.poll(() => mocks.saved.at(-1)).toEqual({ homeExhibition: "off" });
     await page.locator('[data-pp-exhibition-mode="on"]').click();

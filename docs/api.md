@@ -16,6 +16,7 @@ Error responses use `{ error: string }`.
 | GET | `/api/photos/:id` | One published photo + its published series/work + indexable `prev` / `next` |
 | GET | `/api/hero-photos` | Hero carousel photos (published + non-deleted only) |
 | GET | `/api/series` | Published series with cover URLs (`?kind=work` for the Work shelf) |
+| POST | `/api/exhibition/notes` | 名刺の QR から来た人のひとこと。Body: `{ message }`（600字まで）。1つの IP から10分に6件まで。名前・連絡先・IP は保存しない |
 | GET | `/api/series/:slug` | Single published series or work + its published photos |
 | GET | `/api/pricing` | Published pricing plans |
 | GET | `/api/note-posts` | note.com RSS posts (cached, when enabled) |
@@ -60,6 +61,7 @@ Unauthorized requests receive `401 { error: "Unauthorized" }`.
 
 | Method | Path | Description |
 | --- | --- | --- |
+| GET | `/api/admin/exhibition-visits` | 名刺の QR を読んだ数（日ごとの `people`・`opens`）と、届いたひとこと（新しい順に300件）と総数 |
 | POST | `/api/admin/settings` | Update settings. Body: `{ key: value, ... }`. Keys > 100 chars or values > 50KB are rejected (413) |
 
 ### Photos

@@ -296,7 +296,10 @@ function ExhibitionCards({
   );
 }
 
-/** 本人へ届く、ひとことの欄。名前も連絡先も聞かない（在廊できない展示の、感想ノートの代わり）。 */
+/**
+ * 本人へ届く、ひとことの欄。名前も連絡先も聞かない（在廊できない展示の、感想ノートの代わり）。
+ * サイトに保存し（管理画面で読む）、お問い合わせと同じ送り先へメールでも知らせる。どちらかが通れば届いている。
+ */
 function ExhibitionReply({ endpoint, name }: { endpoint: string; name: string }) {
   const [status, setStatus] = useState<"idle" | "sending" | "sent" | "failed">("idle");
   if (status === "sent") {
@@ -309,14 +312,21 @@ function ExhibitionReply({ endpoint, name }: { endpoint: string; name: string })
     const body = new FormData(event.currentTarget);
     // 人には見えない欄。埋まっていたら機械の送信なので、送ったふりだけする。
     if (String(body.get("_gotcha") ?? "").trim()) return setStatus("sent");
-    if (!String(body.get("message") ?? "").trim()) return;
+    const message = String(body.get("message") ?? "").trim();
+    if (!message) return;
     setStatus("sending");
-    try {
-      const res = await fetch(endpoint, { method: "POST", headers: { Accept: "application/json" }, body });
-      assertOk(res);
+    const post = async (url: string, init: RequestInit) => assertOk(await fetch(url, { method: "POST", ...init }));
+    const results = await Promise.allSettled([
+      post("/api/exhibition/notes", {
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message }),
+      }),
+      ...(endpoint ? [post(endpoint, { headers: { Accept: "application/json" }, body })] : []),
+    ]);
+    if (results.some((result) => result.status === "fulfilled")) {
       setStatus("sent");
       sendAnalyticsEvent("exhibition_reply_sent");
-    } catch {
+    } else {
       setStatus("failed");
     }
   };
@@ -374,7 +384,7 @@ function ExhibitionThanks({
         />
       </div>
       <p className="ex-thanks__word">{text}</p>
-      {replyEndpoint && <ExhibitionReply endpoint={replyEndpoint} name={name} />}
+      <ExhibitionReply endpoint={replyEndpoint} name={name} />
     </section>
   );
 }
@@ -415,7 +425,7 @@ export function ExhibitionWorks({
   text: string;
   /** 名刺の QR から来た人へのひとこと。空なら、写真と欄ごと出さない。 */
   thanks: string;
-  /** ひとことの送り先（お問い合わせと同じ）。無ければ欄を出さない。 */
+  /** ひとことをメールでも知らせる送り先（お問い合わせと同じ）。無ければサイトへの保存だけ。 */
   replyEndpoint: string;
   photographerName?: string;
 }) {

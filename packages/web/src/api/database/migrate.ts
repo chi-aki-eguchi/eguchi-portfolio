@@ -188,12 +188,31 @@ export async function ensureSeriesPhotos(
   }
 }
 
+/**
+ * 展示の QR の数とひとことの表（2026-11-01）。Turso では drizzle の migration を走らせないので、
+ * 無ければここで作る。形は `drizzle/0010_exhibition_visits.sql` と列・型をそろえる。
+ */
+export const EXHIBITION_VISITS_TABLE_SQL = [
+  "CREATE TABLE IF NOT EXISTS `exhibition_card_days` (\n\t`day` text PRIMARY KEY NOT NULL,\n\t`people` integer DEFAULT 0 NOT NULL,\n\t`opens` integer DEFAULT 0 NOT NULL\n)",
+  "CREATE TABLE IF NOT EXISTS `exhibition_notes` (\n\t`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,\n\t`message` text NOT NULL,\n\t`created_at` text NOT NULL\n)",
+] as const;
+
+export async function ensureExhibitionVisits(db: ColumnRunner): Promise<void> {
+  try {
+    for (const stmt of EXHIBITION_VISITS_TABLE_SQL) await db.run(sql.raw(stmt));
+  } catch (e) {
+    // 1つの表の失敗で起動全体を止めない。QR の転送は数えられなくても動く。
+    console.warn("[migrate] 展示の表の用意に失敗:", e);
+  }
+}
+
 async function ensureTursoColumns(): Promise<void> {
   const { db } = await import("./libsql");
   await ensureColumnsExist(db);
   await ensureColumnsExist(db, TURSO_HERO_PRESENTATION_COLUMNS);
   await ensureColumnsExist(db, [["series", "content", "text"]]);
   await ensureSeriesPhotos(db, { createTable: true });
+  await ensureExhibitionVisits(db);
 }
 
 export async function runStartupMigrations(): Promise<void> {

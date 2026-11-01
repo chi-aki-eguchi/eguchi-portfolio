@@ -15,6 +15,7 @@ import {
   isAllowedUploadImageFile,
   sanitizeUploadBaseName,
   parseStrictBoolean,
+  createWindowLimiter,
 } from "./security";
 import { IMAGE_UPLOAD_REQUEST_MAX_BYTES } from "../shared/upload-limits";
 
@@ -340,5 +341,28 @@ describe("sanitizeUploadBaseName (upload key safety)", () => {
     expect(sanitizeUploadBaseName("#.jpg")).toBe("_");
     expect(sanitizeUploadBaseName(".jpg")).toBe("upload");
     expect(sanitizeUploadBaseName("")).toBe("upload");
+  });
+});
+
+describe("createWindowLimiter", () => {
+  test("窓の中は上限まで通し、窓が切れたら戻る。別の IP には影響しない", () => {
+    let at = 0;
+    const allow = createWindowLimiter({ windowMs: 1000, max: 2, now: () => at });
+    expect(allow("a")).toBe(true);
+    expect(allow("a")).toBe(true);
+    expect(allow("a")).toBe(false);
+    expect(allow("b")).toBe(true);
+    at = 1000;
+    expect(allow("a")).toBe(true);
+  });
+
+  test("覚える数が上限に達したら、窓の切れたものを捨て、捨てられなければ断る", () => {
+    let at = 0;
+    const allow = createWindowLimiter({ windowMs: 1000, max: 5, maxKeys: 2, now: () => at });
+    expect(allow("a")).toBe(true);
+    expect(allow("b")).toBe(true);
+    expect(allow("c")).toBe(false);
+    at = 1000;
+    expect(allow("c")).toBe(true);
   });
 });

@@ -1169,6 +1169,60 @@ body.pp-dragging * {
   }
 }
 
+/* ── 展示：名刺の QR の数とひとこと ───────────────────── */
+.pp-visits {
+  max-width: 760px;
+  margin: 20px 0 8px;
+  padding: 14px 0;
+  border-top: 1px solid var(--admin-line-strong);
+  border-bottom: 1px solid var(--admin-line-strong);
+  font-size: 13.5px;
+}
+.pp-visits__numbers {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 32px;
+  margin: 0;
+}
+.pp-visits__numbers dt {
+  font-size: 12px;
+  color: var(--admin-muted);
+}
+.pp-visits__numbers dd {
+  margin: 0;
+  font-size: 22px;
+  color: var(--admin-ink);
+}
+.pp-visits__days {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 16px;
+  margin: 10px 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: 12px;
+  color: var(--admin-muted);
+}
+.pp-visits__notes {
+  display: grid;
+  gap: 12px;
+  max-height: 22rem;
+  margin: 14px 0 0;
+  padding: 0;
+  overflow-y: auto;
+  list-style: none;
+}
+.pp-visits__notes time {
+  font-size: 12px;
+  color: var(--admin-muted);
+}
+.pp-visits__notes p {
+  margin: 2px 0 0;
+  line-height: 1.8;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
 /* ── 展示（題・会期・添える文、写真ごとの題）──────────────── */
 .pp-exhibition-copy {
   display: grid;

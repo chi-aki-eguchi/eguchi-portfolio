@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
-import { adminPhotoSrc } from "../../pages/admin-shared";
+import { useQuery } from "@tanstack/react-query";
+import { adminApi } from "../../lib/api";
+import { adminPhotoSrc, jsonOrThrow } from "../../pages/admin-shared";
 import type { PagePhoto } from "../../lib/page-photos";
 import {
   EXHIBITION_CAPTION_MAX,
@@ -10,6 +12,75 @@ import {
   readExhibitionCaptions,
   writeExhibitionCaptions,
 } from "../../../shared/exhibition";
+
+type ExhibitionVisitsData = {
+  days: { day: string; people: number; opens: number }[];
+  notes: { id: number; message: string; createdAt: string }[];
+  noteTotal: number;
+};
+
+const noteTime = new Intl.DateTimeFormat("ja-JP", {
+  month: "numeric",
+  day: "numeric",
+  hour: "2-digit",
+  minute: "2-digit",
+  timeZone: "Asia/Tokyo",
+});
+
+/** 名刺の QR を読んだ数と、届いたひとこと。開いている間は1分ごとに読み直す。 */
+export function ExhibitionVisits() {
+  const { data, isError } = useQuery({
+    queryKey: ["exhibition-visits"],
+    queryFn: async (): Promise<ExhibitionVisitsData> => jsonOrThrow(await adminApi["exhibition-visits"].$get()),
+    refetchInterval: 60_000,
+  });
+  if (isError) {
+    return <p className="pp-note">QRの数を読めませんでした。1分ほどで読み直します。</p>;
+  }
+  if (!data) return null;
+  const people = data.days.reduce((sum, day) => sum + day.people, 0);
+  const opens = data.days.reduce((sum, day) => sum + day.opens, 0);
+  return (
+    <section className="pp-visits" aria-label="名刺のQRとひとこと">
+      <dl className="pp-visits__numbers">
+        <div>
+          <dt>QRを読んだ人</dt>
+          <dd>{people}人</dd>
+        </div>
+        <div>
+          <dt>開かれた回数</dt>
+          <dd>{opens}回</dd>
+        </div>
+        <div>
+          <dt>ひとこと</dt>
+          <dd>{data.noteTotal}件</dd>
+        </div>
+      </dl>
+      {data.days.length > 1 && (
+        <ul className="pp-visits__days">
+          {data.days.map((day) => {
+            const [, month, date] = day.day.split("-").map(Number);
+            return (
+              <li key={day.day}>
+                {month}月{date}日 {day.people}人
+              </li>
+            );
+          })}
+        </ul>
+      )}
+      {data.notes.length > 0 && (
+        <ol className="pp-visits__notes">
+          {data.notes.map((note) => (
+            <li key={note.id}>
+              <time dateTime={note.createdAt}>{noteTime.format(new Date(note.createdAt))}</time>
+              <p>{note.message}</p>
+            </li>
+          ))}
+        </ol>
+      )}
+    </section>
+  );
+}
 
 /** 欄を出たときに保存する1行（または複数行）の入力。保存された値が変わったら欄を合わせる。 */
 function CopyField({

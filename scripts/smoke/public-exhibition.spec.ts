@@ -1,4 +1,4 @@
-import { test, expect, type Page, type SmokeApi } from "./fixtures.ts";
+import { test, expect, type Page, type Route, type SmokeApi } from "./fixtures.ts";
 
 /**
  * トップの展示（shared/exhibition.ts）。人工データの上で、設定だけこの spec の中で差し替えて見る（保存はしない）。
@@ -141,12 +141,14 @@ test("展示のトップ › 名刺の QR から来た人にだけ、掛けな�
   await withSettings(page, api, { formspreeUrl: "https://formspree.example.test/f/smoke" });
   const sent: string[] = [];
   let fail = true;
-  await page.route("https://formspree.example.test/**", (route) => {
+  const answer = (route: Route) => {
     sent.push(route.request().postData() ?? "");
     return fail
       ? route.fulfill({ status: 500, body: "{}" })
       : route.fulfill({ status: 200, contentType: "application/json", body: '{"ok":true}' });
-  });
+  };
+  await page.route("https://formspree.example.test/**", answer);
+  await page.route("**/api/exhibition/notes", answer);
 
   // ふつうに開いた人には出ない。
   await page.goto("/", { waitUntil: "networkidle" });
@@ -177,7 +179,8 @@ test("展示のトップ › 名刺の QR から来た人にだけ、掛けな�
   fail = false;
   await thanks.getByRole("button", { name: "送る" }).click();
   await expect(thanks.getByRole("status")).toContainText("届きました");
-  expect(sent.at(-1)).toContain("背中の写真が好きでした");
+  // サイトへの保存とメールの知らせの、両方へ送る。
+  expect(sent.slice(-2).filter((body) => body.includes("背中の写真が好きでした"))).toHaveLength(2);
   expect(await noSideScroll(page)).toBeLessThanOrEqual(0);
 
   // ひとことを空にすると、部分ごと出ない。

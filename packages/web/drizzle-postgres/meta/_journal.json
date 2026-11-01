@@ -50,6 +50,13 @@
       "when": 1791181813811,
       "tag": "0006_series_content",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1793512135398,
+      "tag": "0007_exhibition_visits",
+      "breakpoints": true
     }
   ]
 }

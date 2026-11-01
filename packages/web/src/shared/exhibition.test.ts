@@ -2,8 +2,12 @@ import { describe, expect, test } from "bun:test";
 import {
   EXHIBITION_BUILT_IN,
   EXHIBITION_POEM,
+  EXHIBITION_REPLY_MAX,
   EXHIBITION_WALL,
+  cleanExhibitionNote,
+  exhibitionAutomatedVisit,
   exhibitionCardVisitor,
+  exhibitionDay,
   exhibitionIsTop,
   exhibitionNeedsLibrary,
   exhibitionPhotoList,
@@ -64,6 +68,27 @@ describe("トップの展示の決まり", () => {
     expect(exhibitionCardVisitor("not_ex_card=1", "")).toBe(false);
     expect(exhibitionCardVisitor("", "")).toBe(false);
     expect(exhibitionCardVisitor("", "?card")).toBe(true);
+  });
+
+  test("QR の数は日本時間の日付で分ける", () => {
+    expect(exhibitionDay(new Date("2026-10-31T14:59:00Z"))).toBe("2026-10-31");
+    expect(exhibitionDay(new Date("2026-10-31T15:00:00Z"))).toBe("2026-11-01");
+  });
+
+  test("人の読み方だけを数え、下見や巡回は数えない", () => {
+    const iphone = "Mozilla/5.0 (iPhone; CPU iPhone OS 26_0 like Mac OS X) AppleWebKit/605.1.15 Mobile/15E148 Safari/604.1";
+    expect(exhibitionAutomatedVisit(iphone, "")).toBe(false);
+    expect(exhibitionAutomatedVisit(iphone, "prefetch")).toBe(true);
+    expect(exhibitionAutomatedVisit("", "")).toBe(true);
+    expect(exhibitionAutomatedVisit("Googlebot/2.1", "")).toBe(true);
+    expect(exhibitionAutomatedVisit("Mozilla/5.0 HeadlessChrome/140.0", "")).toBe(true);
+  });
+
+  test("ひとことは前後の空白を落とし、長さをそろえ、文字列以外は受けない", () => {
+    expect(cleanExhibitionNote("  背中が好き \n")).toBe("背中が好き");
+    expect(cleanExhibitionNote("あ".repeat(EXHIBITION_REPLY_MAX + 5))).toHaveLength(EXHIBITION_REPLY_MAX);
+    expect(cleanExhibitionNote("   ")).toBe("");
+    expect(cleanExhibitionNote(42)).toBe("");
   });
 
   test("スマホの掛け方：写真は枠の比のまま（切り抜かない）、はみ出さず、どれも重ならない", () => {

@@ -169,3 +169,17 @@ export const siteSettings = sqliteTable("site_settings", {
   key: text("key").primaryKey(),
   value: text("value").notNull(),
 });
+
+// 名刺の QR が読まれた数（日本時間の1日ごと、shared/exhibition.ts）。people は初めての端末、opens は読まれた回数。
+export const exhibitionCardDays = sqliteTable("exhibition_card_days", {
+  day: text("day").primaryKey(),
+  people: integer("people").notNull().default(0),
+  opens: integer("opens").notNull().default(0),
+});
+
+// QR から来た人が本人へ送ったひとこと。名前・連絡先・IP は持たない。
+export const exhibitionNotes = sqliteTable("exhibition_notes", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  message: text("message").notNull(),
+  createdAt: text("created_at").notNull(),
+});

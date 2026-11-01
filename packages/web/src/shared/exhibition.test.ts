@@ -3,6 +3,7 @@ import {
   EXHIBITION_BUILT_IN,
   EXHIBITION_POEM,
   EXHIBITION_WALL,
+  exhibitionCardVisitor,
   exhibitionIsTop,
   exhibitionNeedsLibrary,
   exhibitionPhotoList,
@@ -55,6 +56,14 @@ describe("トップの展示の決まり", () => {
     expect(exhibitionShowsWall("-4,12,-3,-2,-1,-5")).toBe(true);
     expect(exhibitionShowsWall("-4,-3,-2,-1")).toBe(false);
     expect(exhibitionShowsWall("12,34")).toBe(false);
+  });
+
+  test("名刺の QR から来た人だけを見分ける", () => {
+    expect(exhibitionCardVisitor("a=1; ex_card=1; b=2", "")).toBe(true);
+    expect(exhibitionCardVisitor("ex_card=0", "")).toBe(false);
+    expect(exhibitionCardVisitor("not_ex_card=1", "")).toBe(false);
+    expect(exhibitionCardVisitor("", "")).toBe(false);
+    expect(exhibitionCardVisitor("", "?card")).toBe(true);
   });
 
   test("スマホの掛け方：写真は枠の比のまま（切り抜かない）、はみ出さず、どれも重ならない", () => {

@@ -66,6 +66,8 @@ import {
 } from "./shared/service-visibility";
 import { PORTFOLIO_DISCOVERY_GUIDE } from "./shared/portfolio-guide";
 import {
+  EXHIBITION_CARD_COOKIE,
+  EXHIBITION_CARD_COOKIE_MAX_AGE,
   EXHIBITION_DEFAULTS,
   exhibitionNeedsLibrary,
   exhibitionIsTop,
@@ -1047,7 +1049,14 @@ async function serveNonApi(request: Request, url: URL): Promise<Response> {
   if (url.pathname === "/card.html") {
     const settings = await getSettings();
     if (exhibitionIsTop(settings, siteUrlFrom(settings, publicOrigin)))
-      return new Response(null, { status: 302, headers: { Location: "/", "Cache-Control": "no-store" } });
+      return new Response(null, {
+        status: 302,
+        headers: {
+          Location: "/",
+          "Cache-Control": "no-store",
+          "Set-Cookie": `${EXHIBITION_CARD_COOKIE}=1; Path=/; Max-Age=${EXHIBITION_CARD_COOKIE_MAX_AGE}; SameSite=Lax`,
+        },
+      });
   }
 
   // Always inject OGP for HTML pages (root and SPA routes)

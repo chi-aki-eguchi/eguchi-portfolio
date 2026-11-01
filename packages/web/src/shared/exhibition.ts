@@ -143,10 +143,10 @@ export const EXHIBITION_POEM = [
   "だけど私のものじゃないの",
 ].join("\n");
 
-/** 題・会期・詩の初めの値。 */
+/** 題・会期・詩の初めの値。題は本申し込みの作品名のまま「無題」（2026-11-01 オーナー）。 */
 export const EXHIBITION_DEFAULTS = {
-  title: "日藝祭 2026 展示作品",
-  dates: "2026年11月1日〜3日",
+  title: "無題",
+  dates: "日藝祭 2026年11月1日〜3日",
   text: EXHIBITION_POEM,
 } as const;
 
@@ -155,6 +155,16 @@ export const EXHIBITION_DEFAULTS = {
  * 名刺の QR の行き先は `/card.html`（印刷済みで変えられない）。展示がトップの間は、そこから展示へ通す（`server.ts`）。
  */
 export const EXHIBITION_CARD_PLACES = "TOKYO / FUKUOKA / TAIPEI";
+
+/** 名刺の QR を通った印（`server.ts` が `/card.html` で付ける）。1年残す。後日また開いた人も、名刺の人として迎える。 */
+export const EXHIBITION_CARD_COOKIE = "ex_card";
+export const EXHIBITION_CARD_COOKIE_MAX_AGE = 60 * 60 * 24 * 365;
+
+/** 名刺の QR から来た人か。`?card` は同じ画面を確かめるための入口。 */
+export function exhibitionCardVisitor(cookie: string, search: string): boolean {
+  if (new URLSearchParams(search).has("card")) return true;
+  return cookie.split(";").some((part) => part.trim() === `${EXHIBITION_CARD_COOKIE}=1`);
+}
 
 /** 詩の書体。原稿と同じ。 */
 export const EXHIBITION_POEM_FONT = "Zen Old Mincho";

@@ -5,10 +5,13 @@ import type { GalleryPhoto } from "../PhotoGallery";
 import { useScrollFadeIn } from "../../hooks/useScrollFadeIn";
 import { orientedDimensions } from "../../../shared/image-url";
 import { safeHref } from "../../lib/utils";
+import { sendAnalyticsEvent } from "../../lib/analytics";
 import {
+  EXHIBITION_CARD_COOKIE,
   EXHIBITION_CARD_PLACES,
   EXHIBITION_POEM_FONT,
   EXHIBITION_WALL,
+  exhibitionCardVisitor,
   exhibitionShape,
   exhibitionTextFitsSheet,
   type ExhibitionPhoto,
@@ -19,6 +22,27 @@ import type { PhotoViewerState } from "../photo-site/viewer";
 import "./exhibition.css";
 
 export type ExhibitionItem = GalleryPhoto | ExhibitionPhoto;
+
+/**
+ * 名刺の QR から来た人か。実際に名刺から来たときだけ、1つのタブで1回数える（名前も端末も送らない。
+ * 確かめるための `?card` では数えない）。
+ */
+export function useExhibitionCardVisitor(): boolean {
+  const [visitor] = useState(
+    () => typeof document !== "undefined" && exhibitionCardVisitor(document.cookie, window.location.search),
+  );
+  useEffect(() => {
+    if (!visitor || !exhibitionCardVisitor(document.cookie, "")) return;
+    try {
+      if (sessionStorage.getItem(EXHIBITION_CARD_COOKIE)) return;
+      sessionStorage.setItem(EXHIBITION_CARD_COOKIE, "1");
+    } catch {
+      // 覚えておけない環境では、開くたびに数える。
+    }
+    sendAnalyticsEvent("exhibition_card_visit");
+  }, [visitor]);
+  return visitor;
+}
 
 /** 詩の書体を、使う字だけ読み込む（原稿と同じ書体。全部読むと数MBになる）。 */
 function usePoemFont(text: string) {
@@ -305,6 +329,7 @@ export function ExhibitionWorks({
 }) {
   const fadeRef = useScrollFadeIn([photos.length]);
   usePoemFont(text);
+  useExhibitionCardVisitor();
   const links = [instagram, x].flatMap((link) => {
     const href = link?.href ? safeHref(link.href) : "";
     return link && href ? [{ label: link.label, href }] : [];

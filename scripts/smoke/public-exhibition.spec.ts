@@ -65,8 +65,8 @@ test("展示のトップ › 会場の壁の配置から始まり、同じ順に
   // 写真の上に文字を重ねない。名前と展示の名前は札にある。
   await expect(page.locator(".hero-single")).toHaveCount(0);
   await expect(page.locator(".ex-label h1")).toBeVisible();
-  await expect(page.locator(".ex-label__show")).toContainText("日藝祭 2026 展示作品");
-  await expect(page.locator(".ex-label__show")).toContainText("2026年11月1日〜3日");
+  await expect(page.locator(".ex-label__show")).toContainText("無題");
+  await expect(page.locator(".ex-label__show")).toContainText("日藝祭 2026年11月1日〜3日");
 
   // 続く写真は枠の比が写真の比と同じ（切り抜かれていない）。
   const works = page.locator(".ex-work__open");

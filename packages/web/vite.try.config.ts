@@ -105,7 +105,7 @@ function readOnlyApi(): Plugin {
           res.setHeader("cache-control", "no-store");
           if (url.startsWith("/api/settings") && type.includes("json") && upstream.ok) {
             const json = (await upstream.json()) as Record<string, unknown>;
-            // 展示の設定は、本番へ出るまで本番の応答に無い。無ければ本番へ出たときと同じ値で補う。
+            // 展示の設定は、手元のコードの値で見る（本番の応答は、本番へ出ている版の値）。
             const exhibition = {
               homeExhibition: exhibitionStatus(undefined, json.siteUrl as string | undefined),
               exhibitionTitle: EXHIBITION_DEFAULTS.title,
@@ -115,7 +115,7 @@ function readOnlyApi(): Plugin {
               exhibitionPhotoIds: "",
               exhibitionCaptions: "",
             };
-            res.end(JSON.stringify({ ...exhibition, ...json, siteDesign: DESIGN, ...localSettings() }));
+            res.end(JSON.stringify({ ...json, ...exhibition, siteDesign: DESIGN, ...localSettings() }));
             return;
           }
           res.end(Buffer.from(await upstream.arrayBuffer()));

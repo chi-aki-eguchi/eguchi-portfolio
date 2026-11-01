@@ -61,5 +61,5 @@
 ## 確かめ方
 
 - 見た目: `TRY_DESIGN=develop bun run try` → http://localhost:4400/ 。本番の設定と写真を読むだけで、展示の設定と同梱写真は手元で補う。開いた瞬間の見せ場だけは、設定が HTML に入る本番の組み立てでしか流れない。本番では `https://akieguchi.com/?intro` でもう一度流せる（同じタブでは2回目から流れない）。
-- 回線: 写真は5枚で計約90KB（スマホの幅、AVIF）。Chromium で 0.7Mbps・遅延400ms に絞っても、名刺が動き出す頃に届く。届く前の写真は場所に薄い面を置き、届いてから現像する（`WallPrint`）。
+- 回線: 写真は5枚で計約90KB（スマホの幅、AVIF）。Chromium で 0.7Mbps・遅延400ms に絞っても、名刺が動き出す頃に届く。届く前の写真は場所に薄い面を置き、届いてから現像する（`WallPrint`）。製品の deploy の直後は画像の控えが空で、5枚が揃うのに3秒台かかる（一度読まれれば約0.9秒）。展示中に製品を出し直したら、スマホの大きさで本番を一度読んでおく。
 - 検査: `scripts/smoke/public-exhibition.spec.ts`、`scripts/smoke/admin-page-photos.spec.ts`、`packages/web/src/shared/exhibition.test.ts`、`packages/web/src/api/exhibition-assets.test.ts`、開いた瞬間の段取りは `packages/web/src/web/lib/develop-intro.test.ts` と `scripts/regression/hero-intro.test.mjs`。

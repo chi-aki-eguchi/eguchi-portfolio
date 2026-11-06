@@ -1,3 +1,13 @@
+## 今回の引き継ぎ — 2026-11-06 作業場所の整理（Claude Code、完了）
+
+- 依頼: オーナー「一旦いろいろ整理だけして」。製品・本番・設定は変えていない。主担当・編集担当 Claude Code 1名、委譲なし。開始時、ほかのセッションで動いていた物は0件。
+- 元 checkout `/Users/chiaki/eguchi-portfolio-app`（`main`）: origin より110件遅れだったのを `8855488` へ早送り。2026-10-02〜05 の Codex の共通文書の書きかけ8ファイルは `git stash`（説明「2026-11-06 整理: 10/2-5 …」）と patch に退避。直下の 2026-09-17〜18 の監査資料9件（`akieguchi_adobe_portfolio_audit_2026-09-17.md` など、archive の監査記録が名前で参照）は保管場所の `main-root/` へ移した。`bun install --frozen-lockfile` で依存を揃えた（sharp 0.35.5）。
+- 作業用フォルダ: 公開済みの12個（Codex 7・Claude 5。`wt-nichigei` を含む）を丸ごと `~/.local/share/worktree-archives/2026-11-06/worktrees/` へ移し、`git worktree prune`。何も消していない。`git worktree list` は元 checkout だけ。中身・元の場所・SHA は同じ場所の `README.md`・`MANIFEST.tsv`。`wt-nichigei` などの `.agents/skills/` 7つは `.claude/skills/` と完全に同じ写しだった（そこにしか無い物ではない）。
+- ブランチ: origin/main に入っている10本を `git branch -d` で外した。未統合の4本（`codex/portfolio-pdf-before-release-20260927`・`codex/select-bin-practice-20261001`・`prototype/b2-uneven-rows`・`prototype/finder-contact-sheet`）と GitHub 側のブランチは残した。
+- 残した物: 元 checkout の `.agents/`（Codex 用の写し）と `services/inbound/`（台湾向けの別事業らしき独立した試作、2026-10-03、持ち主未確認、どこからも参照なし）。
+- 公開環境で確認（2026-11-06）: `/api/health` は `status=ok`・build `16e9bd7e`（最後の製品 commit）。トップはまだ展示（`homeExhibition=on`）、肩書き `heroSubtitle=写真学生`。
+- 次の判断（オーナー）: 会期（11/1〜3）が終わったトップをどうするか。`/card.html` は展示がトップの間だけ `/` へ通し、止めると昔のリンク集に戻る。名刺は印刷済みなので、戻すなら QR から展示に着ける別のページを先に作る。あわせて 10/23 の②肩書き ③トップの説明文。Railway の監視パスに `/package.json`・`/bun.lock` を足す設定は未変更のまま。
+
 ## 今回の引き継ぎ — 2026-10-31〜11-01 トップを日藝祭の展示向けにする（公開済み）
 
 - 依頼: akieguchi.com のトップを、日藝祭（2026-11-01〜03）で展示を見た人向けに。スマホで写真をもう一度見る・ほかの作品・Instagram へ。会期後も続け、自動で戻さない。次の作品ができたら更新できるように。「まずローカルで見て確認できるところまで。push は自分でやる」。同日夜、オーナーが会場の写真を送り「詩の内容は把握してる？で、こだわり見せて」。続けて詩と名刺の原稿を渡し「スマホではどう表示しようか？」。

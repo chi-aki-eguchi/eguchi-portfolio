@@ -58,3 +58,38 @@ export function InquiryCta({
     </section>
   );
 }
+
+/**
+ * 依頼の入口の1行（2026-11-10）。新しい構成のトップの、表紙のすぐ下に置く。
+ *
+ * それまで、何を頼めるか・料金・入口はトップに無かった（展示のトップ）。写真を見に来た人が最初の画面で
+ * 分かるように、帯と同じ設定の言葉（料金の文と見出し）を1行で出す。帯を出さない設定（homeCtaEnabled）
+ * なら出さない。Portrait の写真の上には置かない：見出しを出さない設定では、写真は上の帯のすぐ下から
+ * 始める決まり（2026-10-12、余白の指摘。smoke「写真は幅を使い切り、余白は区切りにだけ使う」）。
+ */
+export function InquiryLine() {
+  const { data } = useQuery({
+    queryKey: ["settings"],
+    queryFn: async () => jsonOrThrow(await api.settings.$get()),
+  });
+  const [location] = useLocation();
+  if ((data?.homeCtaEnabled ?? "off") !== "on") return null;
+  if (!usesDevelopStructure(siteDesignFrom(data?.siteDesign), location)) return null;
+  const text = (data?.homeCtaText || "").trim();
+  const label = data?.homeCtaTitle || "撮影のご依頼";
+  return (
+    <p className="inquiry-line">
+      {text && (
+        <span className="inquiry-line__text">
+          <JaPhrases>{text}</JaPhrases>
+        </span>
+      )}
+      <Link to={DEVELOP_INQUIRY_HREF} className="inquiry-line__link">
+        {label}
+        <span aria-hidden="true" className="font-en">
+          →
+        </span>
+      </Link>
+    </p>
+  );
+}

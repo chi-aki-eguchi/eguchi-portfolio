@@ -138,12 +138,15 @@ export function ExhibitionCopy({
   dates,
   text,
   thanks,
+  builtIn = true,
   onSave,
 }: {
   title: string;
   dates: string;
   text: string;
   thanks: string;
+  /** 日藝祭の展示か。足した展示には、名刺の QR の人への部分が無い。 */
+  builtIn?: boolean;
   onSave: (
     key: "exhibitionTitle" | "exhibitionDates" | "exhibitionText" | "exhibitionThanks",
     next: string,
@@ -160,28 +163,34 @@ export function ExhibitionCopy({
         onSave={(next) => onSave("exhibitionTitle", next, "題を変えました")}
       />
       <CopyField
-        label="会期"
+        label={builtIn ? "会期" : "会場と会期（年と月を入れると、一覧が新しい順に並びます。例：〇〇ギャラリー 2025年10月3日〜5日）"}
         field="dates"
         value={dates}
         max={EXHIBITION_DATES_MAX}
         onSave={(next) => onSave("exhibitionDates", next, "会期を変えました")}
       />
       <CopyField
-        label="詩・添える文（写真のあとに、短い文は会場の紙と同じ縦書きで出ます）"
+        label={
+          builtIn
+            ? "詩・添える文（写真のあとに、短い文は会場の紙と同じ縦書きで出ます）"
+            : "添える文（写真のあとに出ます。短い詩は紙に縦書きで、長い文は横書きで）"
+        }
         field="text"
         value={text}
         max={EXHIBITION_TEXT_MAX}
         multiline
         onSave={(next) => onSave("exhibitionText", next, "詩・添える文を変えました")}
       />
-      <CopyField
-        label="名刺のQRから来た人へのひとこと（空にすると、この部分ごと出ません）"
-        field="thanks"
-        value={thanks}
-        max={EXHIBITION_THANKS_MAX}
-        multiline
-        onSave={(next) => onSave("exhibitionThanks", next, "ひとことを変えました")}
-      />
+      {builtIn && (
+        <CopyField
+          label="名刺のQRから来た人へのひとこと（空にすると、この部分ごと出ません）"
+          field="thanks"
+          value={thanks}
+          max={EXHIBITION_THANKS_MAX}
+          multiline
+          onSave={(next) => onSave("exhibitionThanks", next, "ひとことを変えました")}
+        />
+      )}
     </div>
   );
 }

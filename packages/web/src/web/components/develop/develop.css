@@ -261,6 +261,12 @@ body[data-reveal="none"] .dv-stage__img {
 .dv-info > section {
   min-height: 0;
 }
+/* ただし、自己紹介が写真を待っている間（.site-page-hold）は、1画面ぶんの場所を取ったままにする
+   （2026-11-10）。上の指定がこの場所取りまで外していて、遅い回線では依頼の欄が先に画面の上へ出てから、
+   写真と文が届くたびに押し下げられていた（本番のスマホ・4G 相当で、ずれ 0.805。良好の目安は 0.1 以下）。 */
+.dv-info .profile-page.site-page-hold {
+  min-height: calc(100svh - var(--header-h) - var(--sai-top));
+}
 /* 依頼の帯・フッターから来たとき（/info#request）に止まる位置。上の帯に隠れないように。 */
 .dv-info__request {
   scroll-margin-top: var(--header-h);

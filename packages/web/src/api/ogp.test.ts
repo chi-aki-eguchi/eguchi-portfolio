@@ -239,8 +239,35 @@ describe("injectOgp robots policy", () => {
     );
     // 題名・説明・robots は写真を渡しても今までどおり。
     expect(portrait).toContain("<title>Portrait | ");
-    expect(descOf(portrait)).toBe("江口秋の写真ポートフォリオ。");
+    expect(descOf(portrait)).toBe("江口秋が撮ったポートレート。");
     expect(robotsOf(portrait)).toBe("index, follow");
+    // 依頼の帯を出しているサイトは、Portrait の説明に料金の文が続く。Life は日常の写真。
+    const offering = { ...settings, homeCtaEnabled: "on", homeCtaText: "ポートレート撮影 60分 ¥10,000。" };
+    expect(descOf(injectOgp(withImage, offering, "/portrait"))).toBe(
+      "江口秋が撮ったポートレート。ポートレート撮影 60分 ¥10,000。",
+    );
+    expect(descOf(injectOgp(withImage, offering, "/life"))).toBe("江口秋が撮った日常の写真。");
+  });
+
+  test("展示の欄は、公開中の展示があるサイトだけ。1件のページは、その展示の題と説明", () => {
+    const owner = { siteDesign: "develop", siteName: "江口秋", siteUrl: "https://akieguchi.com" };
+    const list = injectOgp(page, owner, "/exhibition");
+    expect(list).toContain("<title>Exhibition | ");
+    expect(robotsOf(list)).toBe("index, follow");
+    // 展示の無いサイト（ほかの人のサイト・今までの構成）では、無いページ。
+    const other = { siteDesign: "develop", siteName: "A", siteUrl: "https://someone-else.example" };
+    expect(injectOgp(page, other, "/exhibition")).toContain("<title>Not Found | ");
+    expect(robotsOf(injectOgp(page, other, "/exhibition"))).toBe("noindex, nofollow");
+    expect(robotsOf(injectOgp(page, { ...owner, siteDesign: "classic" }, "/exhibition"))).toBe("noindex, nofollow");
+    // 1件のページは、在るときだけ server.ts が題を渡す。渡されなければ無いページ。
+    const show = injectOgp(page, owner, "/exhibition/2026-nichigei", undefined, {
+      title: "無題",
+      desc: "江口秋の写真。無題、日藝祭 2026年11月1日〜3日。",
+    });
+    expect(show).toContain("<title>無題 | ");
+    expect(show).toContain('content="江口秋の写真。無題、日藝祭 2026年11月1日〜3日。"');
+    expect(robotsOf(show)).toBe("index, follow");
+    expect(robotsOf(injectOgp(page, owner, "/exhibition/nope"))).toBe("noindex, nofollow");
   });
 
   test("admin and unknown paths are noindex", () => {

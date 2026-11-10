@@ -23,6 +23,7 @@ import { PAGE_EXIT_MS } from "./PageTransition";
 import { useDarkModeContext, useServiceVisibility } from "./provider";
 import { hasPublicEnglishContent } from "../../shared/public-english";
 import { DEVELOP_INQUIRY_HREF, developDoorCopy, type DevelopDoorKey } from "../../shared/develop-structure";
+import { EXHIBITION_LIST_PATH, EXHIBITION_NAV_LABEL, publicExhibitions } from "../../shared/exhibitions";
 import {
   isAboutRoute,
   isServiceOwnerSite,
@@ -361,6 +362,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   // 添え書き）で画面いっぱいに並べる。添え書きは日本語のページを読んでいる人にだけ出す。
   // 名前と添え書きは、管理画面の「扉の名前」で変えられる（設定 developDoors。無ければ初めの値）。
   const doorCopy = developDoorCopy(data?.developDoors);
+  const hasExhibitions =
+    developStructure && publicExhibitions(data, typeof window === "undefined" ? undefined : window.location.hostname).length > 0;
   const doorNote = (key: DevelopDoorKey) => (isEnglishChrome ? undefined : doorCopy[key].note || undefined);
   const navItems: { href: string; label: string; door?: boolean; note?: string }[] = [
     ...(developStructure
@@ -370,6 +373,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           ...(showSeries || showWork
             ? [{ href: "/series", label: doorCopy.series.label, door: true, note: doorNote("series") }]
             : []),
+          // 展示の欄（shared/exhibitions.ts）。公開中の展示があるときだけ。
+          ...(hasExhibitions ? [{ href: EXHIBITION_LIST_PATH, label: EXHIBITION_NAV_LABEL, door: true }] : []),
           // 英語のページを読んでいる人は、英語の Contact へ（Info の英語版は次の段階）。
           { href: isEnglishChrome ? "/en/contact" : "/info", label: doorCopy.info.label, door: true, note: doorNote("info") },
         ]

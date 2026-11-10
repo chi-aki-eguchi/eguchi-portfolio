@@ -1278,3 +1278,37 @@ body.pp-dragging * {
   height: 64px;
   object-fit: cover;
 }
+
+/* 展示のタブ：編集する展示を選ぶ並び（2026-11-10）。件数が増えたら折り返す。 */
+.pp-shows {
+  flex-wrap: wrap;
+  row-gap: 6px;
+}
+.pp-shows button {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.pp-shows button[data-pp-show-add] {
+  margin-left: 12px;
+  border-style: dashed;
+}
+.pp-show-remove {
+  margin: 28px 0 0;
+}
+.pp-show-remove button {
+  all: unset;
+  cursor: pointer;
+  min-height: 36px;
+  display: inline-flex;
+  align-items: center;
+  font-size: 13px;
+  color: var(--admin-danger);
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+.pp-show-remove button:focus-visible {
+  outline: 2px solid var(--admin-ink);
+  outline-offset: 2px;
+}

@@ -401,6 +401,7 @@ export function ExhibitionWorks({
   label,
   text,
   thanks,
+  cards = true,
   replyEndpoint,
   name,
   nameEn,
@@ -408,6 +409,8 @@ export function ExhibitionWorks({
   x,
   photographerName,
 }: {
+  /** 名刺の表と裏を最後に置くか（会場の壁に名刺があった日藝祭の展示だけ）。 */
+  cards?: boolean;
   /** 名刺の名前。 */
   name: string;
   nameEn: string;
@@ -490,7 +493,7 @@ export function ExhibitionWorks({
           </p>
         ))}
       {cardVisitor && thanks.trim() && <ExhibitionThanks text={thanks} replyEndpoint={replyEndpoint} name={name} />}
-      <ExhibitionCards name={name} nameEn={nameEn} links={links} />
+      {cards && <ExhibitionCards name={name} nameEn={nameEn} links={links} />}
     </section>
   );
 }

@@ -35,6 +35,8 @@ export const ROUTE_MODULES: Record<string, string> = {
   "/portrait": "src/web/pages/develop-list.tsx",
   "/life": "src/web/pages/develop-list.tsx",
   "/info": "src/web/pages/develop-info.tsx",
+  // 展示の一覧（2026-11-10）。1件のページはトップと同じ組み立て（下の DYNAMIC_ROUTES）。
+  "/exhibition": "src/web/pages/exhibition-list.tsx",
   "/series": "src/web/pages/series.tsx",
   // Work の棚（2026-08-30）。シリーズと同じ部品なので、読む先も同じ。
   "/work": "src/web/pages/series.tsx",
@@ -53,6 +55,7 @@ export const ROUTE_MODULES: Record<string, string> = {
 const DYNAMIC_ROUTES: [RegExp, string][] = [
   [/^\/series\/[^/]+$/, "src/web/pages/series-detail.tsx"],
   [/^\/work\/[^/]+$/, "src/web/pages/series-detail.tsx"],
+  [/^\/exhibition\/[^/]+$/, "src/web/pages/top.tsx"],
   // 併走中に追加された写真詳細も、app.tsx の lazy import と同じチャンクへ。
   // 実在判定と数値idの検証はサーバ側が担い、ここは先読み先だけを決める。
   [/^\/photo\/[^/]+$/, "src/web/pages/photo-detail.tsx"],

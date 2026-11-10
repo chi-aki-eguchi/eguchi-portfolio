@@ -254,6 +254,7 @@ export const SETTINGS_SECTION_KEYS = {
     "exhibitionThanks",
     "exhibitionPhotoIds",
     "exhibitionCaptions",
+    "exhibitionArchive",
   ],
   // トップの形（写真中心）。
   home: ["bookCoverPhotoId", "photoTopLayout"],

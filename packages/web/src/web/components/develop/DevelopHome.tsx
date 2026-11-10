@@ -162,8 +162,11 @@ export function DevelopHome({
   showSeries,
   showGallery,
   after,
+  before,
   plain = false,
 }: {
+  /** 扉の目次の上（表紙のすぐ下）に置く物。 */
+  before?: React.ReactNode;
   settings: Settings;
   photos: DevelopPhoto[];
   seriesCover: DevelopPhoto | null;
@@ -200,6 +203,7 @@ export function DevelopHome({
   return (
     <div className="dv-home site-page">
       {/* 下の余白は置かない（フッターの上の余白の設定に任せる）。見出し（h1）は、上の表紙の名前。 */}
+      {before}
       <Doors doors={doors} plain={plain} />
       {showGallery && (
         <p className="dv-archive">

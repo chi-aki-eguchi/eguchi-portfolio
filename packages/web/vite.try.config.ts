@@ -114,6 +114,7 @@ function readOnlyApi(): Plugin {
               exhibitionThanks: EXHIBITION_DEFAULTS.thanks,
               exhibitionPhotoIds: "",
               exhibitionCaptions: "",
+              exhibitionArchive: "",
             };
             res.end(JSON.stringify({ ...json, ...exhibition, siteDesign: DESIGN, ...localSettings() }));
             return;

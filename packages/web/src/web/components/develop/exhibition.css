@@ -777,3 +777,94 @@ body[data-reveal="none"] .ex-thanks__print.fade-in-item .ex-thanks__img {
     animation: none;
   }
 }
+
+/* ── 展示の一覧（/exhibition、2026-11-10）─────────────────────
+   1件を、切り抜かない写真1枚と、題・会期の札で置く。スマホは写真を端から端まで、札はその下。
+   PC は写真と札を横に並べ、1件ごとに左右を入れ替える（展示のページの写真の振り方と同じ）。 */
+.ex-index {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: calc(4.5rem * var(--spacing-section-gap, 1) + 1.5rem);
+}
+.ex-index__link {
+  display: block;
+  color: inherit;
+  text-decoration: none;
+}
+.ex-index__photo {
+  display: block;
+  margin-inline: calc(var(--page-inset) * -1);
+  aspect-ratio: var(--ex-ar, 3 / 2);
+  background: rgba(var(--foreground-rgb), 0.05);
+  overflow: hidden;
+}
+.ex-index__photo picture,
+.ex-index__img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.ex-index__text {
+  display: grid;
+  gap: 0.35rem;
+  margin-top: 0.9rem;
+}
+.ex-index__title {
+  font-size: 1.0625rem;
+  letter-spacing: 0.08em;
+  line-height: 1.6;
+}
+.ex-index__dates {
+  font-size: 0.8125rem;
+  letter-spacing: 0.06em;
+  color: var(--text-quiet);
+}
+.ex-index__title {
+  text-decoration: underline;
+  text-decoration-color: transparent;
+  text-underline-offset: 0.35em;
+  transition: text-decoration-color var(--dur-hover, 0.3s) var(--ease-out, ease-out);
+}
+.ex-index__link:hover .ex-index__title,
+.ex-index__link:focus-visible .ex-index__title {
+  text-decoration-color: currentColor;
+}
+@media (min-width: 768px) {
+  .ex-index__link {
+    display: grid;
+    grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+    align-items: end;
+    gap: 2.5rem;
+  }
+  .ex-index__photo {
+    margin-inline: 0;
+    max-height: 70vh;
+    justify-self: start;
+    width: 100%;
+  }
+  .ex-index__text {
+    margin: 0;
+    padding-bottom: 0.2rem;
+  }
+  .ex-index__item:nth-child(even) .ex-index__link {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr);
+  }
+  .ex-index__item:nth-child(even) .ex-index__photo {
+    order: 2;
+  }
+  .ex-index__item:nth-child(even) .ex-index__text {
+    text-align: right;
+  }
+}
+
+/* 展示の1件のページ（足した展示）の札：題が見出し、会期は右に小さく。 */
+.ex-label__title {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: inherit;
+  line-height: 1.6;
+  letter-spacing: 0.1em;
+}

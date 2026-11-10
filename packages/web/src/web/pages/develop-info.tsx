@@ -20,7 +20,10 @@ import "../components/develop/develop.css";
  */
 export default function DevelopInfoPage() {
   // 料金は取り寄せを待って描かれるので、届くまでの間は印へ合わせ直す（useInitialHashScroll の説明）。
-  useInitialHashScroll({ followLayoutMs: 1500 });
+  // 2026-11-10 に 1.5 秒 → 6 秒。上の自己紹介は写真を最大 2.5 秒待ってから出る（profile.tsx の holdBio）ので、
+  // 遅い回線では 1.5 秒を過ぎてから高さが変わり、印の位置が 350px ほど動いたままになっていた
+  //（本番のスマホ・4G 相当で、ずれ 1.458）。読む人が触ったら、その時点でやめるのは今までどおり。
+  useInitialHashScroll({ followLayoutMs: 6000 });
   return (
     <div className="dv-info">
       <ProfilePage embedded part="intro" />

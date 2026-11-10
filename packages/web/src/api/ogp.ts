@@ -1,5 +1,6 @@
 import { OWNER_SERVICE_TITLE } from "../shared/site-title";
 import { developDoorCopy, isDevelopDesignValue, isDevelopOnlyPath } from "../shared/develop-structure";
+import { EXHIBITION_LIST_PATH, EXHIBITION_NAV_LABEL, publicExhibitions } from "../shared/exhibitions";
 import { portfolioPlans } from "../shared/portfolio-product";
 import {
   DEFAULT_SITE_URL as SITE_URL_DEFAULT,
@@ -121,6 +122,8 @@ const PAGE_TITLES: Record<string, string> = {
   "/portrait": "Portrait",
   "/life": "Life",
   "/info": "Info",
+  // 展示の一覧（2026-11-10、shared/exhibitions.ts）。1件のページの題は server.ts が渡す。
+  [EXHIBITION_LIST_PATH]: EXHIBITION_NAV_LABEL,
   "/about": PAGE_TITLE.about,
   "/profile": PAGE_TITLE.about,
   "/contact": PAGE_TITLE.contact,
@@ -186,6 +189,16 @@ function genericPageDescription(
       return `${name}への連絡先ページ。`;
     case "/info":
       return `${name}のプロフィールと連絡先ページ。`;
+    case EXHIBITION_LIST_PATH:
+      return `${name}の展示の記録。`;
+    // 扉の説明（2026-11-10）。それまではサイト全体の一文「〜の写真ポートフォリオ。」で、Portrait と Life の
+    // 区別も、撮影を頼めることも、検索や共有の説明に出なかった。料金の文は、依頼の帯を出しているサイトだけ。
+    case "/portrait": {
+      const offer = settings.homeCtaEnabled === "on" ? (settings.homeCtaText || "").trim() : "";
+      return `${name}が撮ったポートレート。${offer}`;
+    }
+    case "/life":
+      return `${name}が撮った日常の写真。`;
     case "/en/about":
       return `${displayNameEnFrom(settings)}'s profile page.`;
     case "/en/contact":
@@ -586,6 +599,7 @@ export function injectOgp(
     "/portrait",
     "/life",
     "/info",
+    "/exhibition",
     "/about",
     "/profile",
     "/contact",
@@ -617,9 +631,15 @@ export function injectOgp(
   // （2026-10-10、本番で題名は Not Found なのに robots が index のままだった）。
   const developMissing =
     isDevelopOnlyPath(pathname) && !isDevelopDesignValue(settings.siteDesign);
+  // 展示の一覧は、公開中の展示があるサイトにだけ在る。
+  const exhibitionListMissing =
+    pathname === EXHIBITION_LIST_PATH && publicExhibitions(settings, siteUrl).length === 0;
   const isKnown =
     !developMissing &&
+    !exhibitionListMissing &&
     (KNOWN_ROUTES.includes(pathname) ||
+      // 展示の1件のページ。在るときだけ server.ts が題を渡す。
+      (pathname.startsWith(`${EXHIBITION_LIST_PATH}/`) && !!override?.title) ||
       ((pathname.startsWith("/series/") || pathname.startsWith("/work/")) &&
         !!override?.title) ||
       (isPhotoDetail && !!override?.title));

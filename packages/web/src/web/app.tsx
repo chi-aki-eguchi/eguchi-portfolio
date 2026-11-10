@@ -15,6 +15,7 @@ import { JaPhrases } from "./components/JaPhrases";
 import { useQuery } from "@tanstack/react-query";
 import { api, jsonOrThrow } from "./lib/api";
 import { siteDesignFrom } from "./lib/book";
+import { EXHIBITION_NAV_LABEL, exhibitionDisplayTitle, publicExhibitions } from "../shared/exhibitions";
 
 // Lazy-load all pages — only the shell is eagerly loaded
 const TopPage = lazy(() => import("./pages/top"));
@@ -27,6 +28,7 @@ const ContactPage = lazy(() => import("./pages/contact"));
 const PolicyPage = lazy(() => import("./pages/policy"));
 const DevelopListPage = lazy(() => import("./pages/develop-list"));
 const DevelopInfoPage = lazy(() => import("./pages/develop-info"));
+const ExhibitionListPage = lazy(() => import("./pages/exhibition-list"));
 const ServicePage = lazy(() => import("./pages/service"));
 const PortfolioGuidePage = lazy(() => import("./pages/portfolio-guide"));
 const ServiceConsultPage = lazy(() => import("./pages/service-consult"));
@@ -137,6 +139,31 @@ function DevelopRoute({ title, children }: { title: string; children: React.Reac
     <PageTransition>
       <TitledRoute title={title}>
         <Suspense fallback={<PageFallback />}>{children}</Suspense>
+      </TitledRoute>
+    </PageTransition>
+  );
+}
+
+/**
+ * 展示の欄（2026-11-10、shared/exhibitions.ts）。slug があればその展示のページ、無ければ一覧。
+ * 公開中の展示が無いサイト・無い slug は「見つかりませんでした」（サーバーも 404 を返す）。
+ * 1件のページは、トップと同じ組み立てを使う（pages/top.tsx）。
+ */
+function ExhibitionRoute({ slug }: { slug?: string }) {
+  const { data, isLoading } = useQuery({
+    queryKey: ["settings"],
+    queryFn: async () => jsonOrThrow(await api.settings.$get()),
+  });
+  if (isLoading) return <PageFallback />;
+  const shows = publicExhibitions(data, window.location.hostname);
+  const show = slug ? shows.find((entry) => entry.slug === slug) : undefined;
+  if (shows.length === 0 || (slug && !show)) return <NotFoundPage />;
+  return (
+    <PageTransition>
+      <TitledRoute title={show ? exhibitionDisplayTitle(show) : EXHIBITION_NAV_LABEL}>
+        <Suspense fallback={<PageFallback />}>
+          {slug ? <TopPage key={slug} exhibitionSlug={slug} /> : <ExhibitionListPage />}
+        </Suspense>
       </TitledRoute>
     </PageTransition>
   );
@@ -257,6 +284,18 @@ function App() {
               <DevelopRoute title="Info">
                 <DevelopInfoPage />
               </DevelopRoute>
+            </Layout>
+          </Route>
+          <Route path="/exhibition/:slug">
+            {(params) => (
+              <Layout>
+                <ExhibitionRoute slug={params.slug} />
+              </Layout>
+            )}
+          </Route>
+          <Route path="/exhibition">
+            <Layout>
+              <ExhibitionRoute />
             </Layout>
           </Route>
           <Route path="/about">

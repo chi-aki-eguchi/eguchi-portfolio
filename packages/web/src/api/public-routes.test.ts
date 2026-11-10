@@ -141,9 +141,17 @@ describe("app.tsx と各一覧の突き合わせ", () => {
   test("**公開ページを app.tsx へ足したら、SPA の経路一覧にも足す**（忘れると HTTP 404）", () => {
     // 新しい構成にだけ在る扉（/portrait など）は、その構成のサイトで 200 になること。
     const missing = publicPaths.filter(
-      (p) => htmlStatusForSpaPath(p, { developStructure: true }) !== 200,
+      (p) => htmlStatusForSpaPath(p, { developStructure: true, exhibitionFound: true }) !== 200,
     );
     expect(missing).toEqual([]);
+  });
+
+  test("展示の欄は、公開中の展示があるときだけ在る（一覧も、1件のページも）", () => {
+    expect(htmlStatusForSpaPath("/exhibition", { exhibitionFound: true })).toBe(200);
+    expect(htmlStatusForSpaPath("/exhibition", {})).toBe(404);
+    expect(htmlStatusForSpaPath("/exhibition/2026-nichigei", { exhibitionFound: true })).toBe(200);
+    expect(htmlStatusForSpaPath("/exhibition/nope", { exhibitionFound: false })).toBe(404);
+    expect(htmlStatusForSpaPath("/exhibition/a/b", { exhibitionFound: true })).toBe(404);
   });
 
   test("**同じく OGP の既知経路にも足す**（忘れると題名が Not Found・noindex）", () => {

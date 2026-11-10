@@ -272,7 +272,13 @@ test("新しい構成 › 写真は幅を使い切り、余白は区切りにだ
     const doorEls = [...document.querySelectorAll<HTMLElement>(".dv-door")];
     return {
       vw: document.documentElement.clientWidth,
-      coverToDoors: Math.round(doors.top - cover.bottom),
+      // 表紙と扉の目次の間の「空き」。間に依頼の1行（InquiryLine、2026-11-10）があるときは、その行の
+      // 高さは中身なので引く（行の上下の空きだけを数える）。
+      coverToDoors: Math.round(doors.top - cover.bottom - (r(".dv-home > .inquiry-line")?.height ?? 0)),
+      lineInFirstScreen: (() => {
+        const line = r(".dv-home > .inquiry-line");
+        return line ? Math.round(line.bottom) <= window.innerHeight : null;
+      })(),
       doorsToArchive: archive ? Math.round(archive.top - doors.bottom) : 0,
       frameLeft: Math.round(frame.left),
       frameRight: Math.round(frame.right),
@@ -383,6 +389,8 @@ test("新しい構成 › 写真は幅を使い切り、余白は区切りにだ
   expect(latent.order).toBe(true);
   expect(latent.sharpDelay).toBeGreaterThan(0.62);
   expect(home.coverToDoors).toBeLessThanOrEqual(24);
+  // 依頼の1行は、表紙を短くした分に収まり、開いた最初の画面に入っている。
+  expect(home.lineInFirstScreen).toBe(true);
   expect(home.doorsToArchive).toBeLessThanOrEqual(40);
   // 「すべての写真」は下線でなく矢印（すぐ下の帯の罫と二重線にしない）。帯は左端をそろえる。
   if (home.archiveLeft !== null) {

@@ -11,6 +11,16 @@ import {
   type DevelopListKind,
 } from "../../shared/develop-structure";
 import { EXHIBITION_BUILT_IN, exhibitionPhotoList, exhibitionShowsWall } from "../../shared/exhibition";
+import {
+  EXHIBITION_ARCHIVE_MAX,
+  exhibitionDisplayTitle,
+  exhibitionEntries,
+  exhibitionPath,
+  newExhibitionSlug,
+  readExhibitionArchive,
+  writeExhibitionArchive,
+  type ExhibitionRecord,
+} from "../../shared/exhibitions";
 import { isServiceOwnerSite } from "../../shared/service-visibility";
 import { DoorNames } from "../components/page-photos/DoorNames";
 import { ExhibitionCaptions, ExhibitionCopy, ExhibitionVisits } from "../components/page-photos/ExhibitionPanel";
@@ -46,7 +56,8 @@ type SavedKey =
   | "exhibitionText"
   | "exhibitionThanks"
   | "exhibitionPhotoIds"
-  | "exhibitionCaptions";
+  | "exhibitionCaptions"
+  | "exhibitionArchive";
 type Toast = { text: string; undo?: () => void };
 
 /**
@@ -62,6 +73,8 @@ type Toast = { text: string; undo?: () => void };
  * - 構成の切り替えは、公開サイトが変わるので、押してから一度確かめる
  * - 展示（2026-10-31、shared/exhibition.ts）は、トップに出すかどうか・写真・題と会期をここで変える。
  *   同梱の写真とライブラリの写真は同じ並びに入れられる。止めるといつものトップに戻る
+ * - 展示は何件でも足せる（2026-11-10、shared/exhibitions.ts）。前の展示・次の展示を、写真を選んで
+ *   題と会期を書けば、サイトの Exhibition に同じ形で並ぶ。写真を1枚選ぶまでは公開されない
  */
 export default function AdminPagesPage() {
   const queryClient = useQueryClient();
@@ -104,6 +117,8 @@ export default function AdminPagesPage() {
 
   // 展示をトップに出している間は、展示のタブから開く。押して選んだタブが優先。
   const [chosenTab, setTab] = useState<Tab | null>(null);
+  // 展示のタブで、いま編集している展示（slug）。選んでいなければ、一覧の先頭。
+  const [chosenShow, setShow] = useState<string | null>(null);
   const tab: Tab = chosenTab ?? (settings?.homeExhibition === "on" ? "exhibition" : "portrait");
   // 表紙の並び（保存しようとしている物）。保存して読み直すまでの間、画面はこちらを見る。
   const [localCover, setLocalCover] = useState<number[] | null>(null);
@@ -208,6 +223,49 @@ export default function AdminPagesPage() {
     [photos, savedValue],
   );
   const exhibitionIds = useMemo(() => exhibitionPhotos.map((p) => p.id), [exhibitionPhotos]);
+  // 展示の一覧（新しい順。日藝祭の展示と、足した展示）。保存しようとしている値で見る。
+  const archiveValue = savedValue("exhibitionArchive");
+  const archive = useMemo(() => readExhibitionArchive(archiveValue), [archiveValue]);
+  const shows = useMemo(
+    () =>
+      exhibitionEntries(
+        {
+          ...(settings as Record<string, string | null | undefined> | undefined),
+          siteDesign: "develop",
+          exhibitionArchive: archiveValue,
+          exhibitionTitle: savedValue("exhibitionTitle"),
+          exhibitionDates: savedValue("exhibitionDates"),
+        },
+        window.location.hostname,
+      ),
+    [settings, archiveValue, savedValue],
+  );
+  const show = shows.find((entry) => entry.slug === chosenShow) ?? shows[0] ?? null;
+  const record = show && !show.builtIn ? (archive.find((entry) => entry.slug === show.slug) ?? null) : null;
+  const recordPhotos = useMemo(() => {
+    if (!record) return [];
+    const byId = new Map(photos.map((photo) => [photo.id, photo]));
+    return parsePhotoIdList(record.photoIds)
+      .map((id) => byId.get(id))
+      .filter((photo): photo is PagePhoto => Boolean(photo));
+  }, [record, photos]);
+  const recordIds = useMemo(() => recordPhotos.map((photo) => photo.id), [recordPhotos]);
+  const usedOnRecord = useMemo(() => new Set<number>(recordIds), [recordIds]);
+  const saveArchive = (next: ExhibitionRecord[], message: string) =>
+    save("exhibitionArchive", writeExhibitionArchive(next), message, archiveValue);
+  const patchRecord = (slug: string, patch: Partial<ExhibitionRecord>, message: string) =>
+    saveArchive(
+      archive.map((entry) => (entry.slug === slug ? { ...entry, ...patch } : entry)),
+      message,
+    );
+  const addShow = () => {
+    const slug = newExhibitionSlug(
+      archive.map((entry) => entry.slug),
+      Date.now().toString(36),
+    );
+    saveArchive([{ slug, title: "", dates: "", text: "", photoIds: "", captions: "" }, ...archive], "展示を足しました");
+    setShow(slug);
+  };
   const usedOnExhibition = useMemo(() => new Set<number>(exhibitionIds), [exhibitionIds]);
   const used = useMemo(() => new Set([...lists.portrait, ...lists.life]), [lists]);
   const usedOnCover = useMemo(() => new Set<number>(coverIds), [coverIds]);
@@ -242,7 +300,7 @@ export default function AdminPagesPage() {
   const heroMode = savedValue("heroMode") || "carousel";
   const coverSingle = heroMode === "single";
   const counts = {
-    exhibition: exhibitionIds.length,
+    exhibition: record ? recordIds.length : exhibitionIds.length,
     cover: coverIds.length,
     portrait: lists.portrait.length,
     life: lists.life.length,
@@ -280,7 +338,15 @@ export default function AdminPagesPage() {
         {/* いま並べているページを、新しい構成で開く（保存した構成が今までの物でも、下見できる）。 */}
         <a
           className="pp-back pp-back--view"
-          href={`/${tab === "cover" || tab === "exhibition" ? "" : tab}?design=develop`}
+          href={`${
+            tab === "exhibition"
+              ? show && (show.builtIn || recordIds.length > 0)
+                ? exhibitionPath(show.slug)
+                : "/"
+              : tab === "cover"
+                ? "/"
+                : `/${tab}`
+          }?design=develop`}
           target="_blank"
           rel="noopener"
         >
@@ -311,7 +377,90 @@ export default function AdminPagesPage() {
           {error}
         </p>
       )}
-      {tab === "exhibition" ? (
+      {tab === "exhibition" && (
+        /* どの展示を編集するか。足した展示は、サイトの Exhibition に新しい順で並ぶ。 */
+        <fieldset className="pp-cover-mode pp-shows">
+          <legend className="sr-only">編集する展示</legend>
+          {shows.map((entry) => (
+            <button
+              key={entry.slug}
+              type="button"
+              aria-pressed={show?.slug === entry.slug}
+              data-pp-show={entry.slug}
+              onClick={() => setShow(entry.slug)}
+            >
+              {entry.title || entry.dates ? exhibitionDisplayTitle(entry) : "（題のない展示）"}
+            </button>
+          ))}
+          {archive.length < EXHIBITION_ARCHIVE_MAX && (
+            <button type="button" aria-pressed={false} data-pp-show-add onClick={addShow}>
+              ＋ 展示を足す
+            </button>
+          )}
+        </fieldset>
+      )}
+      {tab === "exhibition" && record ? (
+        <>
+          <p className="pp-note">
+            {recordIds.length === 0
+              ? "写真を選ぶと、サイトの Exhibition に出ます。先頭の写真が表紙になり、この順に続きます。"
+              : "先頭の写真が表紙になり、この順に続きます。"}
+          </p>
+          <PagePhotoEditor
+            key={`show-${record.slug}`}
+            photos={photos}
+            value={recordIds}
+            used={usedOnRecord}
+            series={series}
+            name={EXHIBITION_NAME}
+            onChange={(next, message) => patchRecord(record.slug, { photoIds: next.join(",") }, message)}
+          />
+          <ExhibitionCopy
+            builtIn={false}
+            title={record.title}
+            dates={record.dates}
+            text={record.text}
+            thanks=""
+            onSave={(field, next, message) => {
+              if (field === "exhibitionThanks") return;
+              const key = field === "exhibitionTitle" ? "title" : field === "exhibitionDates" ? "dates" : "text";
+              // まだ公開していない展示（写真なし）は、会期の年が分かった時点で住所に年を入れる。
+              // 公開したあとは、共有された住所が切れないように変えない。
+              if (key === "dates" && recordIds.length === 0 && record.slug.startsWith("ex-")) {
+                const slug = newExhibitionSlug(
+                  archive.map((entry) => entry.slug),
+                  record.slug,
+                  next,
+                );
+                patchRecord(record.slug, { dates: next, slug }, message);
+                setShow(slug);
+                return;
+              }
+              patchRecord(record.slug, { [key]: next }, message);
+            }}
+          />
+          <ExhibitionCaptions
+            photos={recordPhotos}
+            value={record.captions}
+            onSave={(next, message) => patchRecord(record.slug, { captions: next }, message)}
+          />
+          <p className="pp-show-remove">
+            <button
+              type="button"
+              data-pp-show-remove
+              onClick={() => {
+                saveArchive(
+                  archive.filter((entry) => entry.slug !== record.slug),
+                  "展示を消しました",
+                );
+                setShow(null);
+              }}
+            >
+              この展示を消す
+            </button>
+          </p>
+        </>
+      ) : tab === "exhibition" ? (
         <>
           {/* トップに展示を出すか。止めると、いつものトップ（表紙＋扉）に戻る。写真と文は残る。 */}
           <fieldset className="pp-cover-mode">
@@ -347,7 +496,7 @@ export default function AdminPagesPage() {
           <ExhibitionVisits />
           <p className="pp-note">
             {exhibitionShowsWall(savedValue("exhibitionPhotoIds"))
-              ? "この順に並びます。同梱の5枚が揃っている間は、トップの最初に会場の壁の配置が出ます。"
+              ? "この順に並びます。同梱の5枚が揃っている間は、展示のページの最初に会場の壁の配置が出ます。"
               : "先頭の写真が表紙になり、この順に続きます。"}
           </p>
           <PagePhotoEditor

@@ -265,3 +265,104 @@ test("展示のトップ › 止めると、いつものトップに戻る", asy
   await expect(page.locator(".dv-doors")).toBeVisible();
   await expect(page.locator(".dv-doors[data-plain]")).toHaveCount(0);
 });
+
+/**
+ * 展示の欄（shared/exhibitions.ts、2026-11-10）。トップはいつもの表紙に戻り、展示は /exhibition に
+ * 1件ずつのページとして残る。足した展示は、ライブラリの写真で同じ形のページになる。
+ */
+test("展示の欄 › トップはいつもの表紙。メニューから一覧へ、一覧から日藝祭の壁と、足した展示のページへ", async ({ page, api }) => {
+  const library = ((await (await api.get("/api/photos")).json()) as { photos: { id: number }[] }).photos;
+  const picked = library.slice(0, 3).map((photo) => photo.id);
+  await withSettings(page, api, {
+    homeExhibition: "off",
+    siteUrl: "https://akieguchi.com",
+    exhibitionArchive: JSON.stringify([
+      { slug: "2025-harbor", title: "港", dates: "港のギャラリー 2025年10月", text: "長い文は横書きで出る。".repeat(4), photoIds: picked.join(","), captions: "" },
+      { slug: "2027-empty", title: "まだ写真の無い展示", dates: "2027年1月", text: "", photoIds: "", captions: "" },
+    ]),
+  });
+  await page.goto("/", { waitUntil: "networkidle" });
+  // トップは展示ではない。表紙のすぐ下に、展示ではなく扉の目次。
+  await expect(page.locator(".ex-wall")).toHaveCount(0);
+  await expect(page.locator("[data-exhibition]")).toHaveCount(0);
+  await expect(page.locator(".dv-doors")).toBeVisible();
+  expect(await noSideScroll(page)).toBeLessThanOrEqual(0);
+
+  // 一覧：新しい順に、公開できる2件（写真の無い展示は出ない）。
+  await page.goto("/exhibition", { waitUntil: "networkidle" });
+  await expect(page.locator("h1")).toHaveText("Exhibition");
+  const items = page.locator(".ex-index__item");
+  await expect(items).toHaveCount(2);
+  await expect(items.nth(0)).toContainText("無題");
+  await expect(items.nth(0)).toContainText("日藝祭 2026年11月1日〜3日");
+  await expect(items.nth(1)).toContainText("港");
+  await expect
+    .poll(() => page.locator(".ex-index__img").evaluateAll((imgs) => (imgs as HTMLImageElement[]).filter((img) => img.naturalWidth > 0).length))
+    .toBe(2);
+  expect(await noSideScroll(page)).toBeLessThanOrEqual(0);
+
+  // 日藝祭のページは、今までのトップと同じ壁・写真・詩・名刺。
+  await items.nth(0).locator("a").click();
+  await expect(page).toHaveURL(/\/exhibition\/2026-nichigei$/);
+  await expect(page.locator(".ex-wall__frame")).toHaveCount(5);
+  await expect(page.locator(".ex-work__open")).toHaveCount(5);
+  await expect(page.locator("#ex-cards .ex-card")).toHaveCount(2);
+  await expect(page).toHaveTitle(/^無題/);
+
+  // 足した展示：先頭の写真が表紙、残りが続き、題が見出し。壁・名刺・QR の人への部分は無い。
+  await page.goto("/exhibition/2025-harbor?card", { waitUntil: "networkidle" });
+  await expect(page.locator("h1")).toHaveText("港");
+  await expect(page.locator(".ex-label__show")).toContainText("港のギャラリー 2025年10月");
+  await expect(page.locator(".ex-wall")).toHaveCount(0);
+  await expect(page.locator(".ex-work__open")).toHaveCount(picked.length - 1);
+  await expect(page.locator(".ex-works__text")).toContainText("長い文は横書きで出る。");
+  await expect(page.locator("#ex-cards")).toHaveCount(0);
+  await expect(page.locator("#ex-thanks")).toHaveCount(0);
+  expect(await noSideScroll(page)).toBeLessThanOrEqual(0);
+
+  // 無い展示・写真の無い展示は「見つかりませんでした」。
+  for (const missing of ["/exhibition/nope", "/exhibition/2027-empty"]) {
+    await page.goto(missing, { waitUntil: "networkidle" });
+    await expect(page.locator("h1")).toContainText("見つかりませんでした");
+  }
+});
+
+test("展示の欄 › 展示の無いサイトには、メニューにも一覧にも出ない", async ({ page, api }) => {
+  await withSettings(page, api, { homeExhibition: "off", siteUrl: "https://someone-else.example" });
+  await page.goto("/exhibition", { waitUntil: "networkidle" });
+  await expect(page.locator("h1")).toContainText("見つかりませんでした");
+  await expect(page.locator('a[href="/exhibition"]')).toHaveCount(0);
+});
+
+test("依頼の入口 › トップの最初の画面に、料金と入口の1行が出る", async ({ page, api }) => {
+  await withSettings(page, api, {
+    homeExhibition: "off",
+    homeCtaEnabled: "on",
+    homeCtaTitle: "撮影のご依頼",
+    homeCtaText: "ポートレート撮影 60分 ¥10,000。学生の方は半額です。",
+    // 最初の画面に入るのは、表紙が画面いっぱいの出し方のとき（本番の設定）。ほかの出し方では表紙の続きに出る。
+    heroDisplayMode: "fullscreen",
+    heroMode: "single",
+    heroHeight: "100",
+  });
+  for (const path of ["/"]) {
+    await page.goto(path, { waitUntil: "networkidle" });
+    const line = page.locator(".inquiry-line");
+    await expect(line).toContainText("¥10,000");
+    const link = line.locator("a");
+    await expect(link).toHaveAttribute("href", "/info#request");
+    // 入口が、送らなくても最初の画面に全部入っている。
+    const box = (await link.boundingBox())!;
+    expect(box.y + box.height).toBeLessThanOrEqual(page.viewportSize()!.height + 1);
+    expect(box.height).toBeGreaterThanOrEqual(44);
+    expect(await noSideScroll(page)).toBeLessThanOrEqual(0);
+  }
+  // 帯を出さない設定なら、1行も出さず、表紙は今までどおり画面いっぱい。
+  await page.unroute((url) => url.pathname === "/api/settings");
+  await withSettings(page, api, { homeExhibition: "off", homeCtaEnabled: "off" });
+  await page.goto("/", { waitUntil: "networkidle" });
+  await expect(page.locator(".inquiry-line")).toHaveCount(0);
+  // Portrait の写真の上には置かない（写真は上の帯のすぐ下から始める）。
+  await page.goto("/portrait", { waitUntil: "networkidle" });
+  await expect(page.locator(".inquiry-line")).toHaveCount(0);
+});

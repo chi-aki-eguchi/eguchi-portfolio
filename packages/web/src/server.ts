@@ -77,6 +77,17 @@ import {
   exhibitionPhotoList,
   exhibitionShowsWall,
 } from "./shared/exhibition";
+import {
+  EXHIBITION_LIST_PATH,
+  EXHIBITION_NAV_LABEL,
+  EXHIBITION_NICHIGEI_SLUG,
+  exhibitionDisplayTitle,
+  exhibitionEntryPhotos,
+  exhibitionPath,
+  exhibitionSlugFromPath,
+  publicExhibitions,
+  type ExhibitionEntry,
+} from "./shared/exhibitions";
 import { srcFor, srcSetFor } from "./shared/image-presets";
 import { INDEXABLE_POLICY_PATHS } from "./shared/policy-content";
 import { publicContentVersion } from "./shared/public-content-version";
@@ -467,8 +478,8 @@ async function getDoorOgImage(
 // 同梱の写真には作り置きの小さい版が無いので、先読みは画面の <source type="image/avif"> と同じ候補を
 // 指す（HeroPicture）。ライブラリの写真が先頭なら、いつもの表紙と同じ組み立て。60秒キャッシュ。
 let exhibitionCoverCache: { key: string; data: ImageRef | null; ts: number } | null = null;
-async function getExhibitionCover(ids: string | undefined): Promise<ImageRef | null> {
-  const key = ids ?? "";
+async function getExhibitionCover(ids: string | undefined, entry?: ExhibitionEntry): Promise<ImageRef | null> {
+  const key = `${entry?.slug ?? ""}|${ids ?? ""}`;
   const now = Date.now();
   if (exhibitionCoverCache?.key === key && now - exhibitionCoverCache.ts < SETTINGS_TTL)
     return exhibitionCoverCache.data;
@@ -490,7 +501,8 @@ async function getExhibitionCover(ids: string | undefined): Promise<ImageRef | n
             .where(and(isNull(schema.photos.deletedAt), eq(schema.photos.isPublished, true))),
         )
       : [];
-    const first = exhibitionPhotoList(ids, rows)[0];
+    // 足した展示（shared/exhibitions.ts）はライブラリの写真だけ。同梱の展示は今までどおり。
+    const first = (entry && !entry.builtIn ? exhibitionEntryPhotos(entry, rows) : exhibitionPhotoList(ids, rows))[0];
     if (first && first.id > 0) {
       data = socialSourceForPhoto(first as (typeof rows)[number]);
     } else if (first) {
@@ -647,6 +659,11 @@ async function buildSitemap(fallbackOrigin: string): Promise<string> {
     "/contact",
     // 新しい構成（siteDesign = "develop"）を保存しているサイトだけ、その扉を載せる。
     ...(isDevelopDesignValue(settings.siteDesign) ? ["/portrait", "/life", "/info"] : []),
+    // 展示の欄（一覧と1件ずつ）。公開中の展示があるサイトだけ。
+    ...(() => {
+      const shows = publicExhibitions(settings, siteUrl);
+      return shows.length > 0 ? [EXHIBITION_LIST_PATH, ...shows.map((show) => exhibitionPath(show.slug))] : [];
+    })(),
     ...INDEXABLE_POLICY_PATHS,
     // i18n Phase 3: 英語文が入力済みのサイトのみ /en/* を sitemap に載せる
     // （配布テンプレート既定では日本語のままの英語URLを検索対象にしない）
@@ -1046,12 +1063,18 @@ async function serveNonApi(request: Request, url: URL): Promise<Response> {
       });
   }
 
-  // 名刺の QR の行き先は /card.html（印刷済み）。展示がトップの間は、そのまま展示へ通す。
-  // リンク集で「Website」を押さないと展示に着かないと、会場で読んだ人が展示まで来ない。
-  // 展示を止めれば、今までのリンク集に戻る。
+  // 名刺の QR の行き先は /card.html（印刷済み）。そのまま展示へ通す：トップが展示の間はトップへ、
+  // そうでなければ日藝祭のページへ（2026-11-10。トップをいつもの表紙に戻しても、名刺から展示に着く）。
+  // リンク集で「Website」を押さないと展示に着かないと、名刺を読んだ人が展示まで来ない。
+  // 展示の無いサイト（配布版・今までの構成）では、今までのリンク集のまま。
   if (url.pathname === "/card.html") {
     const settings = await getSettings();
-    if (exhibitionIsTop(settings, siteUrlFrom(settings, publicOrigin))) {
+    const cardTarget = exhibitionIsTop(settings, siteUrlFrom(settings, publicOrigin))
+      ? "/"
+      : publicExhibitions(settings, siteUrlFrom(settings, publicOrigin)).some((show) => show.slug === EXHIBITION_NICHIGEI_SLUG)
+        ? exhibitionPath(EXHIBITION_NICHIGEI_SLUG)
+        : null;
+    if (cardTarget) {
       const headers = request.headers;
       const automated = exhibitionAutomatedVisit(
         headers.get("user-agent") ?? "",
@@ -1066,7 +1089,7 @@ async function serveNonApi(request: Request, url: URL): Promise<Response> {
       return new Response(null, {
         status: 302,
         headers: {
-          Location: "/",
+          Location: cardTarget,
           "Cache-Control": "no-store",
           "Set-Cookie": `${EXHIBITION_CARD_COOKIE}=1; Path=/; Max-Age=${EXHIBITION_CARD_COOKIE_MAX_AGE}; SameSite=Lax`,
         },
@@ -1112,12 +1135,24 @@ async function serveNonApi(request: Request, url: URL): Promise<Response> {
     const html = await index.text();
     const settings = await getSettings();
     // 展示のトップでは、表紙（共有の写真・先読み）は展示の先頭の写真。トップだけ差し替える。
-    const exhibitionOn = routePathname === "/" && exhibitionIsTop(settings, siteUrlFrom(settings, publicOrigin));
-    const exhibitionCover = exhibitionOn ? await getExhibitionCover(settings.exhibitionPhotoIds) : null;
+    // 展示の欄（/exhibition と /exhibition/:slug、shared/exhibitions.ts）。
+    const exhibitionShows = publicExhibitions(settings, siteUrlFrom(settings, publicOrigin));
+    const exhibitionSlug = exhibitionSlugFromPath(routePathname);
+    const exhibitionPage = exhibitionSlug ? exhibitionShows.find((show) => show.slug === exhibitionSlug) : undefined;
+    const exhibitionFound = routePathname === EXHIBITION_LIST_PATH ? exhibitionShows.length > 0 : Boolean(exhibitionPage);
+    const exhibitionTop = routePathname === "/" && exhibitionIsTop(settings, siteUrlFrom(settings, publicOrigin));
+    // 展示の画面（トップが展示のとき・展示の1件のページ）。共有の写真と先読みは、その展示の先頭の写真。
+    const exhibitionOn = exhibitionTop || Boolean(exhibitionPage);
+    const exhibitionCover = exhibitionPage
+      ? await getExhibitionCover(exhibitionPage.photoIds, exhibitionPage)
+      : exhibitionTop
+        ? await getExhibitionCover(settings.exhibitionPhotoIds)
+        : null;
     const heroImg = exhibitionCover ?? (await getHeroOgImage());
     // 壁の配置を出す間は大きな表紙が無いので、表紙の写真を先読みさせない（共有の写真には使う）。
-    const heroPreload =
-      heroPreloadAllowed(settings.heroRandom) && !(exhibitionOn && exhibitionShowsWall(settings.exhibitionPhotoIds));
+    const exhibitionWall =
+      (exhibitionTop || exhibitionPage?.builtIn === true) && exhibitionShowsWall(settings.exhibitionPhotoIds);
+    const heroPreload = heroPreloadAllowed(settings.heroRandom) && !exhibitionWall;
     const serviceUnavailable =
       isServiceVisibilityGatedPath(routePathname) &&
       !resolveServiceVisibility(
@@ -1194,12 +1229,26 @@ async function serveNonApi(request: Request, url: URL): Promise<Response> {
     }
     // 共有したときの説明にも展示の名前を出す。会期が過ぎても読める、記録の形の文。
     if (!override && exhibitionOn) {
-      const show = [
-        settings.exhibitionTitle ?? EXHIBITION_DEFAULTS.title,
-        settings.exhibitionDates ?? EXHIBITION_DEFAULTS.dates,
-      ].filter(Boolean);
-      if (show.length > 0)
-        override = { desc: `${settings.siteName || displayNameFrom(settings)}の写真。${show.join("、")}。` };
+      const show = exhibitionPage
+        ? [exhibitionPage.title, exhibitionPage.dates].filter(Boolean)
+        : [
+            settings.exhibitionTitle ?? EXHIBITION_DEFAULTS.title,
+            settings.exhibitionDates ?? EXHIBITION_DEFAULTS.dates,
+          ].filter(Boolean);
+      const desc = `${settings.siteName || displayNameFrom(settings)}の写真。${show.length > 0 ? `${show.join("、")}。` : ""}`;
+      // 1件のページは題名もその展示の物に（トップは今までどおりサイトの題名）。
+      override = exhibitionPage
+        ? {
+            title: exhibitionDisplayTitle(exhibitionPage),
+            desc,
+            // 添える文（詩）は、JavaScript を動かさない読み手への本文にもなる。
+            body: exhibitionPage.text || undefined,
+            image: exhibitionCover?.url,
+            imageRotationDeg: exhibitionCover?.rotationDeg,
+          }
+        : show.length > 0
+          ? { desc }
+          : undefined;
     }
     let injected = injectOgp(
       html,
@@ -1253,6 +1302,7 @@ async function serveNonApi(request: Request, url: URL): Promise<Response> {
             : undefined,
           photoFound: photoId != null ? photoFound : undefined,
           developStructure: isDevelopDesignValue(settings.siteDesign),
+          exhibitionFound,
         });
     // 実在するページにだけ本文を入れる。404 の <noscript> に本文と
     // リンクを並べると、無いページを「中身のあるページ」として配ることになる。
@@ -1287,6 +1337,7 @@ async function serveNonApi(request: Request, url: URL): Promise<Response> {
               { href: "/life", label: doors.life.label },
               { href: "/series", label: doors.series.label },
               ...(hasWorkShelf ? [{ href: "/work", label: "Work" }] : []),
+              ...(exhibitionShows.length > 0 ? [{ href: EXHIBITION_LIST_PATH, label: EXHIBITION_NAV_LABEL }] : []),
               { href: "/info", label: doors.info.label },
               { href: "/gallery", label: "Gallery" },
             ]

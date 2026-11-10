@@ -44,13 +44,12 @@ import {
 } from "../components/develop/ExhibitionTop";
 import { PhotoViewer, usePhotoViewer } from "../components/photo-site/viewer";
 import {
-  EXHIBITION_DEFAULTS,
   EXHIBITION_WALL,
   exhibitionNeedsLibrary,
-  exhibitionPhotoList,
   exhibitionShowsWall,
   readExhibitionCaptions,
 } from "../../shared/exhibition";
+import { exhibitionEntries, exhibitionEntryPhotos, publicExhibitions } from "../../shared/exhibitions";
 import { DevelopIntro } from "../components/develop/DevelopIntro";
 import { usableContactEndpoint } from "../../shared/contact-settings";
 import { INTRO_SEEN_KEY, shouldPlayIntro } from "../lib/develop-intro";
@@ -785,7 +784,7 @@ function heroMotionKey(
  * `fallback` is the height that layout used before the slider reached it, so an
  * unset site is unchanged. */
 function heroHeightValue(fallback: string): string {
-  return `min(var(--hero-height, ${fallback}), calc(100svh - var(--header-h) - var(--sai-top)))`;
+  return `min(var(--hero-height, ${fallback}), calc(100svh - var(--header-h) - var(--sai-top) - var(--hero-reserve, 0px)))`;
 }
 
 /** The hero name block, shared by every Hero mode.
@@ -1234,7 +1233,7 @@ function HomeImmersive({
         className="hero-motion-stage relative w-full overflow-hidden"
         style={{
           height: heroHeightValue(
-            "calc(100dvh - var(--header-h) - var(--sai-top))",
+            "calc(100dvh - var(--header-h) - var(--sai-top) - var(--hero-reserve, 0px))",
           ),
         }}
       >
@@ -1347,7 +1346,11 @@ function HomeImmersive({
   );
 }
 
-export default function TopPage() {
+/**
+ * トップ。`exhibitionSlug` を渡すと、その展示の1件のページ（`/exhibition/:slug`）として同じ組み立てを出す
+ * （2026-11-10、shared/exhibitions.ts。在るかどうかは呼ぶ側の app.tsx が確かめる）。
+ */
+export default function TopPage({ exhibitionSlug }: { exhibitionSlug?: string } = {}) {
   const { data: settings, isLoading: settingsLoading } = useQuery({
     queryKey: ["settings"],
     queryFn: async () => jsonOrThrow(await api.settings.$get()),
@@ -1355,8 +1358,16 @@ export default function TopPage() {
   const topWorksMode = settings?.topWorksMode || "auto";
   const isBookDesign = siteDesignFrom(settings?.siteDesign) === "book";
   const isDevelopDesign = siteDesignFrom(settings?.siteDesign) === "develop";
-  // 展示のトップ（shared/exhibition.ts）。日付では切り替えない。止めるのは管理画面の「ページの写真」→「展示」。
-  const exhibitionOn = isDevelopDesign && settings?.homeExhibition === "on";
+  // 展示の画面：展示の1件のページか、トップを展示にしているとき（管理画面の「ページの写真」→「展示」。
+  // 日付では切り替えない）。トップに出るのは日藝祭の展示（shared/exhibition.ts）。
+  const exhibitionEntry = useMemo(() => {
+    if (!isDevelopDesign || typeof window === "undefined") return null;
+    const host = window.location.hostname;
+    if (exhibitionSlug) return publicExhibitions(settings, host).find((show) => show.slug === exhibitionSlug) ?? null;
+    if (settings?.homeExhibition !== "on") return null;
+    return exhibitionEntries(settings, host).find((show) => show.builtIn) ?? null;
+  }, [isDevelopDesign, exhibitionSlug, settings]);
+  const exhibitionOn = exhibitionEntry !== null;
   // 開いた瞬間の見せ場（写真集の扉。components/develop/DevelopIntro.tsx）を流すか。
   // **最初の描画で決める**——あとから被せると、表紙が一度見えてから紙で隠れる。
   // 流す回は、このページを開いている間ずっと、表紙の「現れる動き」を省いたままにする
@@ -1374,13 +1385,16 @@ export default function TopPage() {
     let landedOnTop = true;
     try {
       const landing = performance.getEntriesByType?.("navigation")[0]?.name;
-      if (landing) landedOnTop = new URL(landing).pathname === "/";
+      // 展示のページでは、そのページから入ってきたとき（名刺の QR・共有された住所）。
+      if (landing) landedOnTop = new URL(landing).pathname === (exhibitionSlug ? window.location.pathname : "/");
     } catch {
       // 上の扱いのまま
     }
+    // 足した展示のページでは流さない（名刺から壁へ戻る見せ場は、日藝祭の展示の物）。
+    if (exhibitionSlug && !exhibitionEntry?.builtIn) return false;
     return shouldPlayIntro({
       developTop: isDevelopDesign,
-      pathname: window.location.pathname,
+      pathname: exhibitionSlug ? "/" : window.location.pathname,
       search: window.location.search,
       seen,
       landedOnTop,
@@ -1456,16 +1470,15 @@ export default function TopPage() {
     [photosData, settings?.gallerySortOrder, randomWorks, isDevelopDesign],
   );
   // 展示の写真。同梱の写真だけの並びなら、写真の一覧を待たずに最初の描画から出せる。
-  const exhibitionIds = settings?.exhibitionPhotoIds;
-  const exhibitionCaptions = settings?.exhibitionCaptions;
+  const exhibitionIds = exhibitionEntry?.photoIds;
   const exhibitionPhotos = useMemo<ExhibitionItem[]>(() => {
-    if (!exhibitionOn) return [];
-    if (exhibitionNeedsLibrary(exhibitionIds) && !photosData) return [];
-    const captions = readExhibitionCaptions(exhibitionCaptions);
-    return exhibitionPhotoList(exhibitionIds, (photosData?.photos ?? []) as GalleryPhoto[]).map((photo) =>
+    if (!exhibitionEntry) return [];
+    if (exhibitionNeedsLibrary(exhibitionEntry.photoIds) && !photosData) return [];
+    const captions = readExhibitionCaptions(exhibitionEntry.captions);
+    return exhibitionEntryPhotos(exhibitionEntry, (photosData?.photos ?? []) as GalleryPhoto[]).map((photo) =>
       captions[photo.id] ? { ...photo, title: captions[photo.id] } : photo,
     );
-  }, [exhibitionOn, exhibitionIds, exhibitionCaptions, photosData]);
+  }, [exhibitionEntry, photosData]);
   const exhibitionViewer = usePhotoViewer(exhibitionPhotos as GalleryPhoto[]);
   // The API may return null entries for hero rows whose photo was deleted.
   const heroPhotosPicked = (heroData?.heroPhotos ?? []).filter(
@@ -1798,11 +1811,12 @@ export default function TopPage() {
   // 展示のトップ。同梱の5枚が揃っている間は、最初の画面が会場の壁の配置（開いた瞬間の見せ場は
   // 名前と題だけで、壁へつなぐ）。5枚から外したら、先頭の写真が表紙（いつもの表紙の部品を、切り抜かない
   // 形で使う）。名前はどちらも札として写真の外へ置く。
-  if (exhibitionOn) {
-    const showWall = exhibitionShowsWall(exhibitionIds);
+  if (exhibitionEntry) {
+    // 壁の配置と名刺・QR の人への部分は、日藝祭の展示だけ。足した展示は、先頭の写真が表紙。
+    const showWall = exhibitionEntry.builtIn && exhibitionShowsWall(exhibitionIds);
     const exhibitionCover = showWall ? undefined : exhibitionPhotos[0];
-    const exhibitionTitle = settings?.exhibitionTitle ?? EXHIBITION_DEFAULTS.title;
-    const exhibitionText = settings?.exhibitionText ?? EXHIBITION_DEFAULTS.text;
+    const exhibitionTitle = exhibitionEntry.title;
+    const exhibitionText = exhibitionEntry.text;
     const coverSize = orientedDimensions(
       exhibitionCover?.width,
       exhibitionCover?.height,
@@ -1857,6 +1871,9 @@ export default function TopPage() {
               name={
                 showWall ? (
                   <h1>{settings?.siteName ?? CLIENT_SITE_FALLBACKS.siteName}</h1>
+                ) : exhibitionSlug ? (
+                  // 展示の1件のページは、その展示の題が見出し（名前は上のメニューにある）。
+                  <h1 className="ex-label__title font-ja">{exhibitionTitle || exhibitionEntry.dates}</h1>
                 ) : (
                   <ClassicHeroNameBlock
                     settings={settings}
@@ -1866,8 +1883,8 @@ export default function TopPage() {
                   />
                 )
               }
-              title={exhibitionTitle}
-              dates={settings?.exhibitionDates ?? EXHIBITION_DEFAULTS.dates}
+              title={exhibitionSlug && !showWall ? "" : exhibitionTitle}
+              dates={exhibitionSlug && !showWall && !exhibitionTitle ? "" : exhibitionEntry.dates}
             />
           </section>
           {introPlaying && (
@@ -1887,7 +1904,8 @@ export default function TopPage() {
           viewer={exhibitionViewer}
           label={exhibitionTitle || "展示の写真"}
           text={exhibitionText}
-          thanks={settings?.exhibitionThanks ?? EXHIBITION_DEFAULTS.thanks}
+          thanks={exhibitionEntry.thanks}
+          cards={exhibitionEntry.builtIn}
           replyEndpoint={usableContactEndpoint(settings?.formspreeUrl)}
           name={settings?.siteName ?? CLIENT_SITE_FALLBACKS.siteName}
           nameEn={settings?.siteNameEn ?? CLIENT_SITE_FALLBACKS.siteNameEn}
@@ -1912,7 +1930,13 @@ export default function TopPage() {
   // 「スマホで開く時に特に何も無いのはなんで？」）。
   if (isDevelopDesign)
     return (
-      <div className="top-page" data-hero-mode={isSingle ? "single" : "carousel"} data-develop-top>
+      <div
+        className="top-page"
+        data-hero-mode={isSingle ? "single" : "carousel"}
+        data-develop-top
+        // 表紙のすぐ下に依頼の1行（InquiryLine）を出すときは、表紙をその分だけ短くする（styles.css）。
+        data-inquiry-line={settings?.homeCtaEnabled === "on" ? "" : undefined}
+      >
         {experiencePanel}
         <div className="dv-intro-host" data-dv-intro={introPlanned ? "" : undefined}>
           {heroSection}

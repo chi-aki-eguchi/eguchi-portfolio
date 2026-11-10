@@ -181,6 +181,8 @@ export const SETTINGS_PREVIEW_KEYS = [
   "exhibitionThanks",
   "exhibitionPhotoIds",
   "exhibitionCaptions",
+  // 足した展示（shared/exhibitions.ts）。JSON の並び。
+  "exhibitionArchive",
   "seriesGridColumns",
   "seriesGridColumnsMobile",
   "heroRandom",

@@ -1596,7 +1596,7 @@ const app = new Hono()
         developLifeIds: settings.developLifeIds ?? "",
         // 扉の名前と添え書き（JSON。空なら初めの値）。読み方は shared/develop-structure.ts。
         developDoors: settings.developDoors ?? "",
-        // トップの展示。出すかどうかの既定は shared/exhibition.ts の exhibitionStatus（持ち主のサイトだけ on）。
+        // トップを展示にするか。既定は off（shared/exhibition.ts の exhibitionStatus）。展示そのものは /exhibition に在る。
         // 題・会期は保存値があれば空でもそのまま（空にすれば出さない）。
         homeExhibition: exhibitionStatus(settings.homeExhibition, settings.siteUrl),
         exhibitionTitle: settings.exhibitionTitle ?? EXHIBITION_DEFAULTS.title,
@@ -1605,6 +1605,8 @@ const app = new Hono()
         exhibitionThanks: settings.exhibitionThanks ?? EXHIBITION_DEFAULTS.thanks,
         exhibitionPhotoIds: settings.exhibitionPhotoIds ?? "",
         exhibitionCaptions: settings.exhibitionCaptions ?? "",
+        // 足した展示（前の展示・次の展示）。読み方は shared/exhibitions.ts。
+        exhibitionArchive: settings.exhibitionArchive ?? "",
         // ── O6: smart albums (admin-only) — JSON array of saved photo filters ──
         smartAlbums: settings.smartAlbums ?? "[]",
         // ── I: series navigation toggle (JS-driven, like gallery) ──

@@ -25,9 +25,8 @@ const library = [
 ];
 
 describe("トップの展示の決まり", () => {
-  test("保存値が無いときは持ち主のサイトだけ出す（配布版のサイトに出さない）", () => {
-    expect(exhibitionStatus(undefined, "https://akieguchi.com")).toBe("on");
-    expect(exhibitionStatus(undefined, "https://www.akieguchi.com/")).toBe("on");
+  test("保存値が無いときは、どのサイトもいつものトップ（展示は /exhibition の欄に在る）", () => {
+    expect(exhibitionStatus(undefined, "https://akieguchi.com")).toBe("off");
     expect(exhibitionStatus(undefined, "https://someone-else.example")).toBe("off");
     expect(exhibitionStatus(undefined, "")).toBe("off");
   });
@@ -38,12 +37,12 @@ describe("トップの展示の決まり", () => {
     expect(exhibitionStatus("???", "https://someone-else.example")).toBe("off");
   });
 
-  test("展示がトップかどうかは、新しい構成で、止めていないときだけ（名刺の QR の通し先を決める）", () => {
+  test("展示がトップかどうかは、新しい構成で、トップを展示にしているときだけ（名刺の QR の通し先を決める）", () => {
     const site = "https://akieguchi.com";
-    expect(exhibitionIsTop({ siteDesign: "develop" }, site)).toBe(true);
+    expect(exhibitionIsTop({ siteDesign: "develop", homeExhibition: "on" }, site)).toBe(true);
+    expect(exhibitionIsTop({ siteDesign: "develop" }, site)).toBe(false);
     expect(exhibitionIsTop({ siteDesign: "develop", homeExhibition: "off" }, site)).toBe(false);
-    expect(exhibitionIsTop({ siteDesign: "classic" }, site)).toBe(false);
-    expect(exhibitionIsTop({ siteDesign: "develop" }, "https://someone-else.example")).toBe(false);
+    expect(exhibitionIsTop({ siteDesign: "classic", homeExhibition: "on" }, site)).toBe(false);
   });
 
   const WALL_ORDER = [-4, -3, -2, -1, -5];

@@ -14,7 +14,6 @@
  * 公開の写真一覧（/api/photos）には入らないので、Gallery には出ない。
  */
 import { isDevelopDesignValue, parsePhotoIdList } from "./develop-structure";
-import { isServiceOwnerSite } from "./service-visibility";
 
 export const EXHIBITION_ASSET_PREFIX = "exhibition/";
 
@@ -218,12 +217,13 @@ export const EXHIBITION_THANKS_MAX = 120;
 export const EXHIBITION_REPLY_MAX = 600;
 
 /**
- * 展示のトップを出すか。保存値が無いときは持ち主のサイトだけ出す（配布版のサイトに、
- * 江口秋の展示が出ないように）。`server.ts` は生の設定を読むので、同じ判断をここに置く。
+ * トップを展示にするか。**保存値が無いときは、いつものトップ**（2026-11-10。それまでは持ち主のサイトだけ
+ * 展示だった）。展示は `/exhibition` の欄に1件ずつのページとして残り（shared/exhibitions.ts）、
+ * トップは撮影を頼める入口に戻す。会期中だけトップにも出したいときは、管理画面の「展示」で「展示」を選ぶ。
+ * `server.ts` は生の設定を読むので、同じ判断をここに置く。
  */
-export function exhibitionStatus(value: string | null | undefined, siteUrl: string | null | undefined): "on" | "off" {
-  if (value === "on" || value === "off") return value;
-  return isServiceOwnerSite(siteUrl ?? undefined, undefined) ? "on" : "off";
+export function exhibitionStatus(value: string | null | undefined, _siteUrl?: string | null): "on" | "off" {
+  return value === "on" ? "on" : "off";
 }
 
 /** トップが展示になっているか（`server.ts` の判定。新しい構成のときだけ展示のトップがある）。 */

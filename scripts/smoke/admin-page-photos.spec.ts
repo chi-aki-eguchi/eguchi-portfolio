@@ -79,6 +79,7 @@ async function installMocks(
     exhibitionText: "",
     exhibitionPhotoIds: "",
     exhibitionCaptions: "",
+    exhibitionArchive: "",
   };
   // 表紙の登録（今までの管理画面の「トップに出す」と同じ API）。呼ばれた順に記録する。
   const row = (photoId: number, i: number) => ({ id: i + 1, photoId, sortOrder: i, focalX: null, focalY: null });
@@ -482,6 +483,59 @@ test.describe("admin — ページの写真（選んで並べる）", () => {
     await caption.fill("部屋");
     await caption.blur();
     await expect.poll(() => mocks.saved.at(-1)).toEqual({ exhibitionCaptions: JSON.stringify({ "-2": "部屋" }) });
+  });
+
+  test("展示：前の展示を足し、会期・題・写真を入れ、消せる", async ({ page }) => {
+    const mocks = await installMocks(page, { siteUrl: "https://akieguchi.com" });
+    const archive = () =>
+      JSON.parse(mocks.saved.at(-1)?.exhibitionArchive || "[]") as { slug: string; title: string; dates: string; photoIds: string }[];
+    await open(page);
+    await page.locator('[data-pp-tab="exhibition"]').click();
+    // 初めは日藝祭の展示だけ。
+    await expect(page.locator("[data-pp-show]")).toHaveCount(1);
+    await page.locator("[data-pp-show-add]").click();
+    await expect.poll(() => archive().length).toBe(1);
+    await expect(page.locator("[data-pp-show]")).toHaveCount(2);
+    // 足した展示が選ばれ、写真はまだ無い。日藝祭だけの欄（トップの出し方・QR の数・ひとこと）は出ない。
+    await expect(page.locator('[data-pp-tab="exhibition"] small')).toHaveText("0");
+    await expect(page.locator(".pp-note")).toContainText("写真を選ぶと、サイトの Exhibition に出ます");
+    await expect(page.locator("[data-pp-exhibition-mode]")).toHaveCount(0);
+    await expect(page.locator('[data-pp-exhibition="thanks"]')).toHaveCount(0);
+    expect(archive()[0]!.slug).toMatch(/^ex-/);
+
+    // 公開する前に会期を書くと、住所に年が入る。
+    await page.locator('[data-pp-exhibition="dates"]').fill("港のギャラリー 2025年10月");
+    await page.locator('[data-pp-exhibition="dates"]').blur();
+    await expect.poll(() => archive()[0]?.slug).toMatch(/^2025-/);
+    await page.locator('[data-pp-exhibition="title"]').fill("港");
+    await page.locator('[data-pp-exhibition="title"]').blur();
+    await expect.poll(() => archive()[0]?.title).toBe("港");
+    await expect(page.locator('[data-pp-show][aria-pressed="true"]')).toHaveText("港");
+
+    // 写真を1枚選ぶ。
+    await page.getByRole("button", { name: "写真を足す" }).click();
+    const sheet = page.locator(".pp-sheet");
+    const added = Number(await sheet.locator(".pp-pick").first().getAttribute("data-photo"));
+    await sheet.locator(".pp-pick").first().click();
+    await sheet.locator("[data-pp-done]").click();
+    await expect.poll(() => archive()[0]?.photoIds).toBe(String(added));
+    await expect.poll(() => shownIds(page)).toEqual([added]);
+    // 公開したあとは、会期を直しても住所は変わらない。
+    const slug = archive()[0]!.slug;
+    await page.locator('[data-pp-exhibition="dates"]').fill("港のギャラリー 2024年10月");
+    await page.locator('[data-pp-exhibition="dates"]').blur();
+    await expect.poll(() => archive()[0]?.dates).toBe("港のギャラリー 2024年10月");
+    expect(archive()[0]!.slug).toBe(slug);
+    expect(await noSideScroll(page)).toBeLessThanOrEqual(0);
+
+    // 日藝祭の展示へ切り替えると、今までの欄。足した展示を消すと、日藝祭だけに戻る。
+    await page.locator('[data-pp-show="2026-nichigei"]').click();
+    await expect(page.locator("[data-pp-exhibition-mode]")).toHaveCount(2);
+    await expect.poll(() => shownIds(page)).toEqual([-4, -3, -2, -1, -5]);
+    await page.locator(`[data-pp-show="${slug}"]`).click();
+    await page.locator("[data-pp-show-remove]").click();
+    await expect.poll(() => mocks.saved.at(-1)).toEqual({ exhibitionArchive: "" });
+    await expect(page.locator("[data-pp-show]")).toHaveCount(1);
   });
 
   test("展示を出している間は、表紙のタブでそのことを知らせる", async ({ page }) => {

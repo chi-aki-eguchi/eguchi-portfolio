@@ -1,4 +1,5 @@
 import { isDevelopOnlyPath } from "../shared/develop-structure";
+import { EXHIBITION_LIST_PATH, exhibitionSlugFromPath } from "../shared/exhibitions";
 
 const SPA_STATIC_PATHS = new Set([
   "/",
@@ -103,10 +104,17 @@ export function isPhotoDetailPath(pathname: string): boolean {
   return photoDetailId(pathname) !== null;
 }
 
+/** 展示の一覧（/exhibition）か、1件のページ（/exhibition/:slug）。 */
+export function isExhibitionPath(pathname: string): boolean {
+  const normalized = normalizeSpaPathname(pathname);
+  return normalized === EXHIBITION_LIST_PATH || exhibitionSlugFromPath(normalized) !== null;
+}
+
 export function isKnownSpaPath(pathname: string): boolean {
   const normalized = normalizeSpaPathname(pathname);
   return (
     SPA_STATIC_PATHS.has(normalized) ||
+    isExhibitionPath(normalized) ||
     isSeriesDetailPath(normalized) ||
     isPhotoDetailPath(normalized)
   );
@@ -119,12 +127,16 @@ export function htmlStatusForSpaPath(
     photoFound?: boolean;
     /** 保存されている構成が新しい構成（siteDesign = "develop"）か。 */
     developStructure?: boolean;
+    /** 展示の一覧なら公開中の展示が1件でもあるか、1件のページならその展示が公開中か。 */
+    exhibitionFound?: boolean;
   } = {},
 ): number {
   const normalized = normalizeSpaPathname(pathname);
   // `/portrait`・`/life`・`/info` は新しい構成のサイトにだけ在る。今までの構成の
   // サイトでは、無いページを 200 で返さない。
   if (isDevelopOnlyPath(normalized)) return options.developStructure ? 200 : 404;
+  // 展示の欄は、公開中の展示があるサイトにだけ在る（shared/exhibitions.ts）。
+  if (isExhibitionPath(normalized)) return options.exhibitionFound ? 200 : 404;
   if (isSeriesDetailPath(normalized)) return options.seriesFound ? 200 : 404;
   // 存在しない写真のidを 200 で返さない。**シリーズで一度やった失敗**
   // （棚を足したときに `/work/:slug` が 404 で返っていた件）の裏返しで、

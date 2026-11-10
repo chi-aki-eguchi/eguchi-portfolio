@@ -4,7 +4,7 @@ import { api, jsonOrThrow } from "../../lib/api";
 import { sortPhotosBySetting } from "../../lib/photo-sort";
 import { galleryExcludesSeries } from "../../lib/book";
 import { galleryHasPhotos } from "../../lib/work-entries";
-import { InquiryCta } from "../InquiryCta";
+import { InquiryLine } from "../InquiryCta";
 import { DevelopHome, type DevelopPhoto } from "./DevelopHome";
 
 type Settings = Record<string, string | null | undefined> | undefined;
@@ -53,8 +53,9 @@ export function DevelopTop({ settings, exhibition = false }: { settings: Setting
       seriesCover={seriesCover}
       showSeries={shelves.length > 0}
       showGallery={galleryHasPhotos(photoCounts, galleryExcludesSeries(settings))}
-      // 展示のトップでは、詩の余韻のあとに料金を置かない。依頼の入口は Info にある。
-      after={exhibition ? undefined : <InquiryCta />}
+      // 依頼の入口は、表紙のすぐ下の1行（2026-11-10。それまでは扉の目次の後ろの帯で、スマホでは
+      // 3画面ぶん下だった）。展示の画面では、詩の余韻のあとに料金を置かない。依頼の入口は Info にある。
+      before={exhibition ? undefined : <InquiryLine />}
       plain={exhibition}
     />
   );

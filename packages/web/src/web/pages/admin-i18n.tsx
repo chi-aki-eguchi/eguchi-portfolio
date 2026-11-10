@@ -634,6 +634,10 @@ const ADMIN_PHASE_2B_JA = {
       xUrlPlaceholder: "https://twitter.com/...",
       noteUrlLabel: "note URL",
       noteUrlPlaceholder: "https://note.com/...",
+      cardExtraLabelLabel: "名刺のQRに足す行き先の名前",
+      cardExtraLabelPlaceholder: "still,life",
+      cardExtraUrlLabel: "名刺のQRに足す行き先の住所",
+      cardExtraUrlPlaceholder: "https://...",
     },
   },
   categories: {
@@ -2513,6 +2517,10 @@ const ADMIN_PHASE_2B_EN = {
       xUrlPlaceholder: "https://twitter.com/...",
       noteUrlLabel: "note URL",
       noteUrlPlaceholder: "https://note.com/...",
+      cardExtraLabelLabel: "Extra link on the card QR page — name",
+      cardExtraLabelPlaceholder: "still,life",
+      cardExtraUrlLabel: "Extra link on the card QR page — URL",
+      cardExtraUrlPlaceholder: "https://...",
     },
   },
   categories: {

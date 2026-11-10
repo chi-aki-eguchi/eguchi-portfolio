@@ -2,6 +2,7 @@ import { resolve as pathResolve } from "node:path";
 import app, { getOriginal, photoWithThumbs } from "./api";
 import { db, withRetry, schema } from "./api/database";
 import { runStartupMigrations } from "./api/database/migrate";
+import { renderCardPage } from "./api/card-page";
 import { recordCardScan } from "./api/exhibition-visits";
 import { seriesMembership } from "./api/series-membership";
 import { eq, and, isNull, inArray } from "drizzle-orm";
@@ -80,7 +81,6 @@ import {
 import {
   EXHIBITION_LIST_PATH,
   EXHIBITION_NAV_LABEL,
-  EXHIBITION_NICHIGEI_SLUG,
   exhibitionDisplayTitle,
   exhibitionEntryPhotos,
   exhibitionPath,
@@ -1063,38 +1063,38 @@ async function serveNonApi(request: Request, url: URL): Promise<Response> {
       });
   }
 
-  // 名刺の QR の行き先は /card.html（印刷済み）。そのまま展示へ通す：トップが展示の間はトップへ、
-  // そうでなければ日藝祭のページへ（2026-11-10。トップをいつもの表紙に戻しても、名刺から展示に着く）。
-  // リンク集で「Website」を押さないと展示に着かないと、名刺を読んだ人が展示まで来ない。
-  // 展示の無いサイト（配布版・今までの構成）では、今までのリンク集のまま。
+  // 名刺の QR の行き先は /card.html（印刷済み）。読んだ人が行き先を選ぶページを設定から組む
+  // （Website・Instagram・X・足した行き先。api/card-page.ts、2026-11-10）。
+  // トップを展示にしている間だけは、今までどおりトップへ通す（展示まで来てもらうため）。
+  // QR の数と、読んだ人の印（Cookie）は、どちらの場合も同じに付ける。
   if (url.pathname === "/card.html") {
     const settings = await getSettings();
-    const cardTarget = exhibitionIsTop(settings, siteUrlFrom(settings, publicOrigin))
-      ? "/"
-      : publicExhibitions(settings, siteUrlFrom(settings, publicOrigin)).some((show) => show.slug === EXHIBITION_NICHIGEI_SLUG)
-        ? exhibitionPath(EXHIBITION_NICHIGEI_SLUG)
-        : null;
-    if (cardTarget) {
-      const headers = request.headers;
-      const automated = exhibitionAutomatedVisit(
-        headers.get("user-agent") ?? "",
-        headers.get("sec-purpose") ?? headers.get("purpose") ?? "",
+    const cardSite = siteUrlFrom(settings, publicOrigin);
+    const headers = request.headers;
+    const automated = exhibitionAutomatedVisit(
+      headers.get("user-agent") ?? "",
+      headers.get("sec-purpose") ?? headers.get("purpose") ?? "",
+    );
+    // 数え損ねても、QR の先は止めない。
+    if (request.method === "GET" && !automated) {
+      void recordCardScan(!exhibitionCardVisitor(headers.get("cookie") ?? "", "")).catch((e) =>
+        console.warn("[card] QR の数を保存できません:", e),
       );
-      // 数え損ねても、QR の転送は止めない。
-      if (request.method === "GET" && !automated) {
-        void recordCardScan(!exhibitionCardVisitor(headers.get("cookie") ?? "", "")).catch((e) =>
-          console.warn("[card] QR の数を保存できません:", e),
-        );
-      }
+    }
+    const cardCookie = `${EXHIBITION_CARD_COOKIE}=1; Path=/; Max-Age=${EXHIBITION_CARD_COOKIE_MAX_AGE}; SameSite=Lax`;
+    if (exhibitionIsTop(settings, cardSite)) {
       return new Response(null, {
         status: 302,
-        headers: {
-          Location: cardTarget,
-          "Cache-Control": "no-store",
-          "Set-Cookie": `${EXHIBITION_CARD_COOKIE}=1; Path=/; Max-Age=${EXHIBITION_CARD_COOKIE_MAX_AGE}; SameSite=Lax`,
-        },
+        headers: { Location: "/", "Cache-Control": "no-store", "Set-Cookie": cardCookie },
       });
     }
+    return new Response(request.method === "HEAD" ? null : renderCardPage(settings, cardSite), {
+      headers: {
+        "Content-Type": "text/html; charset=utf-8",
+        "Cache-Control": "no-store",
+        "Set-Cookie": cardCookie,
+      },
+    });
   }
 
   // Always inject OGP for HTML pages (root and SPA routes)

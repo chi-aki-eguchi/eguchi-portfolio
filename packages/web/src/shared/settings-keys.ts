@@ -21,6 +21,9 @@ export const SETTINGS_PREVIEW_KEYS = [
   "profileInstagram",
   "profileTwitter",
   "profileNote",
+  // 名刺の QR のページ（/card.html）に足す行き先（api/card-page.ts）。
+  "cardExtraLabel",
+  "cardExtraUrl",
   "themeBg",
   "themeText",
   "themeBgDark",

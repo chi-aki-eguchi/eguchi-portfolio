@@ -1368,6 +1368,9 @@ const app = new Hono()
         profileInstagram: settings.profileInstagram ?? "",
         profileTwitter: settings.profileTwitter ?? "",
         profileNote: settings.profileNote ?? "",
+        // 名刺の QR のページに足す行き先。住所が空なら並ばない。
+        cardExtraLabel: settings.cardExtraLabel ?? "",
+        cardExtraUrl: settings.cardExtraUrl ?? "",
         themeBg: settings.themeBg ?? "",
         themeText: settings.themeText ?? "",
         // B-21: 暗い表示用の色。空なら styles.css の [data-theme="dark"] 既定へ戻す。

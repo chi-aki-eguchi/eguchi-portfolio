@@ -276,6 +276,8 @@ export const SETTINGS_SECTION_KEYS = {
     "profileInstagram",
     "profileTwitter",
     "profileNote",
+    "cardExtraLabel",
+    "cardExtraUrl",
   ],
   "about-layout": ["profileLayout"],
   "contact-layout": ["contactLayout"],
@@ -7025,6 +7027,8 @@ export function SettingsTab({
                       ["profileInstagram", "instagramLabel", "instagramPlaceholder", false],
                       ["profileTwitter", "xUrlLabel", "xUrlPlaceholder", false],
                       ["profileNote", "noteUrlLabel", "noteUrlPlaceholder", false],
+                      ["cardExtraLabel", "cardExtraLabelLabel", "cardExtraLabelPlaceholder", false],
+                      ["cardExtraUrl", "cardExtraUrlLabel", "cardExtraUrlPlaceholder", false],
                     ] as const
                   ).map(([key, labelKey, placeholderKey, multiline]) => {
                     const label = t.phase2b.profile.fields[labelKey];

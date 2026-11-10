@@ -1103,6 +1103,10 @@
   .st-seg.st-seg--small .st-seg__item { min-width: 44px; min-height: 44px; height: auto; }
   .st-ax-btn.st-link,
   .st-series-head__actions .st-link { display: inline-flex; align-items: center; min-height: 44px; }
+  /* 道具の行（大きさ・まとめて選ぶ・写真を加える）は、390px で1行に収める。 */
+  .st-toolbar__tools { gap: 6px; }
+  .st-toolbar__tools .st-button { padding-inline: 12px; }
+  .st-toolbar__tools .st-seg.st-seg--small .st-seg__item { min-width: 40px; padding-inline: 0; }
   .st-step .st-link,
   .st-inspector__head .st-link { min-width: 44px; justify-content: center; }
 }

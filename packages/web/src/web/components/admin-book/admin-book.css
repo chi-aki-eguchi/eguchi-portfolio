@@ -920,3 +920,50 @@
   .admin-book__tabs { gap: 0.9rem; }
   .admin-book__tab { padding: 0 3px; }
 }
+
+/* ── スマホ：入口は画面の下（2026-11-10、オーナー「人間が使うことをもっと想定して」）──
+   片手で持つと、上の帯の入口には親指が届かない。入口（写真・シリーズ・サイト・ページ・言葉）を
+   下の端に並べ、上の帯にはサイトの名前と「メニュー」だけを残す。写真を選んだときの下からの欄・
+   確かめる窓は、入口より手前に出る（書いている間は入口を隠す）。通知は入口の上に出す。 */
+@media (max-width: 767px) {
+  .admin-book {
+    --admin-tabbar: calc(56px + env(safe-area-inset-bottom, 0px));
+    box-sizing: border-box;
+    padding-bottom: var(--admin-tabbar);
+  }
+  .admin-book__bar { justify-content: space-between; padding: 0 6px 0 16px; }
+  .admin-book__name { display: block; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 15px; }
+  .admin-book__tabs {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 25;
+    flex: none;
+    order: 0;
+    width: auto;
+    height: var(--admin-tabbar);
+    padding: 0 4px env(safe-area-inset-bottom, 0px);
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(0, 1fr);
+    gap: 0;
+    overflow: visible;
+    background: var(--admin-paper);
+    border-top: 1px solid var(--admin-line);
+  }
+  .admin-book__tab,
+  .admin-book__tab--link {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 56px;
+    padding: 0;
+    font-size: 13px;
+    white-space: nowrap;
+  }
+  .admin-book__tab[aria-current="page"] { font-weight: 600; }
+  .admin-book__tab[aria-current="page"]::after { top: 0; bottom: auto; left: 22%; right: 22%; height: 2px; }
+  .admin-book .st-toast,
+  .admin-book .bench-notice { bottom: calc(16px + var(--admin-tabbar)); }
+}

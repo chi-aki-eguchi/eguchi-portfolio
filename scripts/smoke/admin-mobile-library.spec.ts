@@ -342,9 +342,12 @@ test.describe("admin — スマホLibraryコンタクトシート", () => {
       const toolbar = page.locator("[data-library-selection-toolbar]");
       await expect(toolbar).toBeVisible();
       const box = (await toolbar.boundingBox())!;
-      // 下部に固定する（以前の下部タブバーは無い。画面の下端に接する）。
+      // 下部に固定する。スマホでは入口（写真・シリーズ・サイト…）が画面の下端にあるので（2026-11-10）、
+      // そのすぐ上に接する。入口は画面の下端に接する。
       const viewportHeight = page.viewportSize()!.height;
-      expect(Math.abs(box.y + box.height - viewportHeight)).toBeLessThanOrEqual(1);
+      const tabs = (await page.locator(".admin-book__tabs").boundingBox())!;
+      expect(Math.abs(tabs.y + tabs.height - viewportHeight)).toBeLessThanOrEqual(1);
+      expect(Math.abs(box.y + box.height - tabs.y)).toBeLessThanOrEqual(1);
       const scroll = (await page.locator("[data-library-scroll]").boundingBox())!;
       expect(scroll.y + scroll.height).toBeLessThanOrEqual(box.y + 1);
       await expect(toolbar.getByText("選択中 1枚", { exact: true })).toHaveCount(1);

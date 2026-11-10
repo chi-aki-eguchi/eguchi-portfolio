@@ -1,4 +1,5 @@
 import { parseSeriesContent, publicSeriesContent, hasTextIntroduction } from "../shared/series-content";
+import { SPREAD_OTHER_TEXT_DEFAULT, developTopStyle } from "../shared/develop-structure";
 import { Hono } from "hono";
 import { portfolioPdfRoutes } from "./portfolio-pdf";
 import { cors } from "hono/cors";
@@ -1556,6 +1557,9 @@ const app = new Hono()
           settings.homeCtaText ??
           "ポートレート・作品撮り・取材など、お気軽にご相談ください。",
         homeCtaButton: settings.homeCtaButton ?? "お問い合わせ",
+        // 見開きのトップ（新しい構成）。Works の側の相談の文は、空で保存すると出さない。
+        homeCtaOtherText: settings.homeCtaOtherText ?? SPREAD_OTHER_TEXT_DEFAULT,
+        developTopStyle: developTopStyle(settings.developTopStyle),
         // ── homeGalleryCount: トップ Works 欄の初期表示枚数 ──
         homeGalleryCount: settings.homeGalleryCount ?? "12",
         // ── G: gallery controlled-random layout (JS-driven; see lib/gallery-layout) ──

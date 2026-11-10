@@ -4,6 +4,7 @@ import { adminApi, api, jsonOrThrow } from "../lib/api";
 import { sortPhotosBySetting } from "../lib/photo-sort";
 import { planCoverSave, type PagePhoto } from "../lib/page-photos";
 import {
+  developTopStyle,
   developDoorCopy,
   developListPhotos,
   isDevelopDesignValue,
@@ -316,6 +317,8 @@ export default function AdminPagesPage() {
   const design = savedValue("siteDesign");
   const isDevelop = isDevelopDesignValue(design);
   const exhibitionShown = savedValue("exhibitionOnTop") === "on";
+  // 見開きのトップ（SpreadTop）では、表紙の1枚目と2枚目が左右の頁になる。
+  const spreadTop = developTopStyle(settings?.developTopStyle as string | undefined) === "spread";
   // 同梱の写真は持ち主の物なので、配布版の管理画面には展示のタブを出さない。
   const tabs = TABS.filter(
     (kind) =>
@@ -551,6 +554,10 @@ export default function AdminPagesPage() {
           <p className="pp-note">
             {exhibitionShown
               ? "いまはトップに展示を出しているので、ここで選んだ表紙は出ません。「展示」のタブで「いつもの」に戻すと出ます。"
+              : spreadTop
+                ? coverIds.length >= 2
+                  ? "トップは見開きです。1枚目が左の頁（Portrait）、2枚目が右の頁（Works）に出ます。"
+                  : "トップは見開きです。2枚選ぶと、1枚目が左の頁（Portrait）、2枚目が右の頁（Works）に出ます。"
               : !picked
                 ? "まだ選んでいないので、写真の並びの先頭が表紙になっています。足すと、その写真が表紙になります。"
                 : coverSingle

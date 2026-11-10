@@ -257,7 +257,7 @@ export const SETTINGS_SECTION_KEYS = {
     "exhibitionArchive",
   ],
   // トップの形（写真中心）。
-  home: ["bookCoverPhotoId", "photoTopLayout"],
+  home: ["bookCoverPhotoId", "photoTopLayout", "developTopStyle"],
   // 作家の言葉の文（トップと About に出る）。
   "statement-text": ["profileStatement", "profileStatementEn"],
   // トップのどこに作家の言葉を置くか。
@@ -288,7 +288,7 @@ export const SETTINGS_SECTION_KEYS = {
     "printStoreLabel",
     "printDescription",
   ],
-  cta: ["homeCtaEnabled", "homeCtaTitle", "homeCtaText", "homeCtaButton"],
+  cta: ["homeCtaEnabled", "homeCtaTitle", "homeCtaText", "homeCtaOtherText", "homeCtaButton"],
   // 色と背景（差し色・紙の質感も）。
   theme: [
     "themeBg",
@@ -6951,6 +6951,25 @@ export function SettingsTab({
                     ))}
                   </div>
                 </AdminField>
+                <AdminField label={copy.pageLayout.developTopLabel}>
+                  <div className="grid grid-cols-2 gap-1.5">
+                    {(["spread", "doors"] as const).map((val) => (
+                      <button
+                        key={val}
+                        type="button"
+                        aria-pressed={(current["developTopStyle"] || "spread") === val}
+                        onClick={() => set("developTopStyle", val)}
+                        className={`text-[length:var(--admin-text-note)] leading-tight py-1.5 rounded-sm transition-colors ${
+                          (current["developTopStyle"] || "spread") === val
+                            ? "admin-btn-primary font-medium"
+                            : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border border-[var(--admin-line)]"
+                        }`}
+                      >
+                        {copy.pageLayout.developTopOptions[val]}
+                      </button>
+                    ))}
+                  </div>
+                </AdminField>
                 <p className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] leading-relaxed">
                   {copy.pageLayout.topLayoutNote}
                 </p>
@@ -7704,6 +7723,15 @@ export function SettingsTab({
                     value={current["homeCtaText"] ?? ""}
                     onChange={(e) => set("homeCtaText", e.target.value)}
                     placeholder={copyIntegrations.cta.bodyPlaceholder}
+                    className="ax-input ax-input--area"
+                  />
+                </AdminField>
+                <AdminField label={copyIntegrations.cta.otherLabel}>
+                  <textarea
+                    aria-label={copyIntegrations.cta.otherLabel}
+                    rows={2}
+                    value={current["homeCtaOtherText"] ?? ""}
+                    onChange={(e) => set("homeCtaOtherText", e.target.value)}
                     className="ax-input ax-input--area"
                   />
                 </AdminField>

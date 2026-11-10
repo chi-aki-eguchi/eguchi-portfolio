@@ -135,3 +135,19 @@ export function developListPhotos<T extends { id?: number; category?: string | n
     return kind === "portrait" ? c === "portrait" : c !== "" && c !== "portrait";
   });
 }
+
+/**
+ * トップの形（2026-11-10）。"spread" は見開き（左＝Portrait、右＝Works、真ん中に背。初めの値）、
+ * "doors" は今までの表紙と扉の目次。設定 `developTopStyle`。
+ */
+export type DevelopTopStyle = "spread" | "doors";
+export function developTopStyle(value: string | null | undefined): DevelopTopStyle {
+  return value === "doors" ? "doors" : "spread";
+}
+/** 見開きの右の頁の言葉（シリーズ・日常・展示をまとめた呼び名）。 */
+export const SPREAD_WORKS_LABEL = "Works";
+/** 人のほかの撮影の相談の文（設定 `homeCtaOtherText` が無いとき）。空で保存すると出さない。 */
+export const SPREAD_OTHER_TEXT_DEFAULT = "物撮りなど、人のほかの撮影も承ります。";
+export function spreadOtherText(value: string | null | undefined): string {
+  return (value ?? SPREAD_OTHER_TEXT_DEFAULT).trim();
+}

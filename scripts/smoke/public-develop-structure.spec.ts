@@ -1050,3 +1050,54 @@ test("新しい構成 › ?design=classic で下見をやめられる", async ({
   await page.goto("/portrait", { waitUntil: "networkidle" });
   await expect(page.getByRole("heading", { name: "ページが見つかりませんでした" })).toBeVisible();
 });
+
+/**
+ * 見開きのトップ（SpreadTop、2026-11-10）。左の頁が Portrait（依頼の入口）、右の頁が Works、真ん中に背。
+ * 人工データは「表紙と扉」に固定してあるので、この検査の中だけ見開きに切り替える（保存はしない）。
+ */
+test("新しい構成 › 見開きのトップ：左右の頁が最初の画面に入り、依頼は Portrait の側、相談は Works の側", async ({ page, api }) => {
+  await withCategories(page, api);
+  const base = (await (await api.get("/api/settings")).json()) as Record<string, string>;
+  await page.route(
+    (url) => url.pathname === "/api/settings",
+    (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          ...base,
+          siteDesign: "develop",
+          developTopStyle: "spread",
+          homeCtaEnabled: "on",
+          homeCtaTitle: "撮影のご依頼",
+          homeCtaText: "ポートレート撮影 60分 ¥10,000。学生の方は半額です。",
+        }),
+      }),
+  );
+  await page.goto("/", { waitUntil: "networkidle" });
+  // 表紙と扉の目次は出ない。見出しは背の名前の1つだけ。
+  await expect(page.locator(".dv-doors")).toHaveCount(0);
+  await expect(page.locator(".hero-motion-stage")).toHaveCount(0);
+  await expect(page.locator("h1")).toHaveCount(1);
+  const left = page.locator(".sp-page--left");
+  const right = page.locator(".sp-page--right");
+  await expect(left).toHaveAttribute("href", "/portrait");
+  await expect(left).toContainText("¥10,000");
+  await expect(right).toContainText("Works");
+  // 2つの頁は、送らなくても最初の画面に全部入っている。写真は届いて濃くなる。
+  const viewport = page.viewportSize()!;
+  for (const pageLink of [left, right]) {
+    const box = (await pageLink.boundingBox())!;
+    expect(box.y + box.height).toBeLessThanOrEqual(viewport.height + 1);
+    expect(box.height).toBeGreaterThan(160);
+    await expect(pageLink.locator("img")).toHaveCSS("opacity", "1");
+  }
+  expect(await noSideScroll(page)).toBeLessThanOrEqual(0);
+  // 終わり：左に依頼、右に作品の目次と、人のほかの撮影の相談。Life には依頼を出さない。
+  await expect(page.locator(".sp-colophon__l a")).toHaveAttribute("href", "/info#request");
+  await expect(page.locator('.sp-index a[href="/life"]')).toHaveCount(1);
+  await expect(page.locator(".sp-other")).toContainText("物撮り");
+  await expect(page.locator(".sp-other a")).toHaveAttribute("href", "/info#request");
+  await page.goto("/life", { waitUntil: "networkidle" });
+  await expect(page.locator(".sp-other, .inquiry-line")).toHaveCount(0);
+});

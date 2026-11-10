@@ -18,6 +18,8 @@ type SeriesInsert = typeof schema.series.$inferInsert;
 export const SMOKE_SETTINGS: Record<string, string> = {
   setupCompleted: "true",
   siteName: "Smoke Fixture Studio",
+  // 新しい構成のトップは「表紙と扉」で確かめる（今までの検査の前提）。見開きは、その検査の中で切り替える。
+  developTopStyle: "doors",
   siteNameEn: "Smoke Fixture Studio",
   siteDescription: "smoke 用の人工データだけで組んだ確認用サイト",
   profileName: "検証用 写真家",

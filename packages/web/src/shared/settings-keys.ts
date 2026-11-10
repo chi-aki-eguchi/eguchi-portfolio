@@ -210,6 +210,10 @@ export const SETTINGS_PREVIEW_KEYS = [
   "homeCtaEnabled",
   "homeCtaTitle",
   "homeCtaText",
+  // 人のほかの撮影の相談の文（見開きのトップの Works の側。shared/develop-structure.ts）。
+  "homeCtaOtherText",
+  // 新しい構成のトップの形（"spread" 見開き／"doors" 表紙と扉）。
+  "developTopStyle",
   "homeCtaButton",
   "homeGalleryCount",
   "servicePageMode",

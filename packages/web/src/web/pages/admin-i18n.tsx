@@ -1251,6 +1251,8 @@ const ADMIN_PHASE_2B_JA = {
       siteDesignNote:
         "写真中心: トップは名前と選んだ写真、すべての写真は Gallery、シリーズは Series のページ。写真は切り抜かず、元の縦横比のまま段に並べます。いつもの構成: トップの写真の見せ方・写真の並べ方・メニューの位置を細かく選べます。切り替えても、それぞれの設定の値は残ります。",
       topLayoutLabel: "トップの形",
+      developTopLabel: "トップの形",
+      developTopOptions: { spread: "見開き", doors: "表紙と扉" },
       topLayoutHint: "開いて最初に見えるトップの組み方",
       topLayoutOptions: {
         "cover-selection": "表紙と選んだ写真",
@@ -1631,6 +1633,7 @@ const ADMIN_PHASE_2B_JA = {
       bodyAria: "ご依頼の案内の文",
       bodyPlaceholder: "ポートレート・作品撮り・取材など、お気軽にご相談ください。",
       buttonLabel: "ボタン文言",
+      otherLabel: "人のほかの撮影の相談の文（空にすると出さない）",
       buttonHint: "Contact ページへのリンク文言",
       buttonAria: "ご依頼の案内のボタン",
       buttonPlaceholder: "お問い合わせ",
@@ -3128,6 +3131,8 @@ const ADMIN_PHASE_2B_EN = {
       siteDesignNote:
         "Photographs first: the home page shows your name and the photographs you pick, every photograph lives in Gallery and series on the Series page. Photographs are never cropped. Classic: choose the home hero, gallery layout and menu position in detail. Switching keeps every value.",
       topLayoutLabel: "Home page",
+      developTopLabel: "Top page style",
+      developTopOptions: { spread: "Spread", doors: "Cover and doors" },
       topLayoutHint: "How the home page opens",
       topLayoutOptions: {
         "cover-selection": "Cover and picked photos",
@@ -3505,6 +3510,7 @@ const ADMIN_PHASE_2B_EN = {
       bodyAria: "CTA body text",
       bodyPlaceholder: "ポートレート・作品撮り・取材など、お気軽にご相談ください。",
       buttonLabel: "Button Text",
+      otherLabel: "Line for non-portrait commissions (blank hides it)",
       buttonHint: "The text for the link to the Contact page",
       buttonAria: "CTA button text",
       buttonPlaceholder: "お問い合わせ",

@@ -1,0 +1,111 @@
+/* 新しい構成のトップ「見開き」（SpreadTop.tsx、2026-11-10）。
+   1冊の本を開いた形：左の頁＝Portrait、右の頁＝Works、真ん中に背。背の線がページの終わりまで通る。
+   色・書体は今までの設定（--foreground-rgb・.font-en など）。動きは、写真が届いて濃くなることと、
+   触れた言葉の下線・矢印だけ（写真の位置・大きさ・濃さは、触れても変えない）。 */
+.sp {
+  --sp-inset: clamp(16px, 3.4vw, 48px);
+  --sp-spine: clamp(44px, 5vw, 72px);
+  --sp-line: rgba(var(--foreground-rgb), 0.14);
+  --sp-ease: cubic-bezier(0.2, 0.7, 0.1, 1);
+}
+
+/* 言葉の入口：下線が濃くなり、矢印が少し進む（見る人の操作に応える動き）。 */
+.sp-go { position: relative; display: inline-flex; align-items: baseline; gap: 0.6em; padding-bottom: 6px; white-space: nowrap; }
+.sp-go::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 1px; background: currentColor; opacity: 0.32; transition: opacity 0.35s var(--sp-ease); }
+.sp-go__arrow { display: inline-block; transition: transform 0.45s var(--sp-ease); }
+a:hover > .sp-go::after, a:hover .sp-page__meta .sp-go::after, a.sp-go:hover::after, a:focus-visible .sp-go::after, a.sp-go:focus-visible::after { opacity: 1; }
+@media (hover: hover) {
+  a:hover .sp-go__arrow { transform: translateX(5px); }
+}
+
+/* ── 見開き（最初の画面）── */
+.sp-spread {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) var(--sp-spine) minmax(0, 1fr);
+  height: calc(100svh - var(--header-h, 0px) - var(--sai-top, 0px));
+  min-height: 520px;
+}
+.sp-page { position: relative; display: block; overflow: hidden; color: #fff; background: rgba(var(--foreground-rgb), 0.06); text-decoration: none; }
+.sp-page picture { position: absolute; inset: 0; display: block; }
+.sp-page__img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity 0.9s ease; }
+.sp-page__img.is-on { opacity: 1; }
+.sp-page__shade { position: absolute; inset: 40% 0 0; background: linear-gradient(transparent, rgba(0, 0, 0, 0.5)); pointer-events: none; }
+.sp-page__text { position: absolute; left: var(--sp-inset); right: var(--sp-inset); bottom: clamp(22px, 3.4vw, 44px); display: block; }
+.sp-page--right .sp-page__text { text-align: right; }
+.sp-page__note { display: block; font-size: 12px; letter-spacing: 0.22em; opacity: 0.92; }
+.sp-page__word { display: block; margin-top: 2px; font-size: clamp(46px, 6.6vw, 96px); line-height: 1.02; letter-spacing: 0.015em; font-weight: 400; }
+.sp-page__meta { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 1.6em; margin-top: clamp(10px, 1.4vw, 18px); font-size: 13px; line-height: 1.7; letter-spacing: 0.08em; }
+.sp-page--right .sp-page__meta { justify-content: flex-end; }
+.sp-page__metatext { min-width: 0; }
+
+.sp-spine { position: relative; display: flex; align-items: center; justify-content: center; }
+.sp-spine::before { content: ""; position: absolute; top: clamp(18px, 2.6vw, 36px); width: 1px; height: 28px; background: var(--sp-line); }
+.sp-spine__name { margin: 0; font-size: clamp(17px, 1.5vw, 21px); font-weight: 500; letter-spacing: 0.5em; writing-mode: vertical-rl; padding-top: 0.5em; white-space: nowrap; }
+.sp-spine__name:not([data-vertical]) { letter-spacing: 0.2em; padding-top: 0.2em; }
+
+@media (max-width: 767px) {
+  .sp-spread { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr) 46px minmax(0, 1fr); min-height: 0; }
+  .sp-spine::before { display: none; }
+  .sp-spine__name, .sp-spine__name:not([data-vertical]) { writing-mode: horizontal-tb; font-size: 15px; letter-spacing: 0.46em; padding: 0 0 0 0.46em; }
+  .sp-spine::before, .sp-spine::after { content: ""; display: block; position: static; flex: 1; width: auto; height: 1px; background: var(--sp-line); margin: 0 14px 0 var(--sp-inset); }
+  .sp-spine::after { margin: 0 var(--sp-inset) 0 14px; }
+  .sp-page__word { font-size: 46px; }
+  .sp-page__text { bottom: 16px; }
+  .sp-page__meta { font-size: 12px; margin-top: 4px; gap: 0 1.4em; }
+  .sp-page--right .sp-page__text { text-align: left; }
+  .sp-page--right .sp-page__meta { justify-content: flex-start; }
+}
+
+/* ── 続き：背の線が通り、左右に1枚ずつ（切り抜かない）── */
+.sp-gutter { position: relative; padding: clamp(56px, 9vw, 140px) 0 0; }
+.sp-gutter::before, .sp-colophon::before { content: ""; position: absolute; top: 0; bottom: 0; left: 50%; width: 1px; background: var(--sp-line); }
+.sp-pair { display: grid; grid-template-columns: minmax(0, 1fr) var(--sp-spine) minmax(0, 1fr); align-items: end; padding: 0 var(--sp-inset); }
+.sp-pair + .sp-pair { margin-top: clamp(56px, 9vw, 150px); }
+.sp-leaf { display: block; text-decoration: none; color: inherit; }
+.sp-leaf--l { grid-column: 1; justify-self: end; }
+.sp-leaf--r { grid-column: 3; justify-self: start; }
+.sp-leaf__frame { display: block; width: 100%; background: rgba(var(--foreground-rgb), 0.06); overflow: hidden; }
+.sp-leaf__frame picture { display: block; width: 100%; height: 100%; }
+.sp-leaf__img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.sp-leaf__label { display: block; margin-top: 10px; font-size: 15px; line-height: 1.5; letter-spacing: 0.06em; }
+.sp-leaf--r .sp-leaf__label { text-align: right; }
+@media (hover: hover) {
+  .sp-leaf:hover .sp-leaf__label { text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 5px; }
+}
+@media (max-width: 767px) {
+  .sp-gutter { padding-top: 48px; }
+  .sp-gutter::before { display: none; }
+  .sp-pair { grid-template-columns: minmax(0, 1fr); gap: 40px; padding: 0; }
+  .sp-pair + .sp-pair { margin-top: 40px; }
+  .sp-leaf--l, .sp-leaf--r { grid-column: 1; justify-self: stretch; width: auto !important; }
+  .sp-leaf--l { margin-right: 18vw; }
+  .sp-leaf--r { margin-left: 18vw; }
+  .sp-leaf__label { padding: 0 var(--sp-inset); }
+}
+
+/* ── 終わり：左に依頼、右に作品の目次 ── */
+.sp-colophon { position: relative; display: grid; grid-template-columns: minmax(0, 1fr) var(--sp-spine) minmax(0, 1fr); padding: clamp(72px, 11vw, 170px) var(--sp-inset) clamp(40px, 6vw, 96px); }
+.sp-colophon__l { grid-column: 1; justify-self: end; width: 100%; max-width: 26rem; }
+.sp-colophon__r { grid-column: 3; width: 100%; max-width: 30rem; }
+.sp-label { margin: 0; font-size: 12px; letter-spacing: 0.26em; text-transform: uppercase; color: rgba(var(--foreground-rgb), 0.5); }
+.sp-colophon__text { margin: 18px 0 0; font-size: clamp(17px, 1.7vw, 22px); line-height: 1.9; letter-spacing: 0.06em; }
+.sp-ask { margin: 26px 0 0; font-size: 14px; letter-spacing: 0.12em; }
+.sp-ask a, .sp-other a { color: inherit; text-decoration: none; min-height: 44px; align-items: center; }
+.sp-index { list-style: none; margin: 14px 0 0; padding: 0; border-top: 1px solid var(--sp-line); }
+.sp-index a { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; padding: 13px 0; border-bottom: 1px solid var(--sp-line); color: inherit; text-decoration: none; }
+.sp-index b { font-weight: 400; font-size: clamp(24px, 2.6vw, 34px); line-height: 1.2; letter-spacing: 0.03em; transition: letter-spacing 0.5s var(--sp-ease); }
+.sp-index span { font-size: 12px; letter-spacing: 0.12em; color: var(--text-quiet); font-variant-numeric: tabular-nums; }
+@media (hover: hover) {
+  .sp-index a:hover b { letter-spacing: 0.06em; }
+}
+.sp-other { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 1.2em; margin: 22px 0 0; font-size: max(12.5px, var(--body-size, 12.5px)); line-height: 2; letter-spacing: 0.06em; color: var(--text-quiet); }
+.sp-other a { color: rgb(var(--foreground-rgb)); }
+@media (max-width: 767px) {
+  .sp-colophon { grid-template-columns: minmax(0, 1fr); gap: 56px; padding-top: 64px; }
+  .sp-colophon::before { display: none; }
+  .sp-colophon__l, .sp-colophon__r { grid-column: 1; max-width: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sp-page__img { transition: none; }
+  .sp-go__arrow, .sp-index b { transition: none; }
+}

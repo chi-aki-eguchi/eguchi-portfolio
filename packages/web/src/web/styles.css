@@ -4009,6 +4009,11 @@ header > nav {
   .nav-pos-left > main:has(.hero-fullscreen) {
     --header-h: 0px;
   }
+  /* 見開きのトップ（SpreadTop）も、画面の上端から高さいっぱいに置く。 */
+  .nav-pos-left > main:has(.sp-spread) {
+    padding-top: 0;
+    --header-h: 0px;
+  }
 
   /* Both of these nav positions own the bottom-left corner where the floating
      control sits, and the header is z-50 against its z-40 — the button rendered

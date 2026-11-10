@@ -36,6 +36,8 @@ import { isServiceOwnerSite } from "../../shared/service-visibility";
 import { PhotoHome } from "../components/photo-site/PhotoHome";
 import { siteDesignFrom } from "../lib/book";
 import { DevelopTop } from "../components/develop/DevelopTop";
+import { SpreadTop } from "../components/develop/SpreadTop";
+import { developTopStyle } from "../../shared/develop-structure";
 import {
   ExhibitionLabel,
   ExhibitionWall,
@@ -1928,6 +1930,14 @@ export default function TopPage({ exhibitionSlug }: { exhibitionSlug?: string } 
   // 以前は写真だけを置く専用の表紙で、名前も、現れる順も、送ったときの動きも無く、
   // 管理画面の表紙の設定が1つも効いていなかった（2026-10-12 オーナー
   // 「スマホで開く時に特に何も無いのはなんで？」）。
+  // 見開きのトップ（初めの値。shared/develop-structure.ts の developTopStyle）。表紙と扉の目次の代わり。
+  if (isDevelopDesign && developTopStyle(settings?.developTopStyle) === "spread")
+    return (
+      <div className="top-page" data-develop-top data-spread-top>
+        {experiencePanel}
+        <SpreadTop settings={settings} covers={heroPhotosPicked} />
+      </div>
+    );
   if (isDevelopDesign)
     return (
       <div

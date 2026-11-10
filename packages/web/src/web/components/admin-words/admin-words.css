@@ -1,0 +1,59 @@
+/* 言葉を付ける（/admin/words、2026-11-10）。色は「ページの写真」と同じ（.pp-root の変数）。
+   スマホを先に考える：写真1枚・大きい入力欄（16px。iPhone が拡大しない大きさ）・
+   押す物は 48px 以上・「保存して次へ」は親指の届く画面の下に固定。 */
+.aw-root { min-height: 100svh; }
+.aw-page { max-width: 1080px; margin: 0 auto; padding: max(12px, env(safe-area-inset-top)) 16px calc(96px + env(safe-area-inset-bottom)); }
+.aw-plain { padding: 24px 0; font-size: 15px; line-height: 1.9; }
+.aw-head { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 2px 12px; }
+.aw-back { grid-column: 1 / 3; justify-self: start; display: inline-flex; align-items: center; min-height: 44px; font-size: 14px; color: var(--admin-muted); text-decoration: none; }
+.aw-head h1 { margin: 0; font-family: var(--pp-display, serif); font-size: 24px; font-weight: 500; line-height: 1.4; }
+.aw-count { margin: 0; font-size: 13px; color: var(--admin-muted); font-variant-numeric: tabular-nums; }
+.aw-count b { font-size: 20px; font-weight: 500; color: var(--admin-ink); }
+.aw-bar { grid-column: 1 / 3; height: 3px; margin-top: 8px; background: var(--admin-line); border-radius: 2px; overflow: hidden; }
+.aw-bar span { display: block; height: 100%; background: var(--admin-ink); transition: width 0.4s ease; }
+.aw-scope { grid-column: 1 / 3; display: inline-flex; border: 0; min-width: 0; justify-self: start; margin: 12px 0 0; padding: 3px; background: var(--admin-paper-deep); border-radius: 10px; }
+.aw-scope button { min-height: 44px; padding: 0 16px; font: inherit; font-size: 14px; color: var(--admin-muted); background: none; border: 0; border-radius: 8px; cursor: pointer; }
+.aw-scope button[aria-pressed="true"] { color: var(--admin-ink); background: var(--admin-paper); box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08); }
+
+.aw-card { margin-top: 16px; display: grid; gap: 16px; }
+.aw-photo { margin: 0 -16px; background: var(--admin-paper-deep); }
+.aw-photo img { display: block; width: auto; max-width: 100%; max-height: 46svh; margin: 0 auto; object-fit: contain; }
+.aw-photo figcaption { padding: 8px 16px 0; font-size: 12px; color: var(--admin-muted); background: var(--admin-paper); font-variant-numeric: tabular-nums; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.aw-fields { display: grid; gap: 14px; align-content: start; }
+.aw-field { display: grid; gap: 6px; margin: 0; padding: 0; border: 0; min-width: 0; }
+.aw-field > span, .aw-field > legend { padding: 0; font-size: 13px; color: var(--admin-muted); }
+.aw-field input, .aw-field textarea { width: 100%; min-height: 48px; padding: 11px 12px; font: inherit; font-size: 16px; line-height: 1.6; color: var(--admin-ink); background: #fff; border: 1px solid var(--admin-line-strong); border-radius: 10px; appearance: none; }
+.aw-field textarea { resize: vertical; }
+.aw-field input:focus, .aw-field textarea:focus { outline: 2px solid var(--admin-ink); outline-offset: 1px; border-color: transparent; }
+.aw-cats legend { margin-bottom: 6px; }
+.aw-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.aw-chips button { min-height: 44px; padding: 0 16px; font: inherit; font-size: 15px; color: var(--admin-ink); background: var(--admin-paper); border: 1px solid var(--admin-line-strong); border-radius: 999px; cursor: pointer; }
+.aw-chips button[aria-pressed="true"] { color: var(--admin-paper); background: var(--admin-ink); border-color: var(--admin-ink); }
+
+/* 下の帯：前へ・あとで・保存して次へ。 */
+.aw-dock { position: fixed; left: 0; right: 0; bottom: 0; z-index: 5; display: grid; grid-template-columns: 52px auto minmax(0, 1fr); gap: 8px; padding: 10px 16px calc(10px + env(safe-area-inset-bottom)); background: color-mix(in srgb, var(--admin-paper) 94%, transparent); -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px); border-top: 1px solid var(--admin-line); }
+.aw-dock button { min-height: 52px; font: inherit; font-size: 16px; border-radius: 12px; cursor: pointer; }
+.aw-dock button:disabled { opacity: 0.45; cursor: default; }
+.aw-step, .aw-skip { color: var(--admin-ink); background: var(--admin-paper); border: 1px solid var(--admin-line-strong); }
+.aw-skip { padding: 0 18px; }
+.aw-primary { color: var(--admin-paper); background: var(--admin-ink); border: 0; font-weight: 500; }
+.aw-finish { margin-top: 40px; font-size: 15px; line-height: 1.9; }
+.aw-finish__title { margin: 0 0 4px; font-family: var(--pp-display, serif); font-size: 22px; }
+.aw-finish__actions { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; margin-top: 20px; }
+.aw-finish .aw-primary { min-height: 52px; padding: 0 28px; font: inherit; font-size: 16px; border-radius: 12px; cursor: pointer; }
+.aw-quiet { display: inline-flex; align-items: center; min-height: 44px; color: var(--admin-muted); }
+
+@media (min-width: 860px) {
+  .aw-page { padding: 28px 32px 48px; }
+  .aw-card { grid-template-columns: minmax(0, 1.25fr) minmax(320px, 1fr); gap: 20px 40px; align-items: start; }
+  .aw-photo { margin: 0; grid-row: 1 / 3; }
+  .aw-photo img { max-height: 72svh; }
+  .aw-photo figcaption { padding-left: 0; padding-right: 0; }
+  .aw-dock { position: static; grid-column: 2; padding: 0; background: none; border: 0; -webkit-backdrop-filter: none; backdrop-filter: none; }
+}
+@media (prefers-color-scheme: dark) {
+  .aw-field input, .aw-field textarea { background: var(--admin-paper-soft); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .aw-bar span { transition: none; }
+}

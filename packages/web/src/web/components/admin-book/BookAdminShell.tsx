@@ -129,6 +129,12 @@ export function BookAdminShell({
               {en ? "Pages" : "ページ"}
             </a>
           )}
+          {/* 写真に題・説明・分類を1枚ずつ付けていく画面。 */}
+          {pdfEnabled && !locked && (
+            <a className="admin-book__tab admin-book__tab--link" href="/admin/words" data-book-tab="words">
+              {en ? "Words" : "言葉"}
+            </a>
+          )}
         </nav>
         {/* よく使う2つ（探す・サイトを見る）だけを帯に出し、ほかは「その他」にしまう
             （2026-09-30。道具が6つ並んで、入口より目立っていた）。スマホは全部「メニュー」の中。 */}

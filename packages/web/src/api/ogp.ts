@@ -140,6 +140,7 @@ const PAGE_TITLES: Record<string, string> = {
   "/admin/login": "Admin Login",
   "/admin/pdf": "PDF作品集",
   "/admin/pages": "ページの写真",
+  "/admin/words": "言葉を付ける",
   "/admin/demo": "Portfolio Kit 体験版",
 };
 
@@ -620,6 +621,7 @@ export function injectOgp(
     "/admin/login",
     "/admin/pdf",
     "/admin/pages",
+    "/admin/words",
     "/admin/demo",
   ];
   // /series/:slug is indexable only when the slug resolved to a real published

@@ -14,7 +14,7 @@ export const CARD_EXTRA_LABEL_DEFAULT = "still,life";
 
 type SettingsLike = Record<string, string | null | undefined>;
 
-export type CardLink = { label: string; href: string; me: boolean };
+export type CardLink = { label: string; href: string; me: boolean; note: string };
 
 /** http(s) の住所だけ通す。それ以外は空。 */
 function webUrl(value: string | null | undefined): string {
@@ -28,12 +28,25 @@ function webUrl(value: string | null | undefined): string {
   }
 }
 
+/** 行き先の名前に添える小さい字。SNS は @名前、ほかは場所の名前（akieguchi.com）。 */
+function linkNote(href: string, account: boolean): string {
+  try {
+    const url = new URL(href);
+    const handle = url.pathname.split("/").filter(Boolean)[0];
+    if (account && handle) return `@${decodeURIComponent(handle)}`;
+    return url.hostname.replace(/^www\./, "");
+  } catch {
+    return "";
+  }
+}
+
 /** 並べる行き先。Website はいつも先頭。 */
 export function cardLinks(settings: SettingsLike, siteUrl: string): CardLink[] {
-  const links: CardLink[] = [{ label: "Website", href: `${siteUrl.replace(/\/+$/, "")}/`, me: false }];
+  const home = `${siteUrl.replace(/\/+$/, "")}/`;
+  const links: CardLink[] = [{ label: "Website", href: home, me: false, note: linkNote(home, false) }];
   const add = (label: string, value: string | null | undefined, me: boolean) => {
     const href = webUrl(value);
-    if (href) links.push({ label, href, me });
+    if (href) links.push({ label, href, me, note: linkNote(href, me) });
   };
   add(settings.snsLabelInstagram?.trim() || "Instagram", settings.profileInstagram, true);
   add(settings.snsLabelTwitter?.trim() || "X", settings.profileTwitter, true);
@@ -46,11 +59,12 @@ export function renderCardPage(settings: SettingsLike, siteUrl: string): string 
   const roman = settings.profileNameEn?.trim() || "";
   const links = cardLinks(settings, siteUrl);
   const labels = links.map((link) => link.label).join("・");
-  // 名前を縦に組むのは、かな・漢字の短い名前のときだけ。
-  const vertical = /^[぀-ヿ㐀-鿿\s]{1,8}$/.test(name);
+  // 名前を縦に組むのは、かな・漢字の短い名前のときだけ（本の背のように、右に立てる）。
+  const vertical = /^[\u3040-\u30ff\u3400-\u9fff\s]{1,8}$/.test(name);
   const owner = isServiceOwnerSite(settings.siteUrl ?? undefined, undefined) || isServiceOwnerSite(siteUrl, undefined);
   const places = owner ? EXHIBITION_CARD_PLACES : "";
   const base = siteUrl.replace(/\/+$/, "");
+  const top = vertical ? roman : name;
   return `<!doctype html>
 <html lang="ja">
 <head>
@@ -62,40 +76,48 @@ export function renderCardPage(settings: SettingsLike, siteUrl: string): string 
   <title>${escapeHtml(name ? `${name} | Links` : "Links")}</title>
   <link rel="canonical" href="${escapeHtml(`${base}/card.html`)}">
   <style>
-    * { box-sizing: border-box; }
-    :root { --bg: #fff; --ink: #171717; --line: #ddd; --soft: #595959; --press: #f6f6f6; }
-    @media (prefers-color-scheme: dark) { :root { --bg: #111; --ink: #ededed; --line: #333; --soft: #a3a3a3; --press: #1c1c1c; } }
-    html { background: var(--bg); color: var(--ink); }
-    body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "Noto Sans", Arial, sans-serif; -webkit-text-size-adjust: 100%; }
-    main { width: min(100%, 392px); min-height: 100svh; margin-inline: auto; padding: max(48px, env(safe-area-inset-top)) 36px max(32px, env(safe-area-inset-bottom)); display: flex; flex-direction: column; justify-content: center; }
-    header { text-align: center; margin-bottom: 36px; }
-    h1 { margin: 0 auto; font-family: "Hiragino Mincho ProN", "Yu Mincho", "Noto Serif CJK JP", serif; font-size: 30px; font-weight: 400; line-height: 1.25; letter-spacing: .24em; }
-    h1.v { writing-mode: vertical-rl; }
-    .roman { margin: 18px 0 0; font-size: 14px; letter-spacing: .055em; }
-    nav { display: grid; gap: 0; }
-    a { display: flex; align-items: center; justify-content: center; min-height: 64px; padding: 16px 12px; border-top: 1px solid var(--line); color: inherit; font-size: 18px; line-height: 1.5; text-align: center; text-decoration: none; -webkit-tap-highlight-color: transparent; }
+    * { box-sizing: border-box; margin: 0; }
+    :root { --bg: #f7f6f2; --ink: #1a1917; --line: #d9d6ce; --soft: #7b776e; --en: "Cormorant Garamond", "Hoefler Text", Baskerville, "Baskerville Old Face", Garamond, "Times New Roman", serif; --ja: "Hiragino Mincho ProN", "Yu Mincho", "Noto Serif CJK JP", "Noto Serif JP", serif; }
+    @media (prefers-color-scheme: dark) { :root { --bg: #131211; --ink: #ece9e2; --line: #34322e; --soft: #9a958a; } }
+    html { background: var(--bg); color: var(--ink); -webkit-text-size-adjust: 100%; }
+    body { font-family: var(--ja); }
+    main { width: min(100%, 460px); min-height: 100svh; margin-inline: auto; padding: max(28px, env(safe-area-inset-top)) 28px max(24px, env(safe-area-inset-bottom)); display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-rows: auto 1fr auto; column-gap: 26px; }
+    .top { grid-column: 1; font: 400 13px var(--en); letter-spacing: .3em; text-transform: uppercase; padding-top: 2px; }
+    .spine { grid-column: 2; grid-row: 1 / 4; display: flex; flex-direction: column; align-items: center; gap: 18px; }
+    .spine::before, .spine::after { content: ""; width: 1px; background: var(--line); }
+    .spine::before { height: 44px; }
+    .spine::after { flex: 1; }
+    h1 { font: 500 27px / 1 var(--ja); letter-spacing: .34em; writing-mode: vertical-rl; }
+    h1.h { grid-column: 1; writing-mode: horizontal-tb; font-size: 26px; letter-spacing: .12em; line-height: 1.4; }
+    nav { grid-column: 1; grid-row: 2; align-self: end; padding-top: 56px; }
+    a { display: grid; grid-template-columns: 1fr auto; align-items: baseline; column-gap: 12px; padding: 17px 0 15px; border-top: 1px solid var(--line); color: inherit; text-decoration: none; -webkit-tap-highlight-color: transparent; }
     a:last-child { border-bottom: 1px solid var(--line); }
-    a:active { background: var(--press); }
-    @media (hover: hover) { a:hover { background: var(--press); } }
-    a:focus-visible { position: relative; outline: 2px solid currentColor; outline-offset: 3px; }
-    footer { margin-top: 36px; font-size: 10px; line-height: 1.7; letter-spacing: .065em; color: var(--soft); text-align: center; }
-    @media (max-height: 600px) { main { padding-top: 28px; padding-bottom: 24px; } header { margin-bottom: 24px; } h1 { font-size: 25px; } a { min-height: 56px; padding-block: 12px; } footer { margin-top: 24px; } }
-    @media (prefers-contrast: more) { a { border-color: currentColor; } footer { color: inherit; } }
+    a b { font: 400 34px / 1.15 var(--en); letter-spacing: .01em; }
+    a i { font: 400 20px var(--en); color: var(--soft); transition: color .3s; }
+    a small { grid-column: 1 / 3; margin-top: 5px; font: 400 11px var(--en); letter-spacing: .16em; color: var(--soft); }
+    a:active { opacity: .55; }
+    @media (hover: hover) { a:hover i { color: var(--ink); } a:hover b { text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 7px; } }
+    a:focus-visible { outline: 1px solid currentColor; outline-offset: 4px; }
+    footer { grid-column: 1; grid-row: 3; margin-top: 30px; font: 400 10px var(--en); letter-spacing: .3em; color: var(--soft); }
+    @media (max-height: 600px) { nav { padding-top: 28px; } a { padding: 12px 0 11px; } a b { font-size: 29px; } footer { margin-top: 20px; } }
+    @media (prefers-reduced-motion: no-preference) {
+      .top, .spine, a, footer { animation: in .9s both; }
+      a:nth-child(1) { animation-delay: .12s; } a:nth-child(2) { animation-delay: .2s; } a:nth-child(3) { animation-delay: .28s; } a:nth-child(4) { animation-delay: .36s; }
+      footer { animation-delay: .5s; }
+      @keyframes in { from { opacity: 0; } }
+    }
+    @media (prefers-contrast: more) { :root { --line: currentColor; --soft: currentColor; } }
   </style>
 </head>
 <body>
   <main>
-${
-  name
-    ? `    <header>
-      <h1${vertical ? ' class="v"' : ""}>${escapeHtml(name)}</h1>${roman ? `\n      <p class="roman" lang="en">${escapeHtml(roman)}</p>` : ""}
-    </header>\n`
-    : ""
-}    <nav aria-label="${escapeHtml(`${labels}から選択`)}">
+${top ? `    <p class="top"${vertical ? ' lang="en"' : ""}>${escapeHtml(top)}</p>\n` : ""}${
+    name && vertical ? `    <div class="spine"><h1 class="v">${escapeHtml(name)}</h1></div>\n` : ""
+  }    <nav aria-label="${escapeHtml(`${labels}から選択`)}">
 ${links
   .map(
     (link) =>
-      `      <a href="${escapeHtml(link.href)}" lang="en"${link.me ? ' rel="me"' : ""}>${escapeHtml(link.label)}</a>`,
+      `      <a href="${escapeHtml(link.href)}" lang="en"${link.me ? ' rel="me"' : ""}><b>${escapeHtml(link.label)}</b><i aria-hidden="true">→</i>${link.note ? `<small>${escapeHtml(link.note)}</small>` : ""}</a>`,
   )
   .join("\n")}
     </nav>${places ? `\n    <footer lang="en">${escapeHtml(places)}</footer>` : ""}

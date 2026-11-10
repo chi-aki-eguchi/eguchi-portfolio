@@ -41,6 +41,6 @@ describe("名刺の QR のページ", () => {
 
   test("かな・漢字の短い名前は縦に組む", () => {
     expect(renderCardPage(base, "https://example.com")).toContain('<h1 class="v">江口秋</h1>');
-    expect(renderCardPage({ ...base, profileName: "Jane Doe" }, "https://example.com")).toContain("<h1>Jane Doe</h1>");
+    expect(renderCardPage({ ...base, profileName: "Jane Doe" }, "https://example.com")).toContain('<p class="top">Jane Doe</p>');
   });
 });

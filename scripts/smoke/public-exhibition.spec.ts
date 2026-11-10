@@ -21,7 +21,7 @@ async function withSettings(page: Page, api: SmokeApi, patch: Record<string, str
         body: JSON.stringify({
           ...base,
           siteDesign: "develop",
-          homeExhibition: "on",
+          exhibitionOnTop: "on",
           profileInstagram: "https://www.instagram.com/example_user/",
           profileTwitter: "https://x.com/example_user",
           ...patch,
@@ -258,7 +258,7 @@ test("展示のトップ › 題と会期を空にすると、その札を出さ
 });
 
 test("展示のトップ › 止めると、いつものトップに戻る", async ({ page, api }) => {
-  await withSettings(page, api, { homeExhibition: "off" });
+  await withSettings(page, api, { exhibitionOnTop: "off" });
   await page.goto("/", { waitUntil: "networkidle" });
   await expect(page.locator(".ex-cover")).toHaveCount(0);
   await expect(page.locator(".ex-works")).toHaveCount(0);
@@ -274,7 +274,7 @@ test("展示の欄 › トップはいつもの表紙。メニューから一覧
   const library = ((await (await api.get("/api/photos")).json()) as { photos: { id: number }[] }).photos;
   const picked = library.slice(0, 3).map((photo) => photo.id);
   await withSettings(page, api, {
-    homeExhibition: "off",
+    exhibitionOnTop: "off",
     siteUrl: "https://akieguchi.com",
     exhibitionArchive: JSON.stringify([
       { slug: "2025-harbor", title: "港", dates: "港のギャラリー 2025年10月", text: "長い文は横書きで出る。".repeat(4), photoIds: picked.join(","), captions: "" },
@@ -328,7 +328,7 @@ test("展示の欄 › トップはいつもの表紙。メニューから一覧
 });
 
 test("展示の欄 › 展示の無いサイトには、メニューにも一覧にも出ない", async ({ page, api }) => {
-  await withSettings(page, api, { homeExhibition: "off", siteUrl: "https://someone-else.example" });
+  await withSettings(page, api, { exhibitionOnTop: "off", siteUrl: "https://someone-else.example" });
   await page.goto("/exhibition", { waitUntil: "networkidle" });
   await expect(page.locator("h1")).toContainText("見つかりませんでした");
   await expect(page.locator('a[href="/exhibition"]')).toHaveCount(0);
@@ -336,7 +336,7 @@ test("展示の欄 › 展示の無いサイトには、メニューにも一覧
 
 test("依頼の入口 › トップの最初の画面に、料金と入口の1行が出る", async ({ page, api }) => {
   await withSettings(page, api, {
-    homeExhibition: "off",
+    exhibitionOnTop: "off",
     homeCtaEnabled: "on",
     homeCtaTitle: "撮影のご依頼",
     homeCtaText: "ポートレート撮影 60分 ¥10,000。学生の方は半額です。",
@@ -359,7 +359,7 @@ test("依頼の入口 › トップの最初の画面に、料金と入口の1�
   }
   // 帯を出さない設定なら、1行も出さず、表紙は今までどおり画面いっぱい。
   await page.unroute((url) => url.pathname === "/api/settings");
-  await withSettings(page, api, { homeExhibition: "off", homeCtaEnabled: "off" });
+  await withSettings(page, api, { exhibitionOnTop: "off", homeCtaEnabled: "off" });
   await page.goto("/", { waitUntil: "networkidle" });
   await expect(page.locator(".inquiry-line")).toHaveCount(0);
   // Portrait の写真の上には置かない（写真は上の帯のすぐ下から始める）。

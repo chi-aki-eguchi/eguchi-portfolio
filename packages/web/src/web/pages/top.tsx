@@ -1364,7 +1364,7 @@ export default function TopPage({ exhibitionSlug }: { exhibitionSlug?: string } 
     if (!isDevelopDesign || typeof window === "undefined") return null;
     const host = window.location.hostname;
     if (exhibitionSlug) return publicExhibitions(settings, host).find((show) => show.slug === exhibitionSlug) ?? null;
-    if (settings?.homeExhibition !== "on") return null;
+    if (settings?.exhibitionOnTop !== "on") return null;
     return exhibitionEntries(settings, host).find((show) => show.builtIn) ?? null;
   }, [isDevelopDesign, exhibitionSlug, settings]);
   const exhibitionOn = exhibitionEntry !== null;

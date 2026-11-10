@@ -149,7 +149,7 @@ export function exhibitionSortKey(dates: string): number {
  */
 function hasBuiltInExhibition(settings: SettingsLike, site: string | undefined): boolean {
   return (
-    settings?.homeExhibition === "on" ||
+    settings?.exhibitionOnTop === "on" ||
     isServiceOwnerSite(settings?.siteUrl ?? undefined, site) ||
     isServiceOwnerSite(site, undefined)
   );

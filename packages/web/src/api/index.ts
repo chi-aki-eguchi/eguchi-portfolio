@@ -1598,7 +1598,7 @@ const app = new Hono()
         developDoors: settings.developDoors ?? "",
         // トップを展示にするか。既定は off（shared/exhibition.ts の exhibitionStatus）。展示そのものは /exhibition に在る。
         // 題・会期は保存値があれば空でもそのまま（空にすれば出さない）。
-        homeExhibition: exhibitionStatus(settings.homeExhibition, settings.siteUrl),
+        exhibitionOnTop: exhibitionStatus(settings.exhibitionOnTop, settings.siteUrl),
         exhibitionTitle: settings.exhibitionTitle ?? EXHIBITION_DEFAULTS.title,
         exhibitionDates: settings.exhibitionDates ?? EXHIBITION_DEFAULTS.dates,
         exhibitionText: settings.exhibitionText ?? EXHIBITION_DEFAULTS.text,

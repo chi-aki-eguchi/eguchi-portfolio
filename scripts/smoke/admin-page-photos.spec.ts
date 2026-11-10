@@ -73,7 +73,7 @@ async function installMocks(
     servicePageMode: "off",
     heroMode: options.heroMode ?? "single",
     siteUrl: options.siteUrl ?? "",
-    homeExhibition: options.exhibition ?? "off",
+    exhibitionOnTop: options.exhibition ?? "off",
     exhibitionTitle: "日藝祭 2026 展示作品",
     exhibitionDates: "2026年11月1日〜3日",
     exhibitionText: "",
@@ -467,9 +467,9 @@ test.describe("admin — ページの写真（選んで並べる）", () => {
     await expect(page.locator(".pp-visits__days")).toContainText("11月1日 5人");
     await expect(page.locator(".pp-visits__notes")).toContainText("背中の写真が好きでした");
     await page.locator('[data-pp-exhibition-mode="off"]').click();
-    await expect.poll(() => mocks.saved.at(-1)).toEqual({ homeExhibition: "off" });
+    await expect.poll(() => mocks.saved.at(-1)).toEqual({ exhibitionOnTop: "off" });
     await page.locator('[data-pp-exhibition-mode="on"]').click();
-    await expect.poll(() => mocks.saved.at(-1)).toEqual({ homeExhibition: "on" });
+    await expect.poll(() => mocks.saved.at(-1)).toEqual({ exhibitionOnTop: "on" });
 
     await page.locator('[data-pp-exhibition="title"]').fill("次の展示");
     await page.locator('[data-pp-exhibition="title"]').blur();

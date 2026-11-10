@@ -174,7 +174,7 @@ export const SETTINGS_PREVIEW_KEYS = [
   "developLifeIds",
   "developDoors",
   // トップの展示（shared/exhibition.ts）。出すか・題・会期・添える文・写真の並び・写真ごとの題。
-  "homeExhibition",
+  "exhibitionOnTop",
   "exhibitionTitle",
   "exhibitionDates",
   "exhibitionText",

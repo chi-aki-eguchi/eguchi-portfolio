@@ -221,6 +221,10 @@ export const EXHIBITION_REPLY_MAX = 600;
  * 展示だった）。展示は `/exhibition` の欄に1件ずつのページとして残り（shared/exhibitions.ts）、
  * トップは撮影を頼める入口に戻す。会期中だけトップにも出したいときは、管理画面の「展示」で「展示」を選ぶ。
  * `server.ts` は生の設定を読むので、同じ判断をここに置く。
+ *
+ * 設定の名前は `exhibitionOnTop`（2026-11-10 に `homeExhibition` から付け替えた）。本番には、展示がトップ
+ * だった頃の `homeExhibition = on` が保存されたままで、展示の欄を作ったあともトップが展示のままだった
+ * （オーナー「開いた時にまだ展示が一番最初に出てくる」）。古い名前の保存値は読まない。
  */
 export function exhibitionStatus(value: string | null | undefined, _siteUrl?: string | null): "on" | "off" {
   return value === "on" ? "on" : "off";
@@ -228,10 +232,10 @@ export function exhibitionStatus(value: string | null | undefined, _siteUrl?: st
 
 /** トップが展示になっているか（`server.ts` の判定。新しい構成のときだけ展示のトップがある）。 */
 export function exhibitionIsTop(
-  settings: { siteDesign?: string | null; homeExhibition?: string | null },
+  settings: { siteDesign?: string | null; exhibitionOnTop?: string | null },
   siteUrl: string | null | undefined,
 ): boolean {
-  return isDevelopDesignValue(settings.siteDesign) && exhibitionStatus(settings.homeExhibition, siteUrl) === "on";
+  return isDevelopDesignValue(settings.siteDesign) && exhibitionStatus(settings.exhibitionOnTop, siteUrl) === "on";
 }
 
 /** 並びにライブラリの写真が入っているか（入っていれば、写真の一覧を待ってから表紙を決める）。 */

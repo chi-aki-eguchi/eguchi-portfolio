@@ -107,7 +107,7 @@ function readOnlyApi(): Plugin {
             const json = (await upstream.json()) as Record<string, unknown>;
             // 展示の設定は、手元のコードの値で見る（本番の応答は、本番へ出ている版の値）。
             const exhibition = {
-              homeExhibition: exhibitionStatus(undefined, json.siteUrl as string | undefined),
+              exhibitionOnTop: exhibitionStatus(undefined, json.siteUrl as string | undefined),
               exhibitionTitle: EXHIBITION_DEFAULTS.title,
               exhibitionDates: EXHIBITION_DEFAULTS.dates,
               exhibitionText: EXHIBITION_DEFAULTS.text,

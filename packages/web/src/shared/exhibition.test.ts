@@ -39,10 +39,10 @@ describe("トップの展示の決まり", () => {
 
   test("展示がトップかどうかは、新しい構成で、トップを展示にしているときだけ（名刺の QR の通し先を決める）", () => {
     const site = "https://akieguchi.com";
-    expect(exhibitionIsTop({ siteDesign: "develop", homeExhibition: "on" }, site)).toBe(true);
+    expect(exhibitionIsTop({ siteDesign: "develop", exhibitionOnTop: "on" }, site)).toBe(true);
     expect(exhibitionIsTop({ siteDesign: "develop" }, site)).toBe(false);
-    expect(exhibitionIsTop({ siteDesign: "develop", homeExhibition: "off" }, site)).toBe(false);
-    expect(exhibitionIsTop({ siteDesign: "classic", homeExhibition: "on" }, site)).toBe(false);
+    expect(exhibitionIsTop({ siteDesign: "develop", exhibitionOnTop: "off" }, site)).toBe(false);
+    expect(exhibitionIsTop({ siteDesign: "classic", exhibitionOnTop: "on" }, site)).toBe(false);
   });
 
   const WALL_ORDER = [-4, -3, -2, -1, -5];

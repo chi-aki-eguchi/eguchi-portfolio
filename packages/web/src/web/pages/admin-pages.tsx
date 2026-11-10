@@ -50,7 +50,7 @@ type SavedKey =
   | "siteDesign"
   | "heroMode"
   | "developDoors"
-  | "homeExhibition"
+  | "exhibitionOnTop"
   | "exhibitionTitle"
   | "exhibitionDates"
   | "exhibitionText"
@@ -119,7 +119,7 @@ export default function AdminPagesPage() {
   const [chosenTab, setTab] = useState<Tab | null>(null);
   // 展示のタブで、いま編集している展示（slug）。選んでいなければ、一覧の先頭。
   const [chosenShow, setShow] = useState<string | null>(null);
-  const tab: Tab = chosenTab ?? (settings?.homeExhibition === "on" ? "exhibition" : "portrait");
+  const tab: Tab = chosenTab ?? (settings?.exhibitionOnTop === "on" ? "exhibition" : "portrait");
   // 表紙の並び（保存しようとしている物）。保存して読み直すまでの間、画面はこちらを見る。
   const [localCover, setLocalCover] = useState<number[] | null>(null);
   // 保存した（保存しようとしている）値。設定を読み直すまでの間、画面はこちらを見る。
@@ -315,7 +315,7 @@ export default function AdminPagesPage() {
   };
   const design = savedValue("siteDesign");
   const isDevelop = isDevelopDesignValue(design);
-  const exhibitionShown = savedValue("homeExhibition") === "on";
+  const exhibitionShown = savedValue("exhibitionOnTop") === "on";
   // 同梱の写真は持ち主の物なので、配布版の管理画面には展示のタブを出さない。
   const tabs = TABS.filter(
     (kind) =>
@@ -475,7 +475,7 @@ export default function AdminPagesPage() {
               onClick={() => {
                 if (exhibitionShown) return;
                 setTab("exhibition");
-                save("homeExhibition", "on", "トップを展示にしました", "off");
+                save("exhibitionOnTop", "on", "トップを展示にしました", "off");
               }}
             >
               展示
@@ -487,7 +487,7 @@ export default function AdminPagesPage() {
               onClick={() => {
                 if (!exhibitionShown) return;
                 setTab("exhibition");
-                save("homeExhibition", "off", "いつものトップに戻しました", "on");
+                save("exhibitionOnTop", "off", "いつものトップに戻しました", "on");
               }}
             >
               いつもの

@@ -122,6 +122,13 @@ export function BookAdminShell({
               {t.label}
             </button>
           ))}
+          {/* 表紙・Portrait・Life・展示の写真を選ぶ画面。「その他」の中に隠れていて見つけにくかった
+              （2026-11-10、オーナー「どこに何があるか」）。入口の並びに出す。 */}
+          {pdfEnabled && !locked && (
+            <a className="admin-book__tab admin-book__tab--link" href="/admin/pages" data-book-tab="pages">
+              {en ? "Pages" : "ページ"}
+            </a>
+          )}
         </nav>
         {/* よく使う2つ（探す・サイトを見る）だけを帯に出し、ほかは「その他」にしまう
             （2026-09-30。道具が6つ並んで、入口より目立っていた）。スマホは全部「メニュー」の中。 */}
@@ -156,7 +163,6 @@ export function BookAdminShell({
           <a className="admin-book__tool admin-book__tool--narrow" href={siteHref} target="_blank" rel="noopener" onClick={closeMenu}>
             {en ? "View site" : "サイトを見る"} ↗
           </a>
-          {pdfEnabled && !locked && <a className="admin-book__tool" href="/admin/pages" onClick={closeMenu}>{en ? "Page photos" : "ページの写真"}</a>}
           {pdfEnabled && !locked && <a className="admin-book__tool" href="/admin/pdf" target="_blank" rel="noopener" onClick={closeMenu}>{en ? "PDF portfolio" : "PDF作品集"}</a>}
           <button type="button" className="bk-ax-btn admin-book__tool" onClick={() => { closeMenu(); onToggleTheme(); }} aria-pressed={theme === "dark"}>
             {theme === "dark" ? (en ? "Light display" : "明るい表示") : (en ? "Dark display" : "暗い表示")}

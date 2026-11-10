@@ -65,6 +65,8 @@ async function installMocks(
   const settings: Record<string, string> = {
     setupCompleted: "true",
     siteName: "Page photos fixture",
+    // 表紙の出し方の検査は「表紙と扉」のトップで見る（見開きでは、表紙の1枚目・2枚目が左右の頁になる）。
+    developTopStyle: "doors",
     siteDesign: "classic",
     gallerySortOrder: "manual",
     developPortraitIds: "",

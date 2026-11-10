@@ -1093,3 +1093,16 @@
   outline: 2px solid var(--st-danger, #a33a2a);
   outline-offset: 2px;
 }
+
+/* スマホでは、押す物を 44px 以上にする（2026-11-10、オーナー「スマホでも使いづらい」。
+   大きさの切り替え・公開／非公開・前／次・閉じる・並べ替えなどが 30〜38px だった。390px で実測）。 */
+@media (max-width: 767px) {
+  .st-seg__item,
+  .st-button,
+  .st-side__item { min-height: 44px; }
+  .st-seg.st-seg--small .st-seg__item { min-width: 44px; min-height: 44px; height: auto; }
+  .st-ax-btn.st-link,
+  .st-series-head__actions .st-link { display: inline-flex; align-items: center; min-height: 44px; }
+  .st-step .st-link,
+  .st-inspector__head .st-link { min-width: 44px; justify-content: center; }
+}

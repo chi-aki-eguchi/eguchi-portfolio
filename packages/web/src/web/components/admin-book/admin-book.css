@@ -912,3 +912,11 @@
   .admin-book__tools[data-open] .admin-book__tool { min-height: 44px; }
   .admin-book__tools[data-open] .admin-book__tool--narrow { display: flex !important; }
 }
+
+/* 「ページ」（/admin/pages）は別の画面へ行く入口。ほかの入口と同じ見た目で並べる。 */
+.admin-book__tab--link { display: inline-flex; align-items: center; height: 100%; text-decoration: none; }
+@media (max-width: 767px) {
+  /* 入口が4つになったので、間を詰めて1行に収める。押せる高さは帯いっぱい（52px）。 */
+  .admin-book__tabs { gap: 0.9rem; }
+  .admin-book__tab { padding: 0 3px; }
+}

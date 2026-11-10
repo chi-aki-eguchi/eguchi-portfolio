@@ -35,6 +35,7 @@ export const ROUTE_MODULES: Record<string, string> = {
   "/portrait": "src/web/pages/develop-list.tsx",
   "/life": "src/web/pages/develop-list.tsx",
   "/info": "src/web/pages/develop-info.tsx",
+  "/works": "src/web/pages/works.tsx",
   // 展示の一覧（2026-11-10）。1件のページはトップと同じ組み立て（下の DYNAMIC_ROUTES）。
   "/exhibition": "src/web/pages/exhibition-list.tsx",
   "/series": "src/web/pages/series.tsx",

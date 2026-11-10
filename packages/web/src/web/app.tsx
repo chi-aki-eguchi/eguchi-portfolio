@@ -28,6 +28,7 @@ const ContactPage = lazy(() => import("./pages/contact"));
 const PolicyPage = lazy(() => import("./pages/policy"));
 const DevelopListPage = lazy(() => import("./pages/develop-list"));
 const DevelopInfoPage = lazy(() => import("./pages/develop-info"));
+const WorksPage = lazy(() => import("./pages/works"));
 const ExhibitionListPage = lazy(() => import("./pages/exhibition-list"));
 const ServicePage = lazy(() => import("./pages/service"));
 const PortfolioGuidePage = lazy(() => import("./pages/portfolio-guide"));
@@ -278,6 +279,13 @@ function App() {
             <Layout>
               <DevelopRoute title="Life">
                 <DevelopListPage kind="life" />
+              </DevelopRoute>
+            </Layout>
+          </Route>
+          <Route path="/works">
+            <Layout>
+              <DevelopRoute title="Works">
+                <WorksPage />
               </DevelopRoute>
             </Layout>
           </Route>

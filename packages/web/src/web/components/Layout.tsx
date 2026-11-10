@@ -22,7 +22,14 @@ import { lockPageScroll } from "../lib/scroll-lock";
 import { PAGE_EXIT_MS } from "./PageTransition";
 import { useDarkModeContext, useServiceVisibility } from "./provider";
 import { hasPublicEnglishContent } from "../../shared/public-english";
-import { DEVELOP_INQUIRY_HREF, developDoorCopy, type DevelopDoorKey } from "../../shared/develop-structure";
+import {
+  DEVELOP_INQUIRY_HREF,
+  SPREAD_WORKS_LABEL,
+  WORKS_PATH,
+  developDoorCopy,
+  developTopStyle,
+  type DevelopDoorKey,
+} from "../../shared/develop-structure";
 import { EXHIBITION_LIST_PATH, EXHIBITION_NAV_LABEL, publicExhibitions } from "../../shared/exhibitions";
 import {
   isAboutRoute,
@@ -364,17 +371,23 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const doorCopy = developDoorCopy(data?.developDoors);
   const hasExhibitions =
     developStructure && publicExhibitions(data, typeof window === "undefined" ? undefined : window.location.hostname).length > 0;
+  const spreadMenu = developStructure && developTopStyle(data?.developTopStyle) === "spread";
   const doorNote = (key: DevelopDoorKey) => (isEnglishChrome ? undefined : doorCopy[key].note || undefined);
   const navItems: { href: string; label: string; door?: boolean; note?: string }[] = [
     ...(developStructure
       ? [
           { href: "/portrait", label: doorCopy.portrait.label, door: true, note: doorNote("portrait") },
-          { href: "/life", label: doorCopy.life.label, door: true, note: doorNote("life") },
-          ...(showSeries || showWork
-            ? [{ href: "/series", label: doorCopy.series.label, door: true, note: doorNote("series") }]
-            : []),
-          // 展示の欄（shared/exhibitions.ts）。公開中の展示があるときだけ。
-          ...(hasExhibitions ? [{ href: EXHIBITION_LIST_PATH, label: EXHIBITION_NAV_LABEL, door: true }] : []),
+          // 見開きのトップでは、日常・シリーズ・展示を Works の棚にまとめる（左＝Portrait、右＝Works）。
+          ...(spreadMenu
+            ? [{ href: WORKS_PATH, label: SPREAD_WORKS_LABEL, door: true }]
+            : [
+                { href: "/life", label: doorCopy.life.label, door: true, note: doorNote("life") },
+                ...(showSeries || showWork
+                  ? [{ href: "/series", label: doorCopy.series.label, door: true, note: doorNote("series") }]
+                  : []),
+                // 展示の欄（shared/exhibitions.ts）。公開中の展示があるときだけ。
+                ...(hasExhibitions ? [{ href: EXHIBITION_LIST_PATH, label: EXHIBITION_NAV_LABEL, door: true }] : []),
+              ]),
           // 英語のページを読んでいる人は、英語の Contact へ（Info の英語版は次の段階）。
           { href: isEnglishChrome ? "/en/contact" : "/info", label: doorCopy.info.label, door: true, note: doorNote("info") },
         ]
@@ -421,6 +434,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         return /^\/(info|about|profile|contact|en\/about|en\/contact)$/.test(location);
       // 撮影ごとの実例（Work）は Portrait の続き。
       if (href === "/portrait") return /^\/(portrait|work)(\/|$)/.test(location);
+      // Works は、シリーズ・展示・日常の写真の棚（見開きのトップのとき）。
+      if (href === WORKS_PATH) return /^\/(works|life|series|exhibition|gallery)(\/|$)/.test(location);
     }
     const section = canonicalSection(href);
     if (section) return canonicalSection(location) === section;

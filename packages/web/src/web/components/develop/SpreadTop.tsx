@@ -14,6 +14,7 @@ import {
   developListPhotos,
   spreadOtherText,
   SPREAD_WORKS_LABEL,
+  WORKS_PATH,
 } from "../../../shared/develop-structure";
 import { EXHIBITION_LIST_PATH, EXHIBITION_NAV_LABEL, publicExhibitions } from "../../../shared/exhibitions";
 import type { DevelopPhoto } from "./DevelopHome";
@@ -112,7 +113,7 @@ export function SpreadTop({ settings, covers }: { settings: Settings; covers: De
 
   const left = covers.length >= 2 ? covers[0]! : (portraits[0] ?? covers[0] ?? null);
   const right = covers.length >= 2 ? covers[1]! : (covers[0] && portraits[0] ? covers[0] : (shelfCovers[0]?.photo ?? life[0] ?? null));
-  const worksHref = shelves.length > 0 ? "/series" : "/life";
+  const worksHref = WORKS_PATH;
 
   // 続きの見開き：左は Portrait の写真、右はシリーズの表紙と日常の写真を交互に。入口と同じ写真は出さない。
   const pairs = useMemo(() => {

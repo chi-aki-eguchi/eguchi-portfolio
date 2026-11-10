@@ -658,7 +658,7 @@ async function buildSitemap(fallbackOrigin: string): Promise<string> {
     "/about",
     "/contact",
     // 新しい構成（siteDesign = "develop"）を保存しているサイトだけ、その扉を載せる。
-    ...(isDevelopDesignValue(settings.siteDesign) ? ["/portrait", "/life", "/info"] : []),
+    ...(isDevelopDesignValue(settings.siteDesign) ? ["/portrait", "/life", "/works", "/info"] : []),
     // 展示の欄（一覧と1件ずつ）。公開中の展示があるサイトだけ。
     ...(() => {
       const shows = publicExhibitions(settings, siteUrl);
@@ -1335,6 +1335,7 @@ async function serveNonApi(request: Request, url: URL): Promise<Response> {
               { href: "/", label: siteLabel },
               { href: "/portrait", label: doors.portrait.label },
               { href: "/life", label: doors.life.label },
+              { href: "/works", label: "Works" },
               { href: "/series", label: doors.series.label },
               ...(hasWorkShelf ? [{ href: "/work", label: "Work" }] : []),
               ...(exhibitionShows.length > 0 ? [{ href: EXHIBITION_LIST_PATH, label: EXHIBITION_NAV_LABEL }] : []),

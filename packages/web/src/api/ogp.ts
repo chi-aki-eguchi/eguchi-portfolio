@@ -122,6 +122,7 @@ const PAGE_TITLES: Record<string, string> = {
   "/portrait": "Portrait",
   "/life": "Life",
   "/info": "Info",
+  "/works": "Works",
   // 展示の一覧（2026-11-10、shared/exhibitions.ts）。1件のページの題は server.ts が渡す。
   [EXHIBITION_LIST_PATH]: EXHIBITION_NAV_LABEL,
   "/about": PAGE_TITLE.about,
@@ -200,6 +201,8 @@ function genericPageDescription(
     }
     case "/life":
       return `${name}が撮った日常の写真。`;
+    case "/works":
+      return `${name}の作品。シリーズ、展示、日常の写真。`;
     case "/en/about":
       return `${displayNameEnFrom(settings)}'s profile page.`;
     case "/en/contact":
@@ -600,6 +603,7 @@ export function injectOgp(
     "/portrait",
     "/life",
     "/info",
+    "/works",
     "/exhibition",
     "/about",
     "/profile",

@@ -5,7 +5,9 @@
  * About・Contact・英語・方針）は無くさず、同じ住所でそのまま開ける。
  * 増えるのは下の3つの住所だけで、今までの構成のサイトでは今までどおり 404。
  */
-export const DEVELOP_ONLY_PATHS = ["/portrait", "/life", "/info"] as const;
+export const DEVELOP_ONLY_PATHS = ["/portrait", "/life", "/info", "/works"] as const;
+/** Works（シリーズ・展示・日常をまとめた棚。見開きのトップの右の頁の先）。 */
+export const WORKS_PATH = "/works";
 
 export function isDevelopDesignValue(value: string | null | undefined): boolean {
   return value === "develop";

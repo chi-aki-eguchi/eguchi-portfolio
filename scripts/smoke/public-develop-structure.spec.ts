@@ -1099,5 +1099,15 @@ test("新しい構成 › 見開きのトップ：左右の頁が最初の画面
   await expect(page.locator(".sp-other")).toContainText("物撮り");
   await expect(page.locator(".sp-other a")).toHaveAttribute("href", "/info#request");
   await page.goto("/life", { waitUntil: "networkidle" });
-  await expect(page.locator(".sp-other, .inquiry-line")).toHaveCount(0);
+  await expect(page.locator(".sp-other, .inquiry-line, .wk__other")).toHaveCount(0);
+  // メニューは Portrait・Works・Info。Works は棚：日常の写真と、人のほかの撮影の相談。
+  const hrefs = await menuHrefs(page);
+  expect(hrefs).toContain("/works");
+  expect(hrefs).not.toContain("/life");
+  await expect(right).toHaveCount(0);
+  await page.goto("/works", { waitUntil: "networkidle" });
+  await expect(page.locator("h1")).toHaveText("Works");
+  await expect(page.locator('.wk__link[href="/life"]')).toHaveCount(1);
+  await expect(page.locator(".wk__other a")).toHaveAttribute("href", "/info#request");
+  expect(await noSideScroll(page)).toBeLessThanOrEqual(0);
 });

@@ -65,25 +65,33 @@ push と本番公開はオーナーが行う。ここは「調べて分かった
 - `bun run lint` 成功。
 - smoke（公開画面の5 spec: public-site・public-develop-structure・public-exhibition・public-photo-site・profile-aspect、Chromium と WebKit の PC・スマホ）548成功・120skip・失敗0。
 - そのあと「見開きのトップ」の検査に、入口の写真と Works の表紙の説明文が空でないこと、`/en/about` の題が英語だけであることを足し、4環境で成功。
-- `bun run check` の全体と smoke の残り（管理画面）は実行していない。管理画面のコードは触っていない。
-- 本番の写真での見え方（実際に入る説明文）は、公開後に確認する。手元の検査は人工データ。
+- **2026-11-11 追加検証**: `bun run check` 全体（スキーマ・移行・型・lint・単体・道具・smokeの守り・ビルド）が終了コード0。最後の wiki の鮮度確認は以前からある「67日前に確認」の注意を出すだけで、失敗ではない。smoke の管理画面側は実行していない（管理画面のコードは触っていない）。
+- **本番の公開写真での確認**（`TRY_DESIGN=develop bun run try`。本番の公開GETだけを中継し、書き込みはしない）。`/` `/works` `/en/about` `/portrait` を PC 1440 とスマホ 390 で、本番（変更前）と並べて取得。
+  - 写真の位置と大きさ、ページの高さ・幅は、4ページ×2幅とも変更前と完全に同じ。読み込めない写真 0、画面のエラー 0。
+  - 空の説明文: トップ 10枚 → 0、Works 7枚 → 0。入った文は「江口秋撮影のフィルム写真（2025年10月スキャン）」「Ishigaki Islandシリーズより、江口秋撮影の写真」など、既存ページと同じ規則の文。
+  - `/en/about` の題: 「About | 江口秋 | Aki Eguchi | 写真学生」→「About | Aki Eguchi」。
+  - 画面: [トップ](evidence/seo-20261111/after__1440_top.jpg)、[Works PC](evidence/seo-20261111/after_works_1440_full.jpg)、[Works スマホ](evidence/seo-20261111/after_works_390_full.jpg)、[About 英語](evidence/seo-20261111/after_en_about_1440_full.jpg)。
+- サーバが最初に返すHTMLの題・説明（`api/ogp.ts`）は単体テストで確認。本番での実物は公開後に見る。
+- シリーズ紹介文の下書き: [series-statement-drafts-20261111.md](series-statement-drafts-20261111.md)（未確認の下書き。管理画面には入れていない）。
 
 ## 公開の手順（オーナー）
 
 1. `git fetch origin` のあと、`claude/seo-20261111` を `main` へ取り込み、`git push origin main`（Railway が反映）。
 2. `https://akieguchi.com/api/health` の build が新しくなったことを確認。
 3. 本番で確認: `/en/about` のタブの題が「About | Aki Eguchi」。トップの写真を右クリック →「検証」で alt に文が入っている。`/sitemap.xml` の `/portrait` に `<lastmod>`。
-4. Search Console → URL検査で、次の順に「インデックス登録をリクエスト」（1日10件ほどまで）: `/portrait` `/works` `/info` `/life` `/series/indigoblue` `/series/sicf` `/series/stilllifekyoto` `/work/rintaro` `/exhibition`。**紹介文を入れた後のほうが通りやすい**ので、先に上の表の言葉を入れられるなら入れてから。
+4. Search Console → URL検査で、次の順に「インデックス登録をリクエスト」（1日10件ほどまで）: `/portrait` `/works` `/info` `/life` `/series/indigoblue` `/series/sicf` `/series/stilllifekyoto` `/work/rintaro` `/exhibition`。読める文があるページのほうが登録されやすいので、先に紹介文を入れられるなら入れてから。**リクエストしても登録は保証されない。**
 5. Search Console → サイトマップ → `sitemap.xml` を再送信。
 
 戻し方: 取り込んだコミットを `git revert` して push（DB・設定の変更は無い）。`docs/rollback-guide.md`。
 
 ## 公開後に見る所
 
+登録されることを前提にしない。下の時期に実際の登録状況と表示回数を記録し、登録されないページは URL検査の理由（検出・未登録／クロール済み・未登録）を見て次の手を決める。
+
 | いつ | どこ | 何を |
 |---|---|---|
 | 公開当日 | 本番 | 上の手順3 |
-| 1〜2週間後 | Search Console → ページ →「検出・未登録」 | `/portrait` `/life` `/info` とシリーズが一覧から消えたか（12件 → 道具の4件だけになるのが目標） |
+| 1〜2週間後 | Search Console → ページ →「検出・未登録」 | `/portrait` `/life` `/info` とシリーズが一覧から消えたか（今は12件。消えない物は理由を記録する） |
 | 4週間後（12月上旬） | 検索パフォーマンス、28日比較、ページ別 | `/portrait` `/works` `/series/*` に表示が付いたか。`/en/about` の表示とクリック |
 | 4週間後 | 検索パフォーマンス、検索タイプ「画像」 | 表示回数（今回 未取得。説明文を足した効果はここに出る） |
 | 表示が付いてから | 同上 | `/about` と `/info` のどちらが名前の検索で出ているか → 正規URLを寄せるか判断 |

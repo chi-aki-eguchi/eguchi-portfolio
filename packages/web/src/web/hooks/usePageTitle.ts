@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { api, jsonOrThrow } from "../lib/api";
 import { CLIENT_SITE_FALLBACKS } from "../lib/site-fallbacks";
 import { isServiceOwnerSite } from "../../shared/service-visibility";
-import { composePageTitle, OWNER_SERVICE_TITLE } from "../../shared/site-title";
+import { composeEnglishPageTitle, composePageTitle, OWNER_SERVICE_TITLE } from "../../shared/site-title";
 
 /**
  * Sets document.title on SPA navigation.
@@ -12,7 +12,7 @@ import { composePageTitle, OWNER_SERVICE_TITLE } from "../../shared/site-title";
  * Pass a page name like "Gallery" -> "Gallery | Name JA | Name EN | Subtitle"
  * Pass nothing → home title ("Name JA | Name EN Subtitle").
  */
-export function usePageTitle(page?: string) {
+export function usePageTitle(page?: string, english = false) {
   const { data: settings, isError } = useQuery({
     queryKey: ["settings"],
     queryFn: async () => jsonOrThrow(await api.settings.$get()),
@@ -28,10 +28,15 @@ export function usePageTitle(page?: string) {
       document.title = OWNER_SERVICE_TITLE[page === "Portfolio Kit" ? "ja" : "en"];
       return;
     }
+    // 英語URLは英語だけの題（サーバの api/ogp.ts と同じ式）。
+    if (english && page) {
+      document.title = composeEnglishPageTitle(page, settings?.siteNameEn || CLIENT_SITE_FALLBACKS.siteNameEn);
+      return;
+    }
     document.title = composePageTitle(page, {
       nameJa: settings?.siteName || CLIENT_SITE_FALLBACKS.siteName,
       nameEn: settings?.siteNameEn || CLIENT_SITE_FALLBACKS.siteNameEn,
       subtitle: settings?.heroSubtitle || CLIENT_SITE_FALLBACKS.heroSubtitle,
     });
-  }, [isError, page, settings]);
+  }, [english, isError, page, settings]);
 }

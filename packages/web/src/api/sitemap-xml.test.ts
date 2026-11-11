@@ -153,6 +153,26 @@ describe("buildSitemapXml", () => {
     expect(portraitLine.split("<image:title>").length - 1).toBe(2);
   });
 
+  test("写真を選んで並べたページの lastmod は、そのページの写真でいちばん新しい日", () => {
+    const input = base();
+    const xml = buildSitemapXml({
+      ...input,
+      paths: [...input.paths, "/portrait", "/life", "/works"],
+      // /portrait は 20（07-20）と 10（06-01）。/life は公開されていない写真だけ。
+      pagePhotoIds: new Map([
+        ["/portrait", [10, 20]],
+        ["/life", [999]],
+      ]),
+    });
+    const entry = (path: string) =>
+      xml.split("\n").find((line) => line.includes(`<loc>https://example.com${path}</loc>`))!;
+    expect(entry("/portrait")).toContain("<lastmod>2026-07-20</lastmod>");
+    // 根拠になる写真が無ければ出さない。
+    expect(entry("/life")).not.toContain("<lastmod>");
+    // 棚をまとめた Works は、サイト全体の最新日。
+    expect(entry("/works")).toContain("<lastmod>2026-07-20</lastmod>");
+  });
+
   test("英語のAboutにもプロフィール写真を出す", () => {
     const input = base();
     const xml = buildSitemapXml({

@@ -10,6 +10,7 @@ import { api, jsonOrThrow } from "../lib/api";
 import { sortPhotosBySetting } from "../lib/photo-sort";
 import { useScrollFadeIn } from "../hooks/useScrollFadeIn";
 import { exhibitionNeedsLibrary } from "../../shared/exhibition";
+import { photoAltText } from "../../shared/photo-alt";
 import {
   DEVELOP_INQUIRY_HREF,
   developDoorCopy,
@@ -26,7 +27,15 @@ import {
 } from "../../shared/exhibitions";
 import "../components/develop/spread.css";
 
-type Row = { key: string; href: string; title: string; note: string; photo: DevelopPhoto | null };
+type Row = {
+  key: string;
+  href: string;
+  title: string;
+  note: string;
+  photo: DevelopPhoto | null;
+  /** シリーズ・仕事の棚の表紙。写真の説明に棚の名前を添える。 */
+  shelf?: boolean;
+};
 
 function ratio(photo: DevelopPhoto): string | undefined {
   if (!photo.width || !photo.height) return undefined;
@@ -64,6 +73,7 @@ export default function WorksPage() {
       key: s.href,
       href: s.href,
       title: s.title,
+      shelf: true,
       note: s.photoCount > 0 ? `${s.photoCount}` : "",
       photo: s.coverUrl
         ? {
@@ -110,7 +120,10 @@ export default function WorksPage() {
                     width={row.photo.width}
                     height={row.photo.height}
                     rotationDeg={row.photo.rotationDeg}
-                    alt=""
+                    alt={photoAltText(row.photo, {
+                      photographerName: settings?.siteName,
+                      seriesName: row.shelf ? row.title : undefined,
+                    })}
                     preset="grid"
                     sizes="(min-width: 768px) 48vw, 100vw"
                     fallbackW={1400}

@@ -43,12 +43,15 @@ const AdminDemoPage = lazy(() => import("./pages/admin-demo"));
 
 function TitledRoute({
   title,
+  english = false,
   children,
 }: {
   title?: string;
+  /** 英語URLのページ。題を英語だけにする（shared/site-title.ts）。 */
+  english?: boolean;
   children: React.ReactNode;
 }) {
-  usePageTitle(title);
+  usePageTitle(title, english);
   return <>{children}</>;
 }
 
@@ -88,7 +91,7 @@ function PublicPolicyRoute({
   const page = (
     <Layout>
       <PageTransition>
-        <TitledRoute title={title}>
+        <TitledRoute title={title} english={language === "en"}>
           <Suspense fallback={<PageFallback />}>
             <PolicyPage kind={kind} language={language} />
           </Suspense>
@@ -344,7 +347,7 @@ function App() {
           <Route path="/en/about">
             <Layout>
               <PageTransition>
-                <TitledRoute title={PAGE_TITLE.about}>
+                <TitledRoute title={PAGE_TITLE.about} english>
                   <Suspense fallback={<PageFallback />}>
                     <ProfilePage language="en" />
                   </Suspense>
@@ -355,7 +358,7 @@ function App() {
           <Route path="/en/contact">
             <Layout>
               <PageTransition>
-                <TitledRoute title={PAGE_TITLE.contactEn}>
+                <TitledRoute title={PAGE_TITLE.contactEn} english>
                   <Suspense fallback={<PageFallback />}>
                     <ContactPage language="en" />
                   </Suspense>

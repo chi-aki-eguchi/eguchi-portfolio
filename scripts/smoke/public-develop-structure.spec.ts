@@ -1091,6 +1091,8 @@ test("新しい構成 › 見開きのトップ：左右の頁が最初の画面
     expect(box.y + box.height).toBeLessThanOrEqual(viewport.height + 1);
     expect(box.height).toBeGreaterThan(160);
     await expect(pageLink.locator("img")).toHaveCSS("opacity", "1");
+    // 入口の写真は、説明の言葉を持つ（空のままにしない）。
+    await expect(pageLink.locator("img")).toHaveAttribute("alt", /\S/);
   }
   expect(await noSideScroll(page)).toBeLessThanOrEqual(0);
   // 終わり：左に依頼、右に作品の目次と、人のほかの撮影の相談。Life には依頼を出さない。
@@ -1110,4 +1112,11 @@ test("新しい構成 › 見開きのトップ：左右の頁が最初の画面
   await expect(page.locator('.wk__link[href="/life"]')).toHaveCount(1);
   await expect(page.locator(".wk__other a")).toHaveAttribute("href", "/info#request");
   expect(await noSideScroll(page)).toBeLessThanOrEqual(0);
+  // 棚の表紙も、説明の言葉を持つ。
+  const covers = page.locator(".wk__img");
+  expect(await covers.count()).toBeGreaterThan(0);
+  for (const cover of await covers.all()) await expect(cover).toHaveAttribute("alt", /\S/);
+  // 英語のページの題は英語だけ（日本語の名前・肩書きを混ぜない）。
+  await page.goto("/en/about", { waitUntil: "networkidle" });
+  await expect(page).toHaveTitle(/^About \| [\x20-\x7e]+$/);
 });

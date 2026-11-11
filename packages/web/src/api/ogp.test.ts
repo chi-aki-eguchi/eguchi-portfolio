@@ -1771,8 +1771,26 @@ describe("injectOgp 撮影依頼の構造化データ", () => {
     expect(out).toContain("<title>撮影依頼・お問い合わせ | 江口秋 | Aki Eguchi");
     // 英語URLの題には日本語を出さない。
     expect(injectOgp(page, settings, "/en/contact")).toContain(
-      "<title>Contact | 江口秋 | Aki Eguchi",
+      "<title>Contact | Aki Eguchi</title>",
     );
+  });
+
+  test("英語URLの題は英語の名前だけで、対になる日本語ページの題と重ならない", () => {
+    const ja = injectOgp(page, settings, "/about").match(/<title>([^<]*)/)?.[1];
+    const en = injectOgp(page, settings, "/en/about").match(/<title>([^<]*)/)?.[1];
+    expect(en).toBe("About | Aki Eguchi");
+    expect(ja).toContain("江口秋");
+    expect(en).not.toBe(ja);
+  });
+
+  test("/work の説明文は /series と同じ文にならない", () => {
+    const desc = (path: string) =>
+      injectOgp(page, { ...settings, metaDescriptionSeries: "シリーズの説明。" }, path).match(
+        /<meta name="description" content="([^"]*)"/,
+      )?.[1];
+    expect(desc("/series")).toBe("シリーズの説明。");
+    expect(desc("/work")).toBeTruthy();
+    expect(desc("/work")).not.toBe(desc("/series"));
   });
 });
 

@@ -17,6 +17,7 @@ import {
   WORKS_PATH,
 } from "../../../shared/develop-structure";
 import { EXHIBITION_LIST_PATH, EXHIBITION_NAV_LABEL, publicExhibitions } from "../../../shared/exhibitions";
+import { photoAltText } from "../../../shared/photo-alt";
 import type { DevelopPhoto } from "./DevelopHome";
 import "./spread.css";
 
@@ -154,7 +155,9 @@ export function SpreadTop({ settings, covers }: { settings: Settings; covers: De
           width={photo.width}
           height={photo.height}
           rotationDeg={photo.rotationDeg}
-          alt=""
+          // 入口の2枚は、開いて最初に見える写真。空のままだと、画像の検索にも読み上げにも
+          // 「写真がある」ことしか伝わらない（2026-11-11 実測: トップの10枚すべてが空）。
+          alt={photoAltText(photo, { photographerName: name })}
           preset="hero"
           sizes="(min-width: 768px) 50vw, 100vw"
           fallbackW={1600}
@@ -198,7 +201,7 @@ export function SpreadTop({ settings, covers }: { settings: Settings; covers: De
           width={item.photo.width}
           height={item.photo.height}
           rotationDeg={item.photo.rotationDeg}
-          alt={item.photo.title || ""}
+          alt={photoAltText(item.photo, { photographerName: name })}
           preset="grid"
           sizes="(min-width: 768px) 46vw, 82vw"
           fallbackW={1200}

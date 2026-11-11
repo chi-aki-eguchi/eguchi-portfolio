@@ -45,6 +45,18 @@ export function composePageTitle(
 }
 
 /**
+ * 英語URL（/en/about など）の題。"Page | Name EN" だけにする。
+ *
+ * それまでは英語ページも "About | 江口秋 | Aki Eguchi | 写真学生" で、日本語ページと
+ * 一字一句同じ題だった（2026-11-11 実測）。`<html lang="en">` を名乗るページの題に
+ * 日本語の名前と肩書きが入り、対になる日本語ページと検索結果で見分けが付かない。
+ * 肩書き（heroSubtitle）は日本語で入力される欄なので、英語の題には使わない。
+ */
+export function composeEnglishPageTitle(page: string, nameEn: string): string {
+  return [page, nameEn].filter(Boolean).join(" | ");
+}
+
+/**
  * 各ページの題（`<title>` の先頭に来る語）。**サーバ（api/ogp.ts）と画面
  * （web/app.tsx の TitledRoute）の両方がここを読む。**別々に文字列を書くと
  * 静かにズレて、GA が同じURLを2つの題で記録する（過去に実際に起きた）。

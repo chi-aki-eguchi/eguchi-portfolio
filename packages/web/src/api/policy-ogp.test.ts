@@ -22,7 +22,7 @@ describe("policy route metadata", () => {
       "/privacy/en",
     );
     expect(out).toContain("<html lang=\"en\"");
-    expect(out).toContain("<title>Privacy Policy | Aki Eguchi | Photography</title>");
+    expect(out).toContain("<title>Privacy Policy | Aki Eguchi</title>");
     expect(out).toContain(
       '<link rel="canonical" href="https://akieguchi.com/privacy/en">',
     );

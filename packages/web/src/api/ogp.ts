@@ -23,6 +23,7 @@ import {
 } from "../shared/analytics-path";
 import {
   composeBaseTitle,
+  composeEnglishPageTitle,
   composeHomeTitle,
   PAGE_TITLE,
 } from "../shared/site-title";
@@ -152,9 +153,9 @@ const META_DESCRIPTION_KEYS: Record<string, string> = {
   "/": "metaDescriptionHome",
   "/gallery": "metaDescriptionGallery",
   "/series": "metaDescriptionSeries",
-  // Work は専用キーを増やさず、シリーズ側の説明に相乗りする（同じ「作品群を
-  // 束ねたページ」なので、説明の中身も同じでよい）。
-  "/work": "metaDescriptionSeries",
+  // Work は専用キーを持たない。以前はシリーズ側の説明に相乗りしていて、/series と
+  // /work の説明文が一字一句同じだった（2026-11-11 実測）。同じ文の2ページは検索で
+  // 片方しか出ないので、下の genericPageDescription の文を使う。
   "/about": "metaDescriptionAbout",
   "/profile": "metaDescriptionAbout",
   "/contact": "metaDescriptionContact",
@@ -182,8 +183,9 @@ function genericPageDescription(
     case "/gallery":
       return `${name}の作品を一覧できるギャラリーページ。`;
     case "/series":
-    case "/work":
       return `${name}の作品をシリーズ単位で紹介するページ。`;
+    case "/work":
+      return `${name}が人や企画ごとに撮りためた写真のページ。`;
     case "/about":
     case "/profile":
       return `${name}のプロフィールページ。`;
@@ -658,7 +660,10 @@ export function injectOgp(
       : override?.title
         ? `${override.title} | ${base}`
         : page
-          ? `${page} | ${base}`
+          ? // 英語URLは英語だけの題（画面側 usePageTitle と同じ式）。
+            ENGLISH_PUBLIC_PATHS.has(pathname)
+            ? composeEnglishPageTitle(page, siteName)
+            : `${page} | ${base}`
           : homeTitle;
   // Per-page description, from most to least specific:
   // 1. a series' own statement/subtitle (override.desc)

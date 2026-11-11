@@ -193,8 +193,20 @@ export function buildSitemapXml(input: SitemapInput): string {
   const lastmodFor = (path: string): string => {
     const pid = photoIdOf(path);
     if (pid != null) return isoDay(photoById.get(pid)?.createdAt ?? null);
-    if (path === "/" || path === "/gallery" || path === "/series")
+    if (path === "/" || path === "/gallery" || path === "/series" || path === "/works")
       return isoDay(latestOverall);
+    // 写真を選んで並べたページ（/portrait・/life）は、そのページの写真でいちばん新しい日。
+    // 日付が無いと、新しく出来たページを検索側が後回しにしても気付く手掛かりが無い
+    // （2026-11-11 実測: /portrait・/life は公開から1か月たっても未巡回）。
+    const pageIds = pagePhotoIds?.get(path);
+    if (pageIds) {
+      let latest: Date | null = null;
+      for (const id of pageIds) {
+        const at = photoById.get(id)?.createdAt;
+        if (at && (!latest || at > latest)) latest = at;
+      }
+      return isoDay(latest);
+    }
     const sid = seriesIdBySlugPath.get(path);
     if (sid != null) return isoDay(latestBySeries.get(sid) ?? latestOverall);
     return "";

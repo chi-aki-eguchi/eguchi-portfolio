@@ -76,7 +76,10 @@ push と本番公開はオーナーが行う。ここは「調べて分かった
 
 ## 公開の手順（オーナー）
 
-1. `git fetch origin` のあと、`claude/seo-20261111` を `main` へ取り込み、`git push origin main`（Railway が反映）。
+1. 作業フォルダから直接、早送りで main へ送る（元の `~/eguchi-portfolio-app` の未追跡ファイルには触らない）:
+   `git -C ~/wt-seo-portfolio-20261111 fetch origin main` → `git -C ~/wt-seo-portfolio-20261111 push origin claude/seo-20261111:main`（Railway が反映）。
+   2026-11-11 時点で `origin/main`（`f10903d`）の真上に載っており、競合は無い。main が進んでいたら push は拒否される（何も壊れない）。
+   そのときは作業フォルダで `git rebase origin/main` → `bun run check` → もう一度 push。
 2. `https://akieguchi.com/api/health` の build が新しくなったことを確認。
 3. 本番で確認: `/en/about` のタブの題が「About | Aki Eguchi」。トップの写真を右クリック →「検証」で alt に文が入っている。`/sitemap.xml` の `/portrait` に `<lastmod>`。
 4. Search Console → URL検査で、次の順に「インデックス登録をリクエスト」（1日10件ほどまで）: `/portrait` `/works` `/info` `/life` `/series/indigoblue` `/series/sicf` `/series/stilllifekyoto` `/work/rintaro` `/exhibition`。読める文があるページのほうが登録されやすいので、先に紹介文を入れられるなら入れてから。**リクエストしても登録は保証されない。**

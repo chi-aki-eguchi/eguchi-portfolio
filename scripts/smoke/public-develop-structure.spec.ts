@@ -1120,3 +1120,63 @@ test("新しい構成 › 見開きのトップ：左右の頁が最初の画面
   await page.goto("/en/about", { waitUntil: "networkidle" });
   await expect(page).toHaveTitle(/^About \| [\x20-\x7e]+$/);
 });
+
+test("新しい構成 › Info は料金と写真を待って依頼へ着地し、操作した後は引き戻さない", async ({ page, api }) => {
+  const settings = await (await api.get("/api/settings")).json();
+  let releasePricing!: () => void;
+  const pricingReady = new Promise<void>((resolve) => { releasePricing = resolve; });
+  await page.route("**/api/settings", route => route.fulfill({ json: {
+    ...settings, siteDesign: "develop", profilePhotoUrl: "/api/images/profile/info-arrival.svg",
+    profileBio: "自己紹介の文章です。\n".repeat(12),
+  } }));
+  await page.route("**/api/images/profile/info-arrival.svg**", async route => {
+    await pricingReady;
+    await route.fulfill({ contentType: "image/svg+xml", body: '<svg xmlns="http://www.w3.org/2000/svg" width="900" height="600"><rect width="900" height="600" fill="#718085"/></svg>' });
+  });
+  await page.route("**/api/pricing", async route => {
+    await pricingReady;
+    await route.fulfill({ json: { plans: [{ id: 1, title: "ポートレート", price: "¥10,000", description: "撮影60分", sortOrder: 0, isPublished: true }] } });
+  });
+  await page.goto("/info#request", { waitUntil: "domcontentloaded" });
+  await page.addStyleTag({ content: ".dv-info .contact-page { min-height: 150vh !important; }" });
+  await expect(page.locator(".dv-info")).toHaveAttribute("aria-busy", "true");
+  await expect(page.locator(".dv-info .contact-page")).toBeHidden();
+  releasePricing();
+  await expect(page.locator(".dv-info")).toHaveAttribute("aria-busy", "false");
+  await expect(page.locator("[data-contact-pricing]")).toBeVisible();
+  const anchorTop = () => page.locator("#request").evaluate(el => el.getBoundingClientRect().top);
+  await expect.poll(anchorTop).toBeLessThan(120);
+  expect(await anchorTop()).toBeGreaterThanOrEqual(-1);
+  // mobile WebKit は wheel 未対応。料金を触ってからスクロールする操作を再現する。
+  await page.locator("[data-contact-pricing]").click({ position: { x: 20, y: 20 } });
+  await page.evaluate(() => window.scrollBy(0, 300));
+  await expect.poll(anchorTop).toBeLessThan(-100);
+  // 読み込み後にページの高さが変わっても、読んでいる場所は本人の操作を優先する。
+  await page.locator(".dv-info").evaluate(el => { el.appendChild(Object.assign(document.createElement("div"), { style: "height:300px" })); });
+  await page.waitForTimeout(250);
+  expect(await anchorTop()).toBeLessThan(-100);
+});
+
+test("新しい構成 › Works は遅い一覧を待ち、最初から同じ順で作品を見せる", async ({ page, api }) => {
+  await withCategories(page, api);
+  const settings = await (await api.get("/api/settings")).json();
+  await page.route("**/api/settings", route => route.fulfill({ json: { ...settings, siteDesign: "develop", developTopStyle: "spread" } }));
+  let releaseSeries!: () => void;
+  const seriesReady = new Promise<void>((resolve) => { releaseSeries = resolve; });
+  await page.route(url => url.pathname === "/api/series" && !url.searchParams.has("kind"), async route => {
+    await seriesReady;
+    await route.fulfill({ json: { series: [{ id: 1, title: "Averylongunbrokentitleforthephotographycollection", slug: "slow-series", photoCount: 12, coverUrl: null }] } });
+  });
+  await page.goto("/works", { waitUntil: "domcontentloaded" });
+  await expect(page.locator(".wk")).toHaveAttribute("aria-busy", "true");
+  await expect(page.locator(".wk__link")).toHaveCount(0);
+  releaseSeries();
+  await expect(page.locator(".wk")).toHaveAttribute("aria-busy", "false");
+  await expect(page.locator(".wk__link").first()).toHaveAttribute("href", "/series/slow-series");
+  await expect(page.locator('.wk__link[href="/life"]')).toBeVisible();
+  await page.setViewportSize({ width: 320, height: 568 });
+  expect(await noSideScroll(page)).toBeLessThanOrEqual(1);
+  const name = await page.locator(".wk__name").first().boundingBox();
+  const note = await page.locator(".wk__note").first().boundingBox();
+  expect(name!.x + name!.width).toBeLessThanOrEqual(note!.x);
+});

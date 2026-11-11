@@ -6,6 +6,7 @@
 
 | 知りたいこと | 文書 |
 |---|---|
+| Info・Worksの読み込みとトップの横向き表示（2026-11-11） | `docs/specs/site-arrival-20261111.md` |
 | 仕事・作品の紹介ページ（初期版） | `docs/specs/portfolio-introduction-v0.md` |
 | 5つの収入経路とWorkroom（2026-10-01） | `docs/specs/income-channels-20261001.md` |
 | 公開サイトのズレの総点検（2026-10-01） | `docs/specs/visual-alignment-20261001.md` |

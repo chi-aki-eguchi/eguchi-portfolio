@@ -52,6 +52,7 @@ export default function ProfilePage({
   language = "ja",
   embedded = false,
   part = "all",
+  onIntroReady,
 }: {
   /**
    * 新しい構成の Info で、料金と依頼を間に挟むために2つに分けて出す（2026-10-13）。
@@ -63,6 +64,8 @@ export default function ProfilePage({
   language?: "ja" | "en";
   /** 依頼のページを続けて出すとき（新しい構成の Info）。すぐ下にフォームがあるので「お問い合わせ」への案内は出さない。 */
   embedded?: boolean;
+  /** Info は自己紹介の高さが決まってから依頼の位置へ移動する。 */
+  onIntroReady?: (ready: boolean) => void;
 }) {
   usePageLanguage(language);
   const english = language === "en";
@@ -153,6 +156,9 @@ export default function ProfilePage({
   const waiting = photoAbove && loadedPhotoUrl !== photoUrl;
   const holdBio = waiting && gaveUpPhotoUrl !== photoUrl;
   const provisionalPhoto = waiting && gaveUpPhotoUrl === photoUrl;
+  useEffect(() => {
+    onIntroReady?.(!settingsLoading && !holdBio);
+  }, [settingsLoading, holdBio, onIntroReady]);
   useEffect(() => {
     if (!holdBio) return;
     const timer = window.setTimeout(() => setGaveUpPhotoUrl(photoUrl), 2500);

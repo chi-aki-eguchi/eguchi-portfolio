@@ -256,6 +256,10 @@ body[data-reveal="none"] .dv-stage__img {
    今までの About と Contact は、それぞれ「1ページぶんの最低の高さ」（画面の6割）を持っている。
    続けて出すと、中身が短いときに、自己紹介と依頼の間・依頼とフッターの間が大きく空く
    （人工データで実測：スマホ 336px と 485px）。Info の中では最低の高さを外す。 */
+.dv-info[aria-busy="true"] {
+  visibility: hidden;
+  min-height: calc(100svh - var(--header-h) - var(--sai-top));
+}
 .dv-info .profile-page,
 .dv-info .contact-page,
 .dv-info > section {

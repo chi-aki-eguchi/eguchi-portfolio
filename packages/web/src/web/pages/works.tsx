@@ -49,7 +49,7 @@ function ratio(photo: DevelopPhoto): string | undefined {
  * 終わりに、人のほかの撮影（物撮りなど）の相談。日常の写真（Life）のページには依頼を出さない。
  */
 export default function WorksPage() {
-  const { data: settings } = useQuery({
+  const settingsQ = useQuery({
     queryKey: ["settings"],
     queryFn: async () => jsonOrThrow(await api.settings.$get()),
   });
@@ -59,6 +59,11 @@ export default function WorksPage() {
     queryFn: async () => jsonOrThrow(await api.series.$get({ query: { kind: "work" } })),
   });
   const photosQ = useQuery({ queryKey: ["photos"], queryFn: async () => jsonOrThrow(await api.photos.$get()) });
+  const settings = settingsQ.data;
+  const sources = [settingsQ, seriesQ, worksQ, photosQ];
+  const pending = sources.some((query) => query.isPending);
+  const failed = sources.some((query) => query.isError && !query.data);
+  const retrying = sources.some((query) => query.isFetching);
   const copy = developDoorCopy(settings?.developDoors);
   const photos = useMemo(
     () => sortPhotosBySetting(photosQ.data?.photos ?? [], "manual") as DevelopPhoto[],
@@ -103,12 +108,20 @@ export default function WorksPage() {
     return list;
   }, [seriesQ.data, worksQ.data, photosQ.data, photos, settings, copy.life.label, copy.life.note]);
   const other = settings?.homeCtaEnabled === "on" ? spreadOtherText(settings?.homeCtaOtherText) : "";
-  const fadeRef = useScrollFadeIn([rows.length]);
+  const fadeRef = useScrollFadeIn([rows.length, pending]);
   return (
-    <section className="sp wk site-page site-page-top min-h-[60vh]" ref={fadeRef}>
+    <section className={`sp wk site-page site-page-top ${pending ? "site-page-hold" : "min-h-[60vh]"}`} ref={fadeRef} aria-busy={pending}>
       <PageTitle className="wk__title">{SPREAD_WORKS_LABEL}</PageTitle>
+      {!pending && failed && (
+        <div className="wk__error" aria-live="polite">
+          作品を一部読み込めませんでした。
+          <button type="button" disabled={retrying} onClick={() => { void Promise.all(sources.map((query) => query.refetch())); }}>
+            {retrying ? "読み込み中…" : "もう一度読み込む"}
+          </button>
+        </div>
+      )}
       <ol className="wk__list">
-        {rows.map((row) => (
+        {!pending && rows.map((row, index) => (
           <li key={row.key} className="wk__item">
             <Link to={row.href} className="wk__link">
               <span className="wk__photo fade-in-item" style={{ aspectRatio: row.photo ? ratio(row.photo) : undefined }}>
@@ -129,7 +142,8 @@ export default function WorksPage() {
                     fallbackW={1400}
                     fallbackQ={80}
                     className="wk__img"
-                    loading="lazy"
+                    loading={index === 0 ? "eager" : "lazy"}
+                    fetchPriority={index === 0 ? "high" : "auto"}
                     draggable={false}
                   />
                 )}
@@ -142,7 +156,7 @@ export default function WorksPage() {
           </li>
         ))}
       </ol>
-      {other && (
+      {!pending && other && (
         <p className="wk__other">
           <JaPhrases>{other}</JaPhrases>
           <Link to={DEVELOP_INQUIRY_HREF} className="sp-go">

@@ -1,5 +1,8 @@
+import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import ProfilePage from "./profile";
 import ContactPage from "./contact";
+import { api, jsonOrThrow } from "../lib/api";
 import { useInitialHashScroll } from "../hooks/useInitialHashScroll";
 import { DEVELOP_INQUIRY_ANCHOR } from "../../shared/develop-structure";
 // Info の中での余白の調整はここ（直接このページを開いても読み込まれるように、ここで読む）。
@@ -19,15 +22,19 @@ import "../components/develop/develop.css";
  * 料金と依頼の頭に印を置き、そこから見せる（自己紹介はその上に残る）。
  */
 export default function DevelopInfoPage() {
-  // 料金は取り寄せを待って描かれるので、届くまでの間は印へ合わせ直す（useInitialHashScroll の説明）。
-  // 2026-11-10 に 1.5 秒 → 6 秒。上の自己紹介は写真を最大 2.5 秒待ってから出る（profile.tsx の holdBio）ので、
-  // 遅い回線では 1.5 秒を過ぎてから高さが変わり、印の位置が 350px ほど動いたままになっていた
-  //（本番のスマホ・4G 相当で、ずれ 1.458）。読む人が触ったら、その時点でやめるのは今までどおり。
-  useInitialHashScroll({ followLayoutMs: 6000 });
+  const [introReady, setIntroReady] = useState(false);
+  // Contact と同じ query を共有する。料金と自己紹介は並行して取り寄せ、
+  // 料金の挿入・写真の到着で読んでいる箇所を押しのけてから合わせ直すのを避ける。
+  const pricing = useQuery({
+    queryKey: ["pricing"],
+    queryFn: async () => jsonOrThrow(await api.pricing.$get()),
+  });
+  const ready = introReady && !pricing.isPending;
+  useInitialHashScroll({ followLayoutMs: 6000, ready });
   return (
-    <div className="dv-info">
-      <ProfilePage embedded part="intro" />
-      <div id={DEVELOP_INQUIRY_ANCHOR} className="dv-info__request" aria-hidden="true" />
+    <div className="dv-info" aria-busy={!ready} inert={!ready}>
+      <ProfilePage embedded part="intro" onIntroReady={setIntroReady} />
+      <div id={ready ? DEVELOP_INQUIRY_ANCHOR : undefined} className="dv-info__request" aria-hidden="true" />
       <ContactPage embedded />
       <ProfilePage embedded part="more" />
     </div>

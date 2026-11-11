@@ -56,6 +56,20 @@ a:hover > .sp-go::after, a:hover .sp-page__meta .sp-go::after, a.sp-go:hover::af
   .sp-page--right .sp-page__meta { justify-content: flex-start; }
 }
 
+/* 横向きのスマホは左右の見開きへ戻す。上下2段では写真が高さ137pxまで潰れ、
+   文字で隠れる（667×375）。短い画面でも写真と名前が最初の画面に収まる。 */
+@media (orientation: landscape) and (max-height: 500px) and (min-width: 568px) {
+  .sp-spread { grid-template-columns: minmax(0, 1fr) var(--sp-spine) minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); min-height: 0; }
+  .sp-spine::before, .sp-spine::after { display: none; }
+  .sp-spine__name, .sp-spine__name:not([data-vertical]) { writing-mode: vertical-rl; font-size: 15px; letter-spacing: 0.35em; padding: 0.35em 0 0; }
+  .sp-page__word { font-size: clamp(32px, 5.5vw, 46px); }
+  .sp-page__text { bottom: max(16px, calc(var(--sai-bottom, 0px) + 8px)); }
+  .sp-page--left .sp-page__text { left: max(var(--sp-inset), calc(var(--sai-left, 0px) + 12px)); }
+  .sp-page__meta { font-size: 12px; margin-top: 6px; gap: 2px 1em; }
+  .sp-page--right .sp-page__text { right: max(var(--sp-inset), calc(var(--sai-right, 0px) + 12px)); text-align: right; }
+  .sp-page--right .sp-page__meta { justify-content: flex-end; }
+}
+
 /* ── 続き：背の線が通り、左右に1枚ずつ（切り抜かない）── */
 .sp-gutter { position: relative; padding: clamp(56px, 9vw, 140px) 0 0; }
 .sp-gutter::before, .sp-colophon::before { content: ""; position: absolute; top: 0; bottom: 0; left: 50%; width: 1px; background: var(--sp-line); }
@@ -112,13 +126,16 @@ a:hover > .sp-go::after, a:hover .sp-page__meta .sp-go::after, a.sp-go:hover::af
 
 /* ── Works（pages/works.tsx）：棚。表紙1枚と名前を、左右交互に置く ── */
 .wk { padding-bottom: clamp(40px, 6vw, 96px); }
+.wk[aria-busy="true"] { visibility: hidden; }
+.wk__error { display: flex; flex-wrap: wrap; align-items: center; gap: 0 1em; margin-bottom: 24px; font-size: 14px; }
+.wk__error button { min-height: 44px; text-decoration: underline; text-underline-offset: 4px; }
 .wk__title { text-align: right; margin-bottom: clamp(28px, 5vw, 72px); }
 .wk__list { list-style: none; margin: 0; padding: 0; display: grid; gap: clamp(56px, 9vw, 140px); }
 .wk__link { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: clamp(20px, 4vw, 64px); align-items: end; color: inherit; text-decoration: none; }
 .wk__photo { display: block; width: 100%; background: rgba(var(--foreground-rgb), 0.06); overflow: hidden; }
 .wk__photo picture { display: block; width: 100%; height: 100%; }
 .wk__img { display: block; width: 100%; height: 100%; object-fit: cover; }
-.wk__text { display: block; padding-bottom: 4px; }
+.wk__text { display: block; min-width: 0; padding-bottom: 4px; overflow-wrap: anywhere; }
 .wk__name { display: block; font-size: clamp(30px, 3.6vw, 52px); line-height: 1.15; letter-spacing: 0.02em; }
 .wk__note { display: block; margin-top: 10px; font-size: 12px; letter-spacing: 0.14em; color: var(--text-quiet); font-variant-numeric: tabular-nums; }
 .wk__item:nth-child(even) .wk__photo { order: 2; }
@@ -136,5 +153,6 @@ a:hover > .sp-go::after, a:hover .sp-page__meta .sp-go::after, a.sp-go:hover::af
   .wk__item:nth-child(even) .wk__photo { order: 0; }
   .wk__item:nth-child(even) .wk__text { text-align: left; }
   .wk__text { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; }
-  .wk__note { margin-top: 0; }
+  .wk__name { min-width: 0; }
+  .wk__note { flex-shrink: 0; max-width: 40%; margin-top: 0; }
 }

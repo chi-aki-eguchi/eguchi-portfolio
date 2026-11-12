@@ -419,8 +419,10 @@
 /* 写真・シリーズの画面の切り替え（.st-seg）と、写真の閲覧／選択の切り替えも同じ選んだ印にする。
    共通の「aria-pressed の選択状態」の規則（styles.css・薄い地＋下線、強さ 0,8,1）と、「サイト」の選択肢の規則
    （admin-book.css の `.admin-book[data-view="site"] .grid > button.admin-btn-primary`、強さ 0,10,1）に勝つため、
-   クラスを重ねる。後者は今回の決まりで不要になった（持ち主が消せる）。 */
-.admin-atelier.admin-atelier.admin-atelier.admin-atelier.admin-atelier.admin-atelier.admin-workbench.admin-studio :is(.st-seg__item, .admin-library-mode-switcher button, .ax-field > :is(.grid, .flex) > button:not(.studio-option))[aria-pressed="true"] {
+   クラスを重ねる。後者は今回の決まりで不要になった（持ち主が消せる）。
+   2026-11-13: Library の閲覧／選択トグル（.admin-library-mode-switcher）は除く。モードの切り替えが実行ボタンと同じ黒塗りだと
+   操作と取り違えるため、薄い面（--studio-hover）で示す（上の 179 行目の規則が効く）。 */
+.admin-atelier.admin-atelier.admin-atelier.admin-atelier.admin-atelier.admin-atelier.admin-workbench.admin-studio :is(.st-seg__item, .ax-field > :is(.grid, .flex) > button:not(.studio-option))[aria-pressed="true"] {
   background-color: var(--admin-ink) !important;
   border-color: var(--admin-ink) !important;
   color: var(--admin-paper) !important;
@@ -509,4 +511,19 @@
     background-repeat: no-repeat;
     background-position: right 10px center;
   }
+}
+
+/* 2026-11-13: スマホの Library 作業バー（写真操作・検索・現在の並び）を 3 行に収める。
+   44px 化で 197px（上限 150px）まで伸びていた。検索と 絞り込み・表示 を 1 行に並べ、写真操作を 2 行目、並びを 3 行目にする。
+   押す面は 44px のまま、文字も 12px 未満にしない。検索欄は 140px 以上を保つ。 */
+@media (max-width: 767px) {
+  .admin-atelier.admin-workbench.admin-studio .admin-library-workbar { padding-block: 4px; }
+  .admin-atelier.admin-workbench.admin-studio .admin-library-workbar__row { gap: 4px 6px; }
+  .admin-atelier.admin-workbench.admin-studio .admin-library-search { order: 1; flex: 1 1 140px; min-width: 140px; }
+  .admin-atelier.admin-workbench.admin-studio .admin-library-find-tools > button { order: 2; }
+  .admin-atelier.admin-workbench.admin-studio .admin-library-view-menu { order: 3; margin-left: 0; }
+  .admin-atelier.admin-workbench.admin-studio .admin-library-import-group { order: 4; }
+  .admin-atelier.admin-workbench.admin-studio .admin-library-mobile-select,
+  .admin-atelier.admin-workbench.admin-studio [data-library-mobile-arrange] { order: 5; }
+  .admin-atelier.admin-workbench.admin-studio .admin-library-orderbar { margin-top: 0; padding-top: 0; }
 }

@@ -1,6 +1,6 @@
 import { test, expect, type Page, type SmokeApi } from "./fixtures.ts";
 import { BOOK_DESIGN_ENABLED } from "./site-design.ts";
-import { chooseSettingsSection, loginAsAdmin } from "./helpers";
+import { chooseSettingsSection, chooseSitePlace, loginAsAdmin } from "./helpers";
 
 /**
  * 管理画面はサイトの骨格（写真中心／いつもの構成）に関係なく同じ形（2026-09-29）。
@@ -109,7 +109,7 @@ test.describe("admin — 骨格を切り替えても管理画面は同じ", () =
     await expect(list).toBeVisible();
     await expect(back).toHaveCount(0);
 
-    await page.locator('[data-site-page="about"]').click();
+    await chooseSitePlace(page, { page: "about" });
     const item = page.locator('[data-site-part="about-layout"]');
     expect((await item.boundingBox())?.height ?? 0).toBeGreaterThanOrEqual(44);
     await item.click();

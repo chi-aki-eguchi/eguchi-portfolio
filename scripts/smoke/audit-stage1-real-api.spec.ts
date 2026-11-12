@@ -3,7 +3,7 @@
 // UI をモックで確かめる検査は admin-settings-preview.spec.ts と packages/web の描画テストにある。
 import { SMOKE_SERIES, SMOKE_LONG_TITLE } from "../../packages/web/src/test-fixtures/smoke-site.ts";
 import { expect, test } from "./fixtures.ts";
-import { gotoAdminTab, loginAsAdmin } from "./helpers.ts";
+import { chooseSitePlace, gotoAdminTab, loginAsAdmin } from "./helpers.ts";
 
 const ENCODED_WORK_PATH = `/work/${encodeURIComponent(SMOKE_SERIES.encoded.slug)}`;
 const ADMIN_ONLY = ["fileHash", "thumbKey", "mediumKey", "isPublished", "deletedAt", "shotAtSource"];
@@ -62,7 +62,7 @@ test.describe("第1段階（実API＋人工データ）", () => {
     await loginAsAdmin(page);
     await gotoAdminTab(page, "settings");
     // サイトの画面（2026-09-29〜）では、上の「Series」を開くと作品ごとのページを選べる。
-    await page.locator('[data-site-page="series"]').click();
+    await chooseSitePlace(page, { page: "series" });
     const preview = page.locator("[data-settings-preview]");
     if (!(await preview.isVisible())) {
       const open = page.getByRole("button", { name: "プレビューを開く" });

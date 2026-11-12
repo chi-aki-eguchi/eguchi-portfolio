@@ -5,6 +5,10 @@ import {
   SETTINGS_SECTION_KEYS,
 } from "../pages/admin-tabs";
 import {
+  DEVELOP_LOOK_PARTS,
+  DEVELOP_MORE_PARTS,
+  DEVELOP_PAGES,
+  DEVELOP_SHARED_PARTS,
   SETTINGS_NAVIGATION,
   SITE_LOOK_PARTS,
   SITE_MORE_PARTS,
@@ -81,7 +85,7 @@ describe("Settings section key registry", () => {
     expect(
       Object.keys(SETTINGS_SECTION_KEYS).length,
       "節を増減したら scripts/smoke/helpers.ts の SETTINGS_SECTION_COUNT も直す",
-    ).toBe(34);
+    ).toBe(35);
   });
 
   test("グループ台帳は全節をちょうど1回ずつ含む", () => {
@@ -106,14 +110,22 @@ describe("Settings section key registry", () => {
   test("どの設定の節も、サイトの画面のいずれかの部分から開ける", () => {
     const parts = Object.values(SITE_PARTS) as SitePart[];
     const reachable = new Set(
-      parts.flatMap((part) => [...(part.sections ?? []), ...Object.values(part.bySkeleton ?? {}).flat()]),
+      parts.flatMap((part) => [
+        ...(part.sections ?? []),
+        ...Object.values(part.bySkeleton ?? {}).flat(),
+        ...(part.develop?.sections ?? []),
+      ]),
     );
     expect(Object.keys(SETTINGS_SECTION_KEYS).filter((id) => !reachable.has(id))).toEqual([]);
     expect([...reachable].filter((id) => !(id in SETTINGS_SECTION_KEYS))).toEqual([]);
   });
 
   test("ページ・全体の見た目・そのほかに並べる部分は、すべて台帳にある", () => {
-    const ids = [...SITE_PAGES.flatMap((p) => p.parts), ...SITE_LOOK_PARTS, ...SITE_MORE_PARTS];
+    // 今までの構成と新しい構成（2026-11-12）の並びを合わせて、どの部分もどちらかに並ぶ。
+    const ids = [
+      ...SITE_PAGES.flatMap((p) => p.parts), ...SITE_LOOK_PARTS, ...SITE_MORE_PARTS,
+      ...DEVELOP_PAGES.flatMap((p) => p.parts), ...DEVELOP_SHARED_PARTS, ...DEVELOP_LOOK_PARTS, ...DEVELOP_MORE_PARTS,
+    ];
     expect(ids.filter((id) => !(id in SITE_PARTS))).toEqual([]);
     // 部分は、ページ・全体の見た目・そのほかのどこかに必ず並ぶ（探さないと見つからない部分を作らない）。
     expect(Object.keys(SITE_PARTS).filter((id) => !ids.includes(id as never))).toEqual([]);

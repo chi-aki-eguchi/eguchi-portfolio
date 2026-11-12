@@ -520,3 +520,160 @@
   transition: transform var(--dur-fast, 160ms);
 }
 .se-parts-more[open] > summary::before { transform: rotate(90deg); }
+
+/* ══ 並び（2026-11-12、作業 A。spec admin-redesign-20261112 §2.1・§2.2）══════════════
+   この塊は .se-bar* と .se-pagepick* だけ。ほかの見た目の作業と重ならないよう、ここにまとめる。
+   PC: 全部の入口を並べ、収まらない幅では折り返す（横に隠さない）。
+   スマホ: 横に送る帯をやめ、1行の「いまのページ ▾」と、右に「編集／プレビュー」。
+   帯 554px が画面 390px に入らず、「見た目」が切れ「そのほか」が見えなかった（実測）。 */
+@media (min-width: 768px) {
+  .se-bar.se-bar { flex-wrap: wrap; height: auto; min-height: 48px; row-gap: 0; }
+  .se-bar .se-bar__pages { flex-wrap: wrap; overflow: visible; height: auto; }
+  .se-bar .se-bar__more { flex-wrap: wrap; height: auto; }
+  .se-bar .se-bar__page,
+  .se-bar .se-bar__mode { height: 48px; }
+}
+.se-pagepick,
+.se-bar__view { display: none; }
+@media (max-width: 767px) {
+  .se-bar.se-bar {
+    gap: 8px;
+    height: 56px;
+    padding: 0 8px;
+    overflow: visible;
+    -webkit-mask-image: none;
+    mask-image: none;
+  }
+  .se-bar .se-bar__pages,
+  .se-bar .se-bar__more { display: none; }
+  .se-bar .se-pagepick { display: flex; flex: 1 1 auto; min-width: 0; }
+  .se-bar .se-bar__view { display: flex; flex: none; align-items: center; }
+  /* 編集／プレビューは帯の右へ移したので、設定の欄の上の段は出さない（中身に高さを返す）。 */
+  .se-bar ~ .se-frame__body .admin-settings-mobile-current { display: none !important; }
+}
+/* 管理画面の共通のボタン指定（.admin-atelier button…、0,3,1）より強くする。 */
+.se-pagepick .se-pagepick__button.se-pagepick__button.se-pagepick__button {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  max-width: 100%;
+  min-height: 44px;
+  padding: 0 10px;
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: var(--admin-ink) !important;
+  background: none !important;
+  border: 0;
+  border-radius: 10px;
+  cursor: pointer;
+}
+.se-pagepick__current { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.se-pagepick__button svg { flex: none; color: var(--admin-muted); }
+.se-pagepick__button[aria-expanded="true"] svg { transform: rotate(180deg); }
+.se-pagepick__button:focus-visible,
+.se-pagepick__row:focus-visible { outline: 2px solid var(--admin-accent); outline-offset: -2px; }
+/* 選ぶ欄は下の入口の上に出す（下の入口は隠さない）。 */
+.se-pagepick__scrim {
+  position: fixed;
+  inset: 0 0 var(--admin-tabbar, 0px) 0;
+  z-index: 40;
+  background: rgba(0, 0, 0, 0.28);
+}
+.se-pagepick__sheet {
+  position: fixed;
+  inset: auto 0 var(--admin-tabbar, 0px) 0;
+  z-index: 41;
+  width: auto;
+  max-width: none;
+  height: auto;
+  margin: 0;
+  border: 0;
+  color: inherit;
+  max-height: calc(100dvh - var(--admin-tabbar, 0px) - env(safe-area-inset-top, 0px) - 24px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 10px 0 12px;
+  background: var(--admin-paper);
+  border-radius: 14px 14px 0 0;
+  box-shadow: 0 -12px 32px rgba(0, 0, 0, 0.16);
+  animation: se-pagepick-rise 200ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+/* 管理画面の共通の dialog 指定（角・影・縮み）より、下から出る欄の形を優先する。 */
+.se-pagepick .se-pagepick__sheet.se-pagepick__sheet {
+  border-radius: 14px 14px 0 0 !important;
+  box-shadow: 0 -12px 32px rgba(0, 0, 0, 0.16) !important;
+  opacity: 1;
+  transform: none;
+}
+@keyframes se-pagepick-rise {
+  from { transform: translateY(16px); opacity: 0; }
+  to { transform: none; opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .se-pagepick__sheet { animation: none; }
+}
+.se-pagepick__list { list-style: none; margin: 0; padding: 0 8px; }
+.se-pagepick__list--groups { margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--admin-line); }
+.se-pagepick .se-pagepick__row.se-pagepick__row.se-pagepick__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  min-height: 52px;
+  padding: 0 16px;
+  font-size: 16px;
+  color: var(--admin-ink) !important;
+  text-align: left;
+  background: none !important;
+  border: 0;
+  border-radius: 10px;
+  box-shadow: none;
+  cursor: pointer;
+}
+.se-pagepick .se-pagepick__row.se-pagepick__row.se-pagepick__row[aria-current="true"] { font-weight: 600; background: var(--admin-paper-soft) !important; }
+.se-pagepick__row[aria-current="true"]::after { content: "✓"; font-weight: 400; color: var(--admin-ink); }
+/* ページの下の部分（地図の2段目）。字を小さく・細くし、左の罫でページに属すると分かるようにする。 */
+.se-pagepick__parts { list-style: none; margin: 0 0 6px 24px; padding: 0 0 0 12px; border-left: 1px solid var(--admin-line); }
+.se-pagepick .se-pagepick__part.se-pagepick__part.se-pagepick__part {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-height: 48px;
+  padding: 0 12px;
+  font-size: 15px;
+  color: var(--admin-muted) !important;
+  text-align: left;
+  background: none !important;
+  border: 0;
+  border-radius: 10px;
+  box-shadow: none;
+  cursor: pointer;
+}
+.se-pagepick__part:focus-visible { outline: 2px solid var(--admin-accent); outline-offset: -2px; }
+/* 帯の右の「編集／プレビュー」（設定の画面から移ってくる）。押す所は 44px。 */
+.se-bar__view .admin-settings-mobile-current__view-switch {
+  display: flex;
+  gap: 2px;
+  padding: 3px;
+  border-radius: 999px;
+  background: var(--admin-paper-deep);
+}
+.se-bar__view.se-bar__view .admin-settings-mobile-current__view-switch.admin-settings-mobile-current__view-switch > button {
+  min-width: 0;
+  min-height: 44px;
+  padding: 0 14px;
+  font-size: 14px;
+  color: var(--admin-muted);
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 999px !important;
+  box-shadow: none !important;
+}
+.se-bar__view.se-bar__view .admin-settings-mobile-current__view-switch.admin-settings-mobile-current__view-switch > button[aria-pressed="true"] {
+  color: var(--admin-ink);
+  background: var(--admin-paper) !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12) !important;
+}
+.se-bar__view.se-bar__view .admin-settings-mobile-current__preview-open.admin-settings-mobile-current__preview-open { min-width: 44px; min-height: 44px; }

@@ -110,11 +110,12 @@ async function changedMarker(page: Page, sectionId: string) {
   return page.locator(`.se-parts [data-site-sections~="${sectionId}"] [data-settings-section-changed]`);
 }
 
-// 34節。台帳（SETTINGS_SECTION_KEYS）と同じ。増減したら SETTINGS_SECTION_COUNT と揃える。
+// 35節。台帳（SETTINGS_SECTION_KEYS）と同じ。増減したら SETTINGS_SECTION_COUNT と揃える。
+// 2026-11-12: 名刺のQR（card）を About の節から分けた。
 const SECTION_IDS = [
   "site-basics", "contact", "contact-words", "portfolio-kit", "hero", "navigation", "spacing", "reveal",
   "gallery-layout", "top-works", "series-cards", "series-layout", "series-strip", "order", "mood",
-  "page-layout", "home", "statement-text", "statement", "viewer", "about", "about-layout", "contact-layout",
+  "page-layout", "home", "statement-text", "statement", "viewer", "about", "card", "about-layout", "contact-layout",
   "note", "print", "cta", "theme", "fonts", "name", "headings", "body", "footer", "site-copy", "presets",
 ];
 
@@ -310,8 +311,12 @@ test.describe("admin — Form layout", () => {
     await page.setViewportSize({ width: 390, height: 844 });
     await openTab(page, "settings");
 
+    // スマホの上は「サイト」の帯の1行だけ（いまのページ ▾ と 編集／プレビュー、2026-11-12）。
+    // 設定の欄の上の段は出さない。
     const current = page.locator(".admin-settings-mobile-current");
-    await expect(current).toBeVisible();
+    await expect(page.locator(".se-bar .se-pagepick__button")).toBeVisible();
+    await expect(page.locator(".se-bar .admin-settings-mobile-current__view-switch")).toBeVisible();
+    await expect(current).toBeHidden();
     await expect(page.locator(".admin-form-toc")).toBeHidden();
     // 設定の中の「設定項目」一覧は出さない（右の一覧と2つ目の一覧が重なる）。
     await expect(current.getByRole("button", { name: /設定項目/ })).toBeHidden();
@@ -391,10 +396,10 @@ test.describe("admin — Form layout", () => {
       : SECTION_IDS.filter((id) => id !== "page-layout" && id !== "home");
     for (const sectionId of reachable) {
       await chooseSettingsSection(page, sectionId);
-      // 部分によっては2つの節を並べる（作家の言葉＝文と位置、About＝文章と作家の言葉）。
+      // 部分によっては2つ以上の節を並べる（作家の言葉＝文と位置、About＝文章と作家の言葉と名刺のQR）。
       const sections = page.locator("[data-settings-section]");
       await expect(page.locator(`[data-settings-section="${sectionId}"]`)).toBeVisible();
-      expect(await sections.count(), `${sectionId} を選んだら、その部分の節だけになる`).toBeLessThanOrEqual(2);
+      expect(await sections.count(), `${sectionId} を選んだら、その部分の節だけになる`).toBeLessThanOrEqual(3);
       const overflow = await page.evaluate(
         () =>
           document.documentElement.scrollWidth -
@@ -416,8 +421,10 @@ test.describe("admin — Form layout", () => {
     await page.setViewportSize({ width: 390, height: 844 });
     await openTab(page, "settings");
 
-    const current = page.locator(".admin-settings-mobile-current");
+    // 上は「サイト」の帯の1行だけ（いまのページ ▾ と 編集／プレビュー、2026-11-12）。
+    const current = page.locator(".se-bar");
     await expect(current).toBeVisible();
+    await expect(page.locator(".admin-settings-mobile-current")).toBeHidden();
     const currentBox = await current.boundingBox();
     expect(currentBox?.height ?? 999, "上部の切り替えは1行に収める").toBeLessThanOrEqual(
       56,

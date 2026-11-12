@@ -26,6 +26,20 @@ export type PreviewWork = {
   isPublished: boolean;
 };
 
+/**
+ * 新しい構成のページ（2026-11-12）。管理画面「サイト」の各ページを開いたときに、
+ * プレビューでそのページを見せる。ページを選ぶ欄（上の PREVIEW_STATIC_PATHS）には足さない。
+ */
+export const PREVIEW_DEVELOP_PATHS = [
+  "/portrait",
+  "/life",
+  "/works",
+  "/info",
+  "/exhibition",
+  "/tokyo/ja",
+  "/card.html",
+] as const;
+
 /** 作品の詳細ページ。slug はURLの1区切りとして符号化する。 */
 export function previewWorkPath(work: Pick<PreviewWork, "kind" | "slug">): string {
   return `/${work.kind}/${encodeURIComponent(work.slug)}`;
@@ -34,6 +48,7 @@ export function previewWorkPath(work: Pick<PreviewWork, "kind" | "slug">): strin
 /** 固定のページか、正しく符号化された作品の詳細ページか。 */
 export function isPreviewablePath(path: string): boolean {
   if ((PREVIEW_STATIC_PATHS as readonly string[]).includes(path)) return true;
+  if ((PREVIEW_DEVELOP_PATHS as readonly string[]).includes(path)) return true;
   const segment = path.match(/^\/(?:series|work)\/([^/?#]+)$/)?.[1];
   if (!segment) return false;
   try {

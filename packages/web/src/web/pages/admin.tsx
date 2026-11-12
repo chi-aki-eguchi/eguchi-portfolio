@@ -1,20 +1,30 @@
 import "../components/admin-workbench.css";
 import { uploadPhotoFile } from "../lib/admin-upload";
 import {
+  ALL_SITE_PAGE_IDS,
   AdminSettingsNavigationContext,
-  SITE_LOOK_PARTS,
-  SITE_MORE_PARTS,
-  SITE_SHARED_PARTS,
-  SITE_PAGES,
+  DEVELOP_SECTIONS_EDITED_ELSEWHERE,
   SITE_PARTS,
-  partIsListed,
+  SITE_SHARED_PARTS,
+  pagesHref,
+  partHome,
+  partLinks,
+  partText,
+  resolvePartId,
+  sectionUnusedIn,
   sectionsForPart,
+  siteOutline,
   siteSkeletonFrom,
+  siteStructureFrom,
+  type SiteOutlineContext,
   type SiteOutlineTab,
   type SitePageId,
   type SitePart,
   type SitePartId,
 } from "./admin-settings-navigation";
+import { developDoorCopy } from "../../shared/develop-structure";
+import { exhibitionEntries } from "../../shared/exhibitions";
+import { isServiceOwnerSite } from "../../shared/service-visibility";
 import { comparePhotoDates } from "../../shared/photo-dates";
 import { PhotoImportReview, type ImportDatePolicy } from "../components/PhotoImportReview";
 import { PhotoDateRecovery } from "../components/PhotoDateRecovery";
@@ -154,7 +164,6 @@ import {
   SitePartHeader,
   SitePartIcon,
   SitePartsPanel,
-  partLabel,
   sectionLabel,
   type SiteEditorLanguage,
   type SiteEditorMode,
@@ -610,8 +619,9 @@ function parseAdminHistoryHash(hash: string): AdminHistoryState | null {
   const [view, mode, page, target] = hash.split("/");
   if (view === "photos" || view === "series" || view === "library") return { view };
   if (view !== "site") return null;
-  const siteMode: SiteEditorMode = mode === "look" || mode === "more" ? mode : "page";
-  const sitePage: SitePageId = SITE_PAGES.some((p) => p.id === page) ? (page as SitePageId) : "top";
+  const siteMode: SiteEditorMode = mode === "shared" || mode === "look" || mode === "more" ? mode : "page";
+  // 構成（今までの／新しい）はまだ分からないので、どちらのページの id も受ける。
+  const sitePage: SitePageId = ALL_SITE_PAGE_IDS.includes(page as SitePageId) ? (page as SitePageId) : "top";
   let siteTarget: SiteEditorTarget = null;
   if (target) {
     try {
@@ -729,18 +739,54 @@ function AdminPageContent({
     "top",
     "local",
   );
-  const sitePage: SitePageId = SITE_PAGES.some((p) => p.id === storedSitePage) ? storedSitePage : "top";
+  const storedPage: SitePageId = ALL_SITE_PAGE_IDS.includes(storedSitePage) ? storedSitePage : "top";
   const [storedSiteMode, setSiteMode] = usePersistentState<SiteEditorMode>(
     demoMode ? "admin:site:mode:demo" : "admin:site:mode",
     "page",
     "local",
   );
-  const siteMode: SiteEditorMode = storedSiteMode === "look" || storedSiteMode === "more" ? storedSiteMode : "page";
+  const storedMode: SiteEditorMode =
+    storedSiteMode === "shared" || storedSiteMode === "look" || storedSiteMode === "more" ? storedSiteMode : "page";
   const [siteTarget, setSiteTarget] = usePersistentState<SiteEditorTarget>(
     demoMode ? "admin:site:part:demo" : "admin:site:part",
     null,
     "local",
   );
+  // 「サイト」の並びは公開サイトの構成に合わせる（2026-11-12）。新しい構成なら
+  // トップ／Portrait／Works／Info／展示／東京プラン／名刺のQR。展示は展示があり得るサイト、
+  // 東京プランは持ち主のサイトだけ（/admin/pages のタブと同じ決まり）。
+  const siteHost = typeof window === "undefined" ? "" : window.location.hostname;
+  const siteContext: SiteOutlineContext = {
+    structure: siteStructureFrom(shellSettings?.siteDesign),
+    showService,
+    exhibition: exhibitionEntries(shellSettings, siteHost).length > 0,
+    tokyo: isServiceOwnerSite(shellSettings?.siteUrl, siteHost),
+    doors: developDoorCopy(shellSettings?.developDoors),
+  };
+  const outline = siteOutline(siteContext);
+  // 設定を読むまでは構成が分からないので、覚えていたページのまま待つ（# を書き換えない）。
+  const settingsKnown = shellSettings !== undefined;
+  const sitePage: SitePageId =
+    !settingsKnown || outline.pages.some((p) => p.id === storedPage) ? storedPage : outline.pages[0]!.id;
+  const siteMode: SiteEditorMode =
+    storedMode === "page" || !settingsKnown || outline.groups.some((g) => g.id === storedMode) ? storedMode : "page";
+  // スマホでは「編集／プレビュー」を上の帯の右端に置く（帯と1行にまとめる）。
+  const [viewSwitchHost, setViewSwitchHost] = useState<HTMLElement | null>(null);
+  const [phoneWidth, setPhoneWidth] = useState(
+    () => typeof window !== "undefined" && typeof window.matchMedia === "function" && window.matchMedia("(max-width: 767px)").matches,
+  );
+  useEffect(() => {
+    if (typeof window.matchMedia !== "function") return;
+    const query = window.matchMedia("(max-width: 767px)");
+    const onChange = () => setPhoneWidth(query.matches);
+    onChange();
+    query.addEventListener?.("change", onChange);
+    return () => query.removeEventListener?.("change", onChange);
+  }, []);
+  // 写真を選ぶ画面（/admin/pages）へ行く前に、保存していない変更を確かめる。
+  const [pendingHref, setPendingHref] = useState<string | null>(null);
+  // 探して欄に当たったときは、開いたあとその欄まで送る。
+  const [focusField, setFocusField] = useState<string | null>(null);
   type SiteMove = { page?: SitePageId; mode?: SiteEditorMode; target: SiteEditorTarget };
   const [bookPending, setBookPending] = useState<
     { view: BookAdminView; site?: SiteMove } | null
@@ -863,6 +909,32 @@ function AdminPageContent({
     return () => window.removeEventListener("popstate", onPop);
   }, [setBookView, setSiteMode, setSitePage, setSiteTarget]);
 
+  // 探して当たった欄へ送る（設定の画面は後から読み込まれるので、出るまで少し待つ）。
+  // 欄の名前は台帳の言葉（「Instagram の住所」）と画面の言葉（「Instagram」）が少し違うので、
+  // 同じ・前が同じ・含む の順で探す。
+  useEffect(() => {
+    if (!focusField) return;
+    let tries = 0;
+    const timer = window.setInterval(() => {
+      tries += 1;
+      const labels = Array.from(document.querySelectorAll<HTMLElement>("[data-settings-section] .ax-field__label"))
+        .filter((el) => el.offsetParent !== null);
+      const text = (el: HTMLElement) => (el.firstChild?.textContent ?? el.textContent ?? "").trim();
+      const label =
+        labels.find((el) => text(el) === focusField) ??
+        labels.find((el) => text(el).length >= 2 && focusField.startsWith(text(el))) ??
+        labels.find((el) => text(el).includes(focusField));
+      if (!label && tries < 25) return;
+      window.clearInterval(timer);
+      setFocusField(null);
+      const field = label?.closest<HTMLElement>(".ax-field");
+      if (!field) return;
+      field.scrollIntoView({ block: "center" });
+      field.querySelector<HTMLElement>("input, textarea, select")?.focus({ preventScroll: true });
+    }, 120);
+    return () => window.clearInterval(timer);
+  }, [focusField]);
+
   if (isLoading)
     return (
       <div className="min-h-screen bg-[var(--admin-paper)] flex items-center justify-center">
@@ -902,24 +974,52 @@ function AdminPageContent({
   ) : null;
 
   const siteSkeleton = siteSkeletonFrom(shellSettings?.siteDesign);
+  const siteStructure = outline.structure;
   const siteLanguage: SiteEditorLanguage = language === "en" ? "en" : "ja";
+  const unusedNote =
+    siteLanguage === "ja"
+      ? "今の構成では使いません。値は残してあり、今までの構成に戻すと効きます。"
+      : "Not used by the current structure. The values are kept and apply again if you switch back.";
+  type SiteLink = { label: string; tab?: SiteOutlineTab; part?: string };
   // 開いている部分を、出す設定の節か独立した編集画面へ読み替える。
   const resolveSite = (target: SiteEditorTarget) => {
     if (!target) return null;
     if (target.startsWith("section:")) {
       const section = target.slice("section:".length);
-      return { kind: "settings" as const, sections: [section], label: sectionLabel(section, siteLanguage), note: undefined, links: [] as { label: string; tab: SiteOutlineTab }[] };
+      // 新しい構成では、構成の切り替えの節は開かない（1回押すだけで公開サイトが今までの構成に戻る）。
+      if (siteStructure === "develop" && DEVELOP_SECTIONS_EDITED_ELSEWHERE.includes(section)) return null;
+      return {
+        kind: "settings" as const,
+        sections: [section],
+        label: sectionLabel(section, siteLanguage),
+        note: undefined,
+        unused: sectionUnusedIn(siteStructure, section) ? unusedNote : undefined,
+        links: [] as SiteLink[],
+      };
     }
-    const part: SitePart | undefined = (SITE_PARTS as Record<string, SitePart>)[target];
+    const part: SitePart | undefined = (SITE_PARTS as Record<string, SitePart>)[resolvePartId(siteStructure, target)];
     if (!part) return null;
-    const label = partLabel(part, siteLanguage);
-    if (part.tab) return { kind: "tab" as const, tab: part.tab, label };
+    // 写真を選ぶ画面・ほかの入口・同じ設定を指す行は、ここでは開かない（`openPart` が連れて行く）。
+    if (part.pagesTab || part.view || part.ref) return null;
+    if (siteStructure === "develop" && part.id === "structure") return null;
+    const text = partText(part, siteStructure, siteLanguage, siteContext.doors);
+    if (part.tab) return { kind: "tab" as const, tab: part.tab, label: text.label };
+    const sections = sectionsForPart(part, siteSkeleton, siteStructure);
     return {
       kind: "settings" as const,
-      sections: sectionsForPart(part, siteSkeleton),
-      label,
-      note: siteLanguage === "ja" ? part.noteJa : part.noteEn,
-      links: (part.links ?? []).map((link) => ({ label: siteLanguage === "ja" ? link.ja : link.en, tab: link.tab })),
+      sections,
+      label: text.label,
+      note: text.note,
+      // 今の並びに無い部分（今までの構成だけの部分）で、節が全部使わない物なら印を付ける。
+      unused:
+        siteStructure === "develop" && sections.length > 0 && sections.every((sid) => sectionUnusedIn(siteStructure, sid))
+          ? unusedNote
+          : undefined,
+      links: partLinks(part, siteStructure).map((link): SiteLink => ({
+        label: siteLanguage === "ja" ? link.ja : link.en,
+        tab: link.tab,
+        part: link.part,
+      })),
     };
   };
   const siteOpen = resolveSite(siteTarget);
@@ -955,22 +1055,46 @@ function AdminPageContent({
     setBookView(view);
   };
   const goSite = (move: SiteMove) => goBook("site", move);
-  // 部分を開く。ページにある部分なら、そのページを見ている状態で開く。
-  const openPart = (target: SiteEditorTarget) => {
-    if (!target || target.startsWith("section:")) return goSite({ target });
-    const pageWithPart = SITE_PAGES.find((p) => (p.parts as readonly string[]).includes(target));
-    if (siteMode === "page" && SITE_PAGES.find((p) => p.id === sitePage)?.parts.includes(target as SitePartId)) {
-      return goSite({ target });
+  // 管理画面の外の画面（/admin/pages）へ行く。保存していない変更があれば先に確かめる。
+  const goHref = (href: string) => {
+    if (galleryReordering || galleryUploading) return;
+    if (hasUnsaved) {
+      setPendingHref(href);
+      return;
     }
-    if ((SITE_LOOK_PARTS as readonly string[]).includes(target)) return goSite({ mode: "look", target });
-    if ((SITE_MORE_PARTS as readonly string[]).includes(target)) return goSite({ mode: "more", target });
-    return goSite({ page: pageWithPart?.id, mode: "page", target });
+    navigate(href);
+  };
+  // 部分を開く。ページにある部分なら、そのページを見ている状態で開く。
+  // 写真を選ぶ行は /admin/pages の該当のタブへ（戻ると、いま見ているページへ戻る）、
+  // 同じ設定を指す行はその設定のページへ連れて行く（2026-11-12）。
+  const openPart = (raw: SiteEditorTarget, field?: string) => {
+    if (!raw || raw.startsWith("section:")) {
+      if (field) setFocusField(field);
+      return goSite({ target: raw });
+    }
+    const target = resolvePartId(siteStructure, raw) as SitePartId;
+    const part: SitePart | undefined = (SITE_PARTS as Record<string, SitePart>)[target];
+    if (part?.pagesTab) {
+      const from = `/admin#${adminHistoryHash({ view: "site", mode: siteMode, page: sitePage, target: null })}`;
+      return goHref(pagesHref(part, from));
+    }
+    if (part?.view === "series") return goBook("series");
+    if (part?.ref) return openPart(part.ref as SitePartId, field);
+    if (field) setFocusField(field);
+    const current = siteMode === "page"
+      ? outline.pages.find((p) => p.id === sitePage)?.parts
+      : outline.groups.find((g) => g.id === siteMode)?.parts;
+    if ((current as readonly string[] | undefined)?.includes(target)) return goSite({ target });
+    const home = partHome(outline, target);
+    if (home && "group" in home) return goSite({ mode: home.group, target });
+    if (home && "page" in home) return goSite({ page: home.page, mode: "page", target });
+    return goSite({ target });
   };
   const openFromSettings = (next: Tab) => {
     if (next === "gallery") goBook("photos");
     else if (next === "series") goBook("series");
     else if (next === "settings") goSite({ target: null });
-    else if (next === "hero") openPart("hero-photos");
+    else if (next === "hero") openPart("hero-photos"); // 新しい構成では「入口の写真」へ
     else if (next === "profile") openPart("about");
     else if (next === "categories") openPart("categories");
     else openPart(next as SitePartId);
@@ -979,16 +1103,20 @@ function AdminPageContent({
     { id: "book-photos", label: "写真", group: "管理画面", icon: ADMIN_TAB_ICONS.gallery, action: () => goBook("photos") },
     { id: "book-series", label: "シリーズ", group: "管理画面", icon: ADMIN_TAB_ICONS.series, action: () => goBook("series") },
     { id: "book-library", label: "詳しい道具（構図・日付の一括入力・表での一括編集）", group: "管理画面", icon: ADMIN_TAB_ICONS.gallery, action: () => goBook("library") },
-    ...(Object.values(SITE_PARTS) as SitePart[])
-      .filter((part) => partIsListed(part, siteSkeleton, showService))
-      .map((part) => ({
-        id: `book-part-${part.id}`,
-        label: partLabel(part, siteLanguage),
-        group: siteLanguage === "ja" ? "サイト" : "Site",
-        keywords: [part.noteJa, part.noteEn, part.keywords].filter(Boolean).join(" "),
-        icon: <SitePartIcon id={part.id} />,
-        action: () => openPart(part.id as SitePartId),
-      })),
+    // 今の構成の並びにある部分だけ（並びに無い部分を ⌘K から開かせない）。
+    ...Array.from(new Set<SitePartId>([...outline.pages.flatMap((p) => p.parts), ...outline.groups.flatMap((g) => [...g.parts, ...g.advanced])]))
+      .map((id) => SITE_PARTS[id] as SitePart)
+      .map((part) => {
+        const text = partText(part, siteStructure, siteLanguage, siteContext.doors);
+        return {
+          id: `book-part-${part.id}`,
+          label: text.label,
+          group: siteLanguage === "ja" ? "サイト" : "Site",
+          keywords: [text.note, part.noteJa, part.noteEn, part.keywords].filter(Boolean).join(" "),
+          icon: <SitePartIcon id={part.id} />,
+          action: () => openPart(part.id as SitePartId),
+        };
+      }),
     {
       id: "trash",
       label: t.navigation.trash,
@@ -1021,14 +1149,18 @@ function AdminPageContent({
       onBackToPhotos={() => goBook("photos")}
     />
   );
-  const sitePageDef = SITE_PAGES.find((p) => p.id === sitePage) ?? SITE_PAGES[0]!;
-  const sitePartIds = sitePageDef.parts.filter((id) => partIsListed(SITE_PARTS[id], siteSkeleton, showService));
-  const siteBackLabel =
-    siteMode === "look"
-      ? siteLanguage === "ja" ? "全体の見た目" : "Overall look"
-      : siteMode === "more"
-        ? siteLanguage === "ja" ? "そのほか" : "More"
-        : siteLanguage === "ja" ? sitePageDef.ja : sitePageDef.en;
+  const sitePageDef = outline.pages.find((p) => p.id === sitePage) ?? outline.pages[0]!;
+  const sitePartIds = sitePageDef.parts;
+  const siteGroupDef = siteMode === "page" ? undefined : outline.groups.find((g) => g.id === siteMode);
+  const siteBackLabel = siteGroupDef
+    ? siteLanguage === "ja" ? siteGroupDef.ja : siteGroupDef.en
+    : siteLanguage === "ja" ? sitePageDef.ja : sitePageDef.en;
+  // プレビューで見せるページ。部分が別のページの物（Gallery・シリーズの一覧）ならそちら。
+  const openPartDef: SitePart | undefined =
+    siteTarget && !siteTarget.startsWith("section:")
+      ? (SITE_PARTS as Record<string, SitePart>)[resolvePartId(siteStructure, siteTarget)]
+      : undefined;
+  const sitePreviewPath = (siteStructure === "develop" ? openPartDef?.preview : undefined) ?? sitePageDef.path;
   const loading = (
     <div className="h-full flex items-center justify-center">
       <Loader2 size={18} className="animate-spin text-[var(--admin-muted)]" />
@@ -1040,8 +1172,9 @@ function AdminPageContent({
         backLabel={siteBackLabel}
         onBack={() => goSite({ target: null })}
         target={siteTarget}
+        unused={siteOpen.unused}
         offPage={
-          siteMode === "page" && siteTarget && foundParts.length > 0 &&
+          siteStructure === "classic" && siteMode === "page" && siteTarget && foundParts.length > 0 &&
           SITE_PARTS_THAT_CAN_BE_HIDDEN.includes(siteTarget) && !foundParts.includes(siteTarget)
             ? siteLanguage === "ja"
               ? "今はこのページに出ていません。下の設定で出せます。"
@@ -1051,15 +1184,16 @@ function AdminPageContent({
         title={siteOpen.label}
         note={siteOpen.note}
         links={siteOpen.links.map((link) => ({ label: link.label, onClick: () => openPart(
-          link.tab === "hero" ? "hero-photos" : link.tab === "profile" ? "about" : link.tab === "series" ? "series-details" : (link.tab as SitePartId),
+          (link.part ??
+            (link.tab === "hero" ? "hero-photos" : link.tab === "profile" ? "about" : link.tab === "series" ? "series-details" : link.tab)) as SitePartId,
         ) }))}
       />
     ) : (
       <SitePartsPanel
         mode={siteMode}
         page={sitePage}
-        skeleton={siteSkeleton}
-        showService={showService}
+        outline={outline}
+        context={siteContext}
         foundParts={foundParts}
         changedSections={changedSettings}
         sectionsFor={sectionsFor}
@@ -1111,7 +1245,7 @@ function AdminPageContent({
                   onOpenTab={openFromSettings}
                   onChangedSectionsChange={setChangedSettings}
                   visual={{
-                    page: sitePageDef.path,
+                    page: sitePreviewPath,
                     section: siteOpen?.kind === "settings" ? siteOpen.sections[0] ?? null : null,
                     sections: siteOpen?.kind === "settings" ? siteOpen.sections : [],
                     panel: sitePanelNode,
@@ -1119,14 +1253,17 @@ function AdminPageContent({
                     partIds: [...sitePartIds, ...SITE_SHARED_PARTS],
                     chipLabel: (id) => {
                       const part = (SITE_PARTS as Record<string, SitePart>)[id];
-                      const label = part ? partLabel(part, siteLanguage) : id;
+                      const label = part ? partText(part, siteStructure, siteLanguage, siteContext.doors).label : id;
                       return siteLanguage === "ja" ? `${label}を変える` : `Edit ${label}`;
                     },
-                    onPick: (id) => goSite({ mode: "page", target: id as SitePartId }),
+                    // 新しい構成では、押した部分の場所（共通など）で開く。
+                    onPick: (id) =>
+                      siteStructure === "develop" ? openPart(id as SitePartId) : goSite({ mode: "page", target: id as SitePartId }),
                     selectedPart:
                       (hoverPart && !hoverPart.startsWith("section:") ? hoverPart : null) ??
                       (siteMode === "page" && siteTarget && !siteTarget.startsWith("section:") ? siteTarget : null),
                     onFound: setFoundParts,
+                    viewSwitchHost: phoneWidth ? viewSwitchHost : null,
                   }}
                 />
               </AdminSettingsNavigationContext.Provider>
@@ -1200,6 +1337,16 @@ function AdminPageContent({
                       setBookPending(null);
                     },
                   )}
+                {pendingHref &&
+                  leaveModal(
+                    () => setPendingHref(null),
+                    () => {
+                      const href = pendingHref;
+                      setHasUnsaved(false);
+                      setPendingHref(null);
+                      navigate(href);
+                    },
+                  )}
                 {logoutConfirm &&
                   leaveModal(
                     () => setLogoutConfirm(false),
@@ -1236,11 +1383,15 @@ function AdminPageContent({
                 fullEditor={siteOpen?.kind === "tab"}
                 bar={
                   <SiteEditorBar
+                    outline={outline}
                     page={sitePage}
                     mode={siteMode}
                     language={siteLanguage}
                     onPage={(page) => goSite({ page, mode: "page", target: null })}
                     onMode={(mode) => goSite({ mode, target: null })}
+                    viewHostRef={setViewSwitchHost}
+                    onPart={(id) => openPart(id)}
+                    doors={siteContext.doors}
                   />
                 }
               >

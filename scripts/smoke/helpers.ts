@@ -12,7 +12,7 @@ import { smokeAdminPassword } from "./smoke-env.ts";
 // 4件が同時に落ちた（原因は同じ1箇所なのに、直す場所が4つあった）。
 // 写しがずれていないことは packages/web の
 // `admin-settings-section-keys.test.ts` が `bun run check` の速さで見張る。
-export const SETTINGS_SECTION_COUNT = 34;
+export const SETTINGS_SECTION_COUNT = 35;
 
 // 9タブ全て(setup=はじめに含む)。追加/削除時はここを更新する。
 export const ADMIN_TABS = [
@@ -164,10 +164,24 @@ export async function chooseSettingsSection(page: Page, sectionId: string): Prom
   await expect(page.locator(`[data-settings-section="${sectionId}"]`)).toBeVisible();
 }
 
+/**
+ * 「サイト」の上の帯で、ページか まとまり（共通・見た目・そのほか）を選ぶ。スマホは帯に並べず、
+ * 「いまのページ ▾」を押して下から出る欄で選ぶ（2026-11-12）。
+ */
+export async function chooseSitePlace(page: Page, where: { page?: string; mode?: string }): Promise<void> {
+  const direct = page.locator(where.mode ? `[data-site-mode="${where.mode}"]` : `[data-site-page="${where.page}"]`);
+  if (await direct.isVisible()) {
+    await direct.click();
+    return;
+  }
+  await page.locator(".se-pagepick__button").click();
+  await page.locator(`[data-site-pick="${where.mode ?? where.page}"]`).click();
+}
+
 /** サイトの画面の部分を、ページ（なければ全体の見た目・そのほか）から開く。 */
-export async function openSitePart(page: Page, partId: string, where: { page?: string; mode?: "look" | "more" } = { page: "top" }): Promise<void> {
+export async function openSitePart(page: Page, partId: string, where: { page?: string; mode?: "shared" | "look" | "more" } = { page: "top" }): Promise<void> {
   await backToSiteList(page);
-  await page.locator(where.mode ? `[data-site-mode="${where.mode}"]` : `[data-site-page="${where.page}"]`).click();
+  await chooseSitePlace(page, where);
   await page.locator(`[data-site-part="${partId}"]`).click();
 }
 

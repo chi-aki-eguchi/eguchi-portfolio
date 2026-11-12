@@ -1,4 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api, adminApi } from "../lib/api";
 import { useRowDraftGuard } from "../hooks/useRowDraftGuard";
@@ -60,11 +61,15 @@ import { AdminSettingsPreviewPane } from "./admin-settings-preview-pane";
 import { PREVIEW_DESKTOP, PREVIEW_MOBILE, type PreviewViewport } from "../lib/admin-preview-viewport";
 import { attachPreviewPicking, openPreviewPhoto, selectPreviewPart } from "../lib/admin-preview-pick";
 import {
+  SETTINGS_SECTION_KEYS,
+  keyUnusedIn,
   settingsNavigationItems,
   previewPageForSection,
   siteSkeletonFrom,
+  siteStructureFrom,
   skeletonOnlyForSection,
   type SiteSkeleton,
+  type SiteStructure,
 } from "./admin-settings-navigation";
 import { previewWorksFrom } from "../lib/admin-preview-pages";
 import { useSettingsHistory } from "../hooks/useSettingsHistory";
@@ -126,247 +131,9 @@ const DEFAULT_THEME_BG = "#f7f7f7";
 const DEFAULT_THEME_BG_DARK = "#121212";
 const DEFAULT_THEME_TEXT_DARK = "#e8e8e8";
 
-export const SETTINGS_SECTION_KEYS = {
-  // 節は「公開サイトの部分」ごと（2026-09-30）。管理画面「サイト」で部分を開くと、
-  // その部分の節だけが出る。以前は1つの節に別の部分の設定が混ざっていて、
-  // 「メニュー」を開くと効かない設定が先に並び、「並び順」を開くとシリーズの列数が出た。
-  // 検索とシェア（サイトの説明・公開URL）。
-  "site-basics": ["siteDescription", "siteUrl", "googleSiteVerification"],
-  // Contact の連絡先と案内の文章・フォームの送信先。
-  contact: [
-    "contactIntro",
-    "contactIntroEn",
-    "contactNote",
-    "contactNoteEn",
-    "contactFlow",
-    "contactFlowEn",
-    "contactAreas",
-    "contactAreasEn",
-    "contactEnglishNote",
-    "contactMessagePlaceholder",
-    "contactEmail",
-    "formspreeUrl",
-  ],
-  // Contact のフォームの言葉。
-  "contact-words": [
-    "contactFormName",
-    "contactFormEmail",
-    "contactFormSubject",
-    "contactSubjectOptions",
-    "contactFormMessage",
-    "contactSendButton",
-    "contactSendingButton",
-    "contactSentMessage",
-    "contactSendAnother",
-    "contactErrorMessage",
-  ],
-  "portfolio-kit": ["servicePageMode"],
-  hero: [
-    "heroMode",
-    "heroRandom",
-    "heroMotionSpeed",
-    "heroRevealOrder",
-    "heroHeight",
-    "heroOverlay",
-    "heroDisplayMode",
-    "heroTitlePosition",
-    "heroScrollEffect",
-  ],
-  // メニュー。文字と各ページの入口はどちらの骨格でも効く。位置・帯の背景はいつもの構成だけ。
-  navigation: [
-    "navLabelTop",
-    "navLabelGallery",
-    "navLabelAbout",
-    "navLabelContact",
-    "seriesNavEnabled",
-    "workNavEnabled",
-    "navLabelWork",
-    "navSize",
-    "navTracking",
-    "navOpacity",
-    "navPosition",
-    "navHoverEffect",
-    "headerBackground",
-  ],
-  spacing: [
-    "spacingHeroBottom",
-    "spacingSectionGap",
-    "spacingPageTop",
-    "spacingFooterTop",
-  ],
-  reveal: ["photoRevealEffect"],
-  // Gallery の写真の並べ方（いつもの構成）。
-  "gallery-layout": [
-    "galleryLayout",
-    "galleryColumns",
-    "galleryColumnsMobile",
-    "gallerySizeScale",
-    "galleryGapScale",
-    "galleryEmptyRate",
-    "gallerySizeVariation",
-    "gallerySeed",
-    "galleryExcludeSeries",
-  ],
-  // トップの作品の並び（いつもの構成）。
-  "top-works": [
-    "topWorksLayout",
-    "topWorksMode",
-    "topWorksIds",
-    "homeGalleryCount",
-    "topWorksColumns",
-    "topWorksColumnsMobile",
-    "topWorksSizeScale",
-    "topWorksGapScale",
-  ],
-  // Series の一覧の札（いつもの構成）。写真を切り抜くかどうかも札・帯・表紙に効く。
-  "series-cards": [
-    "seriesCardStyle",
-    "seriesGridColumns",
-    "seriesGridColumnsMobile",
-    "photoCrop",
-  ],
-  // 作品（シリーズ）のページの写真の並べ方（いつもの構成）。
-  "series-layout": ["seriesLayout"],
-  // トップに流れるシリーズの帯（いつもの構成）。
-  "series-strip": [
-    "topSeriesStream",
-    "topSeriesStreamLabel",
-    "topSeriesStreamCaption",
-    "topSeriesStreamSpeed",
-    "topSeriesStreamHeight",
-  ],
-  // 並び順（どちらの骨格でも効く）。
-  order: ["gallerySortOrder", "seriesSortOrder"],
-  // 作風プリセットは自分のキーを持たない（他の節のキーをまとめて入れ替える
-  // だけ）。台帳では空にしておく。所属キーの検査は
-  // admin-settings-section-keys.test.ts が見ている。
-  mood: [],
-  // サイトの骨格（写真中心／いつもの構成）だけを選ぶ節。
-  "page-layout": [
-    "siteDesign",
-    "developPortraitIds",
-    "developLifeIds",
-    "developDoors",
-    "tokyoPhotoIds",
-    "exhibitionOnTop",
-    "exhibitionTitle",
-    "exhibitionDates",
-    "exhibitionText",
-    "exhibitionThanks",
-    "exhibitionPhotoIds",
-    "exhibitionCaptions",
-    "exhibitionArchive",
-  ],
-  // トップの形（写真中心）。
-  home: ["bookCoverPhotoId", "photoTopLayout", "developTopStyle"],
-  // 作家の言葉の文（トップと About に出る）。
-  "statement-text": ["profileStatement", "profileStatementEn"],
-  // トップのどこに作家の言葉を置くか。
-  statement: ["homeStatement"],
-  // 写真を大きく開いたとき。
-  viewer: ["viewerStyle", "viewerMat"],
-  // About の文章と写真（以前は別画面で、プレビューを見ながら直せなかった）。
-  about: [
-    "profilePhotoUrl",
-    "profileName",
-    "profileNameKata",
-    "profileNameEn",
-    "profileBio",
-    "profileBioEn",
-    "profileGear",
-    "profileInstagram",
-    "profileTwitter",
-    "profileNote",
-    "cardExtraLabel",
-    "cardExtraUrl",
-  ],
-  "about-layout": ["profileLayout"],
-  "contact-layout": ["contactLayout"],
-  note: ["noteEnabled", "noteUsername", "noteShowCount"],
-  print: [
-    "printEnabled",
-    "printStoreUrl",
-    "printStoreLabel",
-    "printDescription",
-  ],
-  cta: ["homeCtaEnabled", "homeCtaTitle", "homeCtaText", "homeCtaOtherText", "homeCtaButton"],
-  // 色と背景（差し色・紙の質感も）。
-  theme: [
-    "themeBg",
-    "themeText",
-    "themeBgDark",
-    "themeTextDark",
-    "accentColor",
-    "bgTexture",
-    "bgTextureOpacity",
-  ],
-  fonts: [
-    "fontJa",
-    "customFontJaName",
-    "customFontJaUrl",
-    "customFontJaCategory",
-    "fontEn",
-    "customFontEnName",
-    "customFontEnUrl",
-    "customFontEnCategory",
-  ],
-  name: [
-    "siteName",
-    "siteNameEn",
-    "heroSubtitle",
-    "heroNameSize",
-    "heroNameWeight",
-    "heroNameTracking",
-    "heroNameColor",
-    "heroNameEnSize",
-    "heroNameEnTracking",
-    "heroNameEnColor",
-    "heroSubSize",
-    "heroSubColor",
-  ],
-  headings: [
-    "pageTitleStyle",
-    "headingSize",
-    "sectionLabelSize",
-    "sectionLabelTracking",
-    "sectionLeading",
-    "sectionLabelOpacity",
-  ],
-  body: [
-    "globalFontScale",
-    "bodySize",
-    "bodyWeight",
-    "bodyTracking",
-    "bodyLeading",
-    "linkHoverColor",
-    "linkUnderline",
-  ],
-  // フッター（言葉・並べ方・文字・SNS の名前・制作のクレジット）。
-  footer: [
-    "footerText",
-    "footerLayout",
-    "footerSize",
-    "footerOpacity",
-    "snsOpacity",
-    "snsLabelInstagram",
-    "snsLabelTwitter",
-    "snsLabelNote",
-    "footerCtaLabel",
-    "templateCreditLabel",
-    "templateCreditUrl",
-  ],
-  // ページの見出しなどに出る言葉（いつもの構成の見出し・「すべて見る」など）。
-  "site-copy": [
-    "worksLabel",
-    "viewAllLabel",
-    "viewAllCtaLabel",
-    "galleryLabel",
-    "filterAllLabel",
-    "profileLabel",
-    "contactLabel",
-  ],
-  presets: ["metaPresetsCamera", "metaPresetsLens"],
-} as const;
+// 節と設定のキーの台帳は admin-settings-navigation.tsx にある（探す欄が欄の名前を引くのに使う、
+// 2026-11-12）。ここからも同じ名前で読めるようにしておく。
+export { SETTINGS_SECTION_KEYS };
 
 type SettingsSectionId = keyof typeof SETTINGS_SECTION_KEYS;
 
@@ -395,6 +162,7 @@ export const SETTINGS_SECTION_GROUPS = {
     "statement",
     "viewer",
     "about",
+    "card",
     "about-layout",
     "contact-layout",
   ],
@@ -5237,6 +5005,7 @@ export function SettingsTab({
     statement: copy.pageLayout.statementTitle,
     viewer: copy.pageLayout.viewerTitle,
     about: t.navigation.tabs.profile,
+    card: language === "ja" ? "名刺のQR" : "Card QR page",
     "about-layout": copy.pageLayout.aboutLabel,
     "contact-layout": copy.pageLayout.contactLabel,
     note: copyIntegrations.note.title,
@@ -5349,8 +5118,11 @@ export function SettingsTab({
     (selectedHeroMode === "carousel" && configurableHeroIsFullscreen);
 
   const skeleton = siteSkeletonFrom(current["siteDesign"]);
+  const structure = siteStructureFrom(current["siteDesign"]);
   const sectionOnly = skeletonOnlyForSection(activeSection);
-  const skeletonNote =
+  // 新しい構成では、骨格の言い添え（写真中心・いつもの構成のとき）は当たらない。使わない節には
+  // 「サイト」の見出しの側で「今の構成では使いません」を出す（2026-11-12）。
+  const skeletonNote = structure === "develop" ? undefined :
     (skeleton === "book"
       ? copy.pageLayout.bookUnusedNotes
       : copy.pageLayout.classicUnusedNotes)[activeSection] ??
@@ -5560,15 +5332,39 @@ export function SettingsTab({
   useLayoutEffect(() => {
     if (!visualOn) return;
     const root = workspaceRef.current;
-    setInactiveCount(root ? root.querySelectorAll("[data-settings-section] .ax-field[data-skeleton-inactive]").length : 0);
-  }, [visualOn, visualSectionsKey, skeleton, form]);
+    if (!root) return setInactiveCount(0);
+    // 新しい構成では、隠した効かない設定のキーの数を数える（同じキーの塊が2つあっても1つ）。
+    if (structure === "develop") {
+      const keys = new Set(
+        Array.from(root.querySelectorAll<HTMLElement>("[data-settings-section] [data-unused-keys]"))
+          .flatMap((el) => (el.dataset.unusedKeys ?? "").split(" ").filter(Boolean)),
+      );
+      return setInactiveCount(keys.size);
+    }
+    setInactiveCount(root.querySelectorAll("[data-settings-section] .ax-field[data-skeleton-inactive]").length);
+  }, [visualOn, visualSectionsKey, skeleton, structure, form]);
   const otherSkeletonName =
     skeleton === "book"
       ? language === "ja" ? "いつもの構成" : "the classic structure"
       : language === "ja" ? "写真中心" : "photographs first";
   // 写真中心の骨格は止めたので（`site-design-flag.ts`）、その骨格だけの欄は開く入口ごと出さない。
   const inactiveToggle =
-    BOOK_DESIGN_ENABLED && visual?.section && inactiveCount > 0 ? (
+    structure === "develop" && visual?.section && inactiveCount > 0 ? (
+      <button
+        type="button"
+        className="se-inactive-toggle"
+        aria-expanded={showInactive}
+        onClick={() => setShowInactive((value) => !value)}
+      >
+        {language === "ja"
+          ? showInactive
+            ? "今の構成で使わない設定を隠す"
+            : `今の構成で使わない設定（${inactiveCount}）を表示`
+          : showInactive
+            ? "Hide settings the current structure does not use"
+            : `Show settings the current structure does not use (${inactiveCount})`}
+      </button>
+    ) : BOOK_DESIGN_ENABLED && visual?.section && inactiveCount > 0 ? (
       <button
         type="button"
         className="se-inactive-toggle"
@@ -5589,6 +5385,7 @@ export function SettingsTab({
 
   return (
     <SiteSkeletonContext.Provider value={skeleton}>
+    <SiteStructureContext.Provider value={structure}>
     <VisualSectionsContext.Provider value={visual && visual.sections && visual.sections.length > 0 ? visual.sections : null}>
     <div
       ref={workspaceRef}
@@ -5628,7 +5425,7 @@ export function SettingsTab({
           }}
           copy={t.formLayout}
           previewToggle={previewToggleButton}
-          mobilePreviewControl={mobilePreviewControl}
+          mobilePreviewControl={visual?.viewSwitchHost ? null : mobilePreviewControl}
           header={
             <PageHeader
               title={t.navigation.tabs.settings}
@@ -5637,6 +5434,7 @@ export function SettingsTab({
           }
         >
             {visual?.panel}
+            {visual?.viewSwitchHost && createPortal(mobilePreviewControl, visual.viewSwitchHost)}
             {onOpenTab && !visual && <div className="studio-context-actions">
               {activeSection === "hero" && <button type="button" onClick={() => onOpenTab("hero")}><Upload size={14} />{language === "ja" ? "トップに載せる写真を選ぶ" : "Choose home photographs"}</button>}
               {activeSection === "page-parts" && <button type="button" onClick={() => onOpenTab("profile")}><Pencil size={14} />{language === "ja" ? "プロフィールの文章を編集" : "Edit profile content"}</button>}
@@ -5953,7 +5751,7 @@ export function SettingsTab({
                     only?: SiteSkeleton;
                   }[]
                 ).map((f) => (
-                  <AdminField key={f.key} label={f.label} hint={f.hint} only={f.only}>
+                  <AdminField key={f.key} label={f.label} hint={f.hint} only={f.only} settingKey={f.key}>
                     <input
                       type="text"
                       aria-label={f.label}
@@ -5964,6 +5762,8 @@ export function SettingsTab({
                     />
                   </AdminField>
                 ))}
+                {/* 見開きのメニューは Portrait・Works・Info。Series／Work の入口の指定は今までの構成だけ。 */}
+                <UnusedHere keys={["seriesNavEnabled", "workNavEnabled"]}>
                 <p className="admin-settings-subhead">{copyDesign.parts.menu.entriesGroup}</p>
                 <AdminField
                   label={copy.seriesSection.navLabel}
@@ -6020,6 +5820,7 @@ export function SettingsTab({
                     ))}
                   </div>
                 </AdminField>
+                </UnusedHere>
                 <AdminField label={copyDesign.parts.menu.workNameLabel}>
                   <input
                     type="text"
@@ -6175,6 +5976,7 @@ export function SettingsTab({
                 <AdminField
                   label={copy.spacing.heroBottomLabel}
                   hint={copy.spacing.heroBottomHint}
+                  settingKey="spacingHeroBottom"
                 >
                   <TypoControl
                     label={copy.spacing.ratioControlLabel}
@@ -6933,6 +6735,7 @@ export function SettingsTab({
                   label={copy.pageLayout.topLayoutLabel}
                   hint={copy.pageLayout.topLayoutHint}
                   only="book"
+                  settingKey="photoTopLayout"
                 >
                   <div className="grid grid-cols-2 gap-1.5">
                     {(["cover-selection", "cover-only"] as const).map((val) => (
@@ -6971,9 +6774,12 @@ export function SettingsTab({
                     ))}
                   </div>
                 </AdminField>
-                <p className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] leading-relaxed">
-                  {copy.pageLayout.topLayoutNote}
-                </p>
+                {/* 写真中心のトップの説明。新しい構成のトップの形には当たらないので隠す（2026-11-12）。 */}
+                <UnusedHere keys={["photoTopLayout"]}>
+                  <p className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] leading-relaxed">
+                    {copy.pageLayout.topLayoutNote}
+                  </p>
+                </UnusedHere>
               </Section>
 
               {/* About の文章と写真（2026-09-30 まで別画面。プレビューを見ながら直せるよう設定の節にした） */}
@@ -7047,14 +6853,12 @@ export function SettingsTab({
                       ["profileInstagram", "instagramLabel", "instagramPlaceholder", false],
                       ["profileTwitter", "xUrlLabel", "xUrlPlaceholder", false],
                       ["profileNote", "noteUrlLabel", "noteUrlPlaceholder", false],
-                      ["cardExtraLabel", "cardExtraLabelLabel", "cardExtraLabelPlaceholder", false],
-                      ["cardExtraUrl", "cardExtraUrlLabel", "cardExtraUrlPlaceholder", false],
                     ] as const
                   ).map(([key, labelKey, placeholderKey, multiline]) => {
                     const label = t.phase2b.profile.fields[labelKey];
                     const placeholder = t.phase2b.profile.fields[placeholderKey];
                     return (
-                      <AdminField key={key} label={label} span={multiline}>
+                      <AdminField key={key} label={label} span={multiline} settingKey={key}>
                         {multiline ? (
                           <textarea
                             rows={5}
@@ -7078,6 +6882,35 @@ export function SettingsTab({
                     );
                   })}
                 </div>
+              </Section>
+
+              {/* 名刺のQRから開くページに足す行き先（2026-11-12 に About の節から分けた。
+                  新しい構成では「名刺のQR」のページで直す） */}
+              <Section
+                {...sectionProps("card")}
+                title={sectionTitles.card}
+                defaultOpen={false}
+              >
+                {(
+                  [
+                    ["cardExtraLabel", "cardExtraLabelLabel", "cardExtraLabelPlaceholder"],
+                    ["cardExtraUrl", "cardExtraUrlLabel", "cardExtraUrlPlaceholder"],
+                  ] as const
+                ).map(([key, labelKey, placeholderKey]) => {
+                  const label = t.phase2b.profile.fields[labelKey];
+                  return (
+                    <AdminField key={key} label={label}>
+                      <input
+                        type={key === "cardExtraUrl" ? "url" : "text"}
+                        aria-label={label}
+                        value={current[key] ?? ""}
+                        onChange={(e) => set(key, e.target.value)}
+                        placeholder={t.phase2b.profile.fields[placeholderKey]}
+                        className="ax-input"
+                      />
+                    </AdminField>
+                  );
+                })}
               </Section>
 
               {/* 作家の言葉の文（トップと About に出る） */}
@@ -7994,7 +7827,9 @@ export function SettingsTab({
                 title={copyDesign.parts.name.title}
                 defaultOpen={false}
               >
-                <p className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] leading-relaxed">{copyDesign.parts.name.responsiveHint}</p>
+                <UnusedHere keys={NAME_STYLE_KEYS}>
+                  <p className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] leading-relaxed">{copyDesign.parts.name.responsiveHint}</p>
+                </UnusedHere>
                 {(["siteName", "siteNameEn", "heroSubtitle"] as const).map((key) => {
                   const f = fields.find((field) => field.key === key)!;
                   return (
@@ -8010,6 +7845,8 @@ export function SettingsTab({
                     </AdminField>
                   );
                 })}
+                {/* 名前の大きさ・色は、今までのトップの名前だけが読む（新しい構成では隠す、2026-11-12）。 */}
+                <UnusedHere keys={NAME_STYLE_KEYS}>
                 <p className="admin-settings-subhead">{copyDesign.parts.name.jaGroup}</p>
                 <TypoControl
                   label={copyDesign.parts.size}
@@ -8114,6 +7951,7 @@ export function SettingsTab({
                 >
                   {copy.resetToDefault}
                 </button>
+                </UnusedHere>
               </Section>
 
               {/* 見出し（各ページの見出しと小見出し） */}
@@ -8466,7 +8304,7 @@ export function SettingsTab({
                     only?: SiteSkeleton;
                   }[]
                 ).map((f) => (
-                  <AdminField key={f.key} label={f.label} hint={f.hint} only={f.only}>
+                  <AdminField key={f.key} label={f.label} hint={f.hint} only={f.only} settingKey={f.key}>
                     <input
                       type="text"
                       aria-label={f.label}
@@ -8479,7 +8317,11 @@ export function SettingsTab({
                 ))}
                 <p className="admin-settings-subhead">{copyDesign.parts.footer.linksGroup}</p>
                 <div className="ax-field-grid">
-                  {fields.filter((f) => f.key === "footerCtaLabel" || f.key === "templateCreditLabel" || f.key === "templateCreditUrl").map(basicField)}
+                  {fields.filter((f) => f.key === "footerCtaLabel").map(basicField)}
+                  {/* 持ち主のサイトではクレジットを出さない（新しい構成では隠す、2026-11-12）。 */}
+                  <UnusedHere keys={["templateCreditLabel", "templateCreditUrl"]}>
+                    {fields.filter((f) => f.key === "templateCreditLabel" || f.key === "templateCreditUrl").map(basicField)}
+                  </UnusedHere>
                 </div>
                 <button
                   onClick={() => {
@@ -8544,7 +8386,7 @@ export function SettingsTab({
                     only?: SiteSkeleton;
                   }[]
                 ).map((f) => (
-                  <AdminField key={f.key} label={f.label} hint={f.hint} only={f.only}>
+                  <AdminField key={f.key} label={f.label} hint={f.hint} only={f.only} settingKey={f.key}>
                     <input
                       type="text"
                       aria-label={f.label}
@@ -8760,6 +8602,7 @@ export function SettingsTab({
       )}
     </div>
     </VisualSectionsContext.Provider>
+    </SiteStructureContext.Provider>
     </SiteSkeletonContext.Provider>
   );
 }
@@ -8786,11 +8629,43 @@ export type SettingsVisualMode = {
   onPick: (partId: string) => void;
   selectedPart?: string | null;
   onFound?: (partIds: string[]) => void;
+  /**
+   * スマホの「編集／プレビュー」の切り替えを置く所（「サイト」の上の帯の右端、2026-11-12）。
+   * 帯とこの切り替えを1行にまとめ、中身に使える高さを返す。無ければ今までどおり設定の欄の上。
+   */
+  viewSwitchHost?: HTMLElement | null;
 };
 
 // 今選んでいる骨格（下書きを含む）。`AdminField` の `only` がこれを見て、
 // その骨格で使わない項目に札を付けて薄くする。
 const SiteSkeletonContext = createContext<SiteSkeleton>("classic");
+
+// 公開サイトの構成（2026-11-12）。新しい構成で効かない欄（`DEVELOP_UNUSED_KEYS`）は、
+// 値を消さずに隠す。骨格の札と同じ `data-skeleton-inactive` を使うので、隠し方・
+// 「今の構成で使わない設定」から開く仕組みは1つのまま。
+const SiteStructureContext = createContext<SiteStructure>("classic");
+
+/** 名前の大きさ・太さ・字間・色（今までのトップの名前の塊だけが読む）。 */
+const NAME_STYLE_KEYS = [
+  "heroNameSize", "heroNameWeight", "heroNameTracking", "heroNameColor", "heroNameEnSize",
+  "heroNameEnTracking", "heroNameEnColor", "heroSubSize", "heroSubColor",
+] as const;
+
+/**
+ * 今の構成で効かない欄の塊。中の欄が全部効かないときだけ隠す（1つでも効けばそのまま）。
+ * `data-unused-keys` は「今の構成で使わない設定（N）」の数に使う。
+ */
+function UnusedHere({ keys, children }: { keys: readonly string[]; children: React.ReactNode }) {
+  const structure = useContext(SiteStructureContext);
+  const { language } = useAdminI18n();
+  if (keys.length === 0 || !keys.every((key) => keyUnusedIn(structure, key))) return <>{children}</>;
+  return (
+    <div data-skeleton-inactive="" data-unused-keys={keys.join(" ")}>
+      <p className="admin-skeleton-tag">{language === "ja" ? "今の構成では使いません" : "Not used by the current structure"}</p>
+      {children}
+    </div>
+  );
+}
 
 // 見ながら直す画面で、開いた部分が出す節（部分の並び順どおり）。null は従来どおり1節ずつ。
 const VisualSectionsContext = createContext<readonly string[] | null>(null);
@@ -9682,6 +9557,7 @@ function AdminField({
   children,
   span,
   only,
+  settingKey,
 }: {
   label: string;
   hint?: string;
@@ -9690,17 +9566,26 @@ function AdminField({
   span?: boolean;
   /** この骨格を選んでいるときだけ公開サイトに効く項目。札を付け、今の骨格で使わなければ薄くする */
   only?: SiteSkeleton;
+  /** この欄の設定のキー。今の構成で効かない欄（DEVELOP_UNUSED_KEYS）なら、骨格の札と同じく隠す */
+  settingKey?: string;
 }) {
   const skeleton = useContext(SiteSkeletonContext);
-  const { t } = useAdminI18n();
+  const structure = useContext(SiteStructureContext);
+  const unused = settingKey ? keyUnusedIn(structure, settingKey) : false;
+  const { t, language } = useAdminI18n();
   return (
     <div
       className={`ax-field${span ? " ax-field--span" : ""}`}
-      data-skeleton-inactive={(only && only !== skeleton) || undefined}
+      data-skeleton-inactive={(only && only !== skeleton) || unused || undefined}
+      data-unused-keys={unused ? settingKey : undefined}
     >
       <label className="ax-field__label">
         {label}
-        {only && (
+        {unused ? (
+          <span className="admin-skeleton-tag">
+            {language === "ja" ? "今の構成では使いません" : "Not used by the current structure"}
+          </span>
+        ) : only && (
           <span className="admin-skeleton-tag">
             {t.phase2b.settingsBasic.pageLayout.onlyTag[only]}
           </span>

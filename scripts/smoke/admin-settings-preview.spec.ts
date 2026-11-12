@@ -1,4 +1,4 @@
-import { chooseSettingsSection } from "./helpers";
+import { chooseSettingsSection, chooseSitePlace } from "./helpers";
 import { expect, test, type Page, type Route } from "./fixtures.ts";
 
 // Settings のプレビュー Workspace（Phase 1A）。実測で確定した P1〜P6 の回帰を
@@ -175,7 +175,7 @@ test.describe("admin — サイト編集のプレビューと下書き", () => {
     test.skip(info.project.name !== "desktop", "desktop pages");
     await installMocks(page);
     await openSettings(page);
-    await page.locator('[data-site-page="contact"]').click();
+    await chooseSitePlace(page, { page: "contact" });
     const iframe = page.locator('iframe[title="Site Preview"]');
     await expect.poll(() => iframe.evaluate((el: HTMLIFrameElement) => el.contentWindow!.location.pathname)).toBe("/contact");
     await expect(page.locator(".studio-preview-status a")).toHaveAttribute("href", "/contact");
@@ -297,7 +297,7 @@ test.describe("admin — プレビューで作品を直接選ぶ", () => {
 
   // 見ながら直す画面では、上の「Series」を開くと、下の帯で作品ごとのページを選べる。
   async function openSeries(page: Page) {
-    await page.locator('[data-site-page="series"]').click();
+    await chooseSitePlace(page, { page: "series" });
     await expect.poll(() => framePath(page)).toBe("/series");
   }
 
@@ -344,7 +344,7 @@ test.describe("admin — プレビューで作品を直接選ぶ", () => {
     }
 
     // 別のページへ移って戻ると、作品の一覧から始まる。
-    await page.locator('[data-site-page="about"]').click();
+    await chooseSitePlace(page, { page: "about" });
     await expect.poll(() => framePath(page)).toBe("/about");
     await openSeries(page);
 

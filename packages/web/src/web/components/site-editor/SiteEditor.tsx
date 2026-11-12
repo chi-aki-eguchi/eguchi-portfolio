@@ -1,38 +1,43 @@
-import { useState, type ReactNode } from "react";
+import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import {
-  AlignLeft, ArrowUpDown, AtSign, Baseline, Bookmark, BookOpen, Briefcase, Columns2, GalleryHorizontal,
-  Globe, Heading, Image, Images, JapaneseYen, LayoutGrid, LayoutTemplate, Layers, ListChecks, Mail,
-  Maximize2, Menu, MessageSquare, MoveVertical, Package, Palette, PanelBottom, Printer, Quote,
-  SlidersHorizontal, Sparkles, SquareUser, Tags, Type, WandSparkles, type LucideIcon,
+  AlignLeft, ArrowUpDown, AtSign, Baseline, Bookmark, BookOpen, Briefcase, ChevronDown, Columns2,
+  DoorOpen, Frame, GalleryHorizontal, Globe, Heading, Image, Images, JapaneseYen, LayoutGrid, LayoutTemplate, Layers,
+  ListChecks, Mail, Maximize2, Menu, MessageSquare, MoveVertical, Package, Palette, PanelBottom, PanelsTopLeft, Printer,
+  QrCode, Quote, SlidersHorizontal, Sparkles, SquareUser, Tags, Type, WandSparkles, type LucideIcon,
 } from "lucide-react";
 import {
   SETTINGS_NAVIGATION,
-  SITE_ADVANCED_PARTS,
-  SITE_LOOK_PARTS,
-  SITE_MORE_PARTS,
-  SITE_PAGES,
   SITE_PARTS,
-  partIsListed,
-  settingsNavigationItems,
+  partText,
+  searchSite,
+  type SiteOutline,
+  type SiteOutlineContext,
+  type SiteOutlineGroupId,
   type SitePageId,
   type SitePart,
   type SitePartId,
-  type SiteSkeleton,
+  type SiteStructure,
 } from "../../pages/admin-settings-navigation";
 import "./site-editor.css";
-import { BOOK_DESIGN_ENABLED } from "../../lib/site-design-flag";
 
 /**
  * 管理画面「サイト」（2026-09-29 作り直し）。公開サイトを大きく出し、変えたい所を
  * 押して直す。オーナー「目次が長くてわかりづらい・ださい」を受けて、32項目の目次を
  * やめた。右の欄には、見ているページにある部分だけを並べる。
  *
- *   上の帯    トップ / Gallery / Series / About / Contact ｜ 全体の見た目 ｜ そのほか
+ *   上の帯    公開サイトのページ ｜ ページに依らないまとまり
  *   真ん中    公開サイトのプレビュー（部分に乗ると枠と「〜を変える」、押すと右に設定）
  *   右の欄    このページで変えられるところ → 押すとその設定だけ
+ *
+ * 2026-11-12: 帯のページは公開サイトのページそのもの（新しい構成ならトップ／Portrait／
+ * Works／Info／展示／東京プラン／名刺のQR、まとまりは 共通／見た目／そのほか）。
+ * スマホは横に送る帯をやめ、1行の「いまのページ ▾」（押すと下から全部のページが出る）と、
+ * 右に「編集／プレビュー」。横に隠れる入口を無くす（帯 554px が画面 390px に入らず、
+ * 「そのほか」が見えなかった）。
  */
 
-export type SiteEditorMode = "page" | "look" | "more";
+/** 右の欄の一覧。"page" は見ているページ、ほかはページに依らないまとまり。 */
+export type SiteEditorMode = "page" | SiteOutlineGroupId;
 
 /** 開いている部分。部分の id か、設定の節を直接開く `section:<節の id>`（探す・案内から）。 */
 export type SiteEditorTarget = SitePartId | `section:${string}` | null;
@@ -48,8 +53,8 @@ export function sectionLabel(sectionId: string, language: SiteEditorLanguage): s
   return label ? label[language] : sectionId;
 }
 
-export function partLabel(part: SitePart, language: SiteEditorLanguage): string {
-  return language === "ja" ? part.ja : part.en;
+export function partLabel(part: SitePart, language: SiteEditorLanguage, structure: SiteStructure = "classic"): string {
+  return partText(part, structure, language).label;
 }
 
 /** 一覧で目印にする形。文字だけの一覧は拾い読みしにくい（2026-09-29）。 */
@@ -62,7 +67,12 @@ const PART_ICONS: Record<SitePartId, LucideIcon> = {
   spacing: MoveVertical, reveal: WandSparkles, "site-basics": Globe,
   "hero-photos": Images, categories: Tags, "series-details": Layers, pricing: JapaneseYen, service: Briefcase,
   "portfolio-kit": Package, presets: Bookmark, note: BookOpen, print: Printer, setup: ListChecks,
+  "top-style": LayoutTemplate, "cover-photos": Images, doors: DoorOpen, "portrait-photos": Images, gallery: LayoutGrid,
+  "cta-ref": Mail, "works-series": Layers, "life-photos": Images, "works-other": MessageSquare, "info-statement": Quote,
+  "exhibition-photos": Frame, "tokyo-photos": Images, card: QrCode, "card-profile": SquareUser,
 };
+
+const GROUP_ICONS: Record<SiteOutlineGroupId, LucideIcon> = { shared: PanelsTopLeft, look: Palette, more: SlidersHorizontal };
 
 function iconFor(target: SiteEditorTarget): LucideIcon {
   return target && !target.startsWith("section:") ? PART_ICONS[target as SitePartId] ?? SlidersHorizontal : SlidersHorizontal;
@@ -74,29 +84,189 @@ export function SitePartIcon({ id, size = 15 }: { id: string; size?: number }) {
   return <Icon size={size} strokeWidth={1.6} aria-hidden="true" />;
 }
 
-function partNote(part: SitePart, language: SiteEditorLanguage): string | undefined {
-  return language === "ja" ? part.noteJa : part.noteEn;
+/** 帯・選ぶ欄に出す、いまの場所の名前。 */
+function currentName(outline: SiteOutline, page: SitePageId, mode: SiteEditorMode, language: SiteEditorLanguage, short = false) {
+  const ja = language === "ja";
+  if (mode !== "page") {
+    const group = outline.groups.find((g) => g.id === mode);
+    if (group) return short ? (ja ? group.shortJa : group.shortEn) : ja ? group.ja : group.en;
+  }
+  const p = outline.pages.find((x) => x.id === page) ?? outline.pages[0]!;
+  return ja ? p.ja : p.en;
 }
 
-/** 上の帯。公開サイトのページと、ページに依らない「全体の見た目」「そのほか」。 */
+/**
+ * スマホの「いまのページ ▾」。押すと、全部のページと 共通・見た目・そのほか が下から出る。
+ * 各ページの下にはそのページの部分も並べ、押せばその部分が開く（サイトの地図。どこに何が
+ * あるかを1枚で見せ、自己紹介・書体などへ /admin から3回で届くように）。
+ * 選ぶ・外を押す・Escape で閉じ、閉じたら押したボタンへ戻る（外を押したときは、押した先を優先）。
+ */
+function PagePicker({
+  outline,
+  page,
+  mode,
+  onPage,
+  onMode,
+  onPart,
+  partName,
+  language,
+}: {
+  outline: SiteOutline;
+  page: SitePageId;
+  mode: SiteEditorMode;
+  onPage: (page: SitePageId) => void;
+  onMode: (mode: SiteOutlineGroupId) => void;
+  onPart?: (part: SitePartId) => void;
+  partName: (part: SitePartId) => string;
+  language: SiteEditorLanguage;
+}) {
+  const ja = language === "ja";
+  const [open, setOpen] = useState(false);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const sheetRef = useRef<HTMLDialogElement>(null);
+  const sheetId = useId();
+  const close = (restoreFocus: boolean) => {
+    setOpen(false);
+    if (restoreFocus) buttonRef.current?.focus();
+  };
+  useEffect(() => {
+    if (!open) return;
+    const sheet = sheetRef.current;
+    // いまの場所の行を、選ぶ欄の上に見せてから押せるようにする。
+    const current = sheet?.querySelector<HTMLElement>('[aria-current="true"]') ?? sheet?.querySelector<HTMLElement>("button");
+    if (sheet && current) sheet.scrollTop = Math.max(0, current.offsetTop - 10);
+    current?.focus({ preventScroll: true });
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        close(true);
+        return;
+      }
+      // 開いている間は、選ぶ欄の中だけを Tab で回る。
+      if (e.key === "Tab" && sheet) {
+        const items = Array.from(sheet.querySelectorAll<HTMLElement>("button"));
+        const first = items[0];
+        const last = items[items.length - 1];
+        if (!first || !last) return;
+        if (e.shiftKey && document.activeElement === first) {
+          e.preventDefault();
+          last.focus();
+        } else if (!e.shiftKey && document.activeElement === last) {
+          e.preventDefault();
+          first.focus();
+        }
+      }
+    };
+    const onDown = (e: PointerEvent) => {
+      const target = e.target as Node | null;
+      if (!target || sheet?.contains(target) || buttonRef.current?.contains(target)) return;
+      close(false);
+    };
+    document.addEventListener("keydown", onKey);
+    document.addEventListener("pointerdown", onDown);
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.removeEventListener("pointerdown", onDown);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
+  const row = (key: string, label: string, current: boolean, onChoose: () => void, parts: readonly SitePartId[]) => (
+    <li key={key}>
+      <button
+        type="button"
+        className="se-pagepick__row"
+        data-site-pick={key}
+        aria-current={current ? "true" : undefined}
+        onClick={() => {
+          close(true);
+          onChoose();
+        }}
+      >
+        <span>{label}</span>
+      </button>
+      {onPart && parts.length > 0 && (
+        <ul className="se-pagepick__parts">
+          {parts.map((id) => (
+            <li key={id}>
+              <button
+                type="button"
+                className="se-pagepick__part"
+                data-site-pick-part={id}
+                onClick={() => {
+                  close(false);
+                  onPart(id);
+                }}
+              >
+                {partName(id)}
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </li>
+  );
+  return (
+    <div className="se-pagepick">
+      <button
+        ref={buttonRef}
+        type="button"
+        className="se-pagepick__button"
+        aria-haspopup="dialog"
+        aria-expanded={open}
+        aria-controls={open ? sheetId : undefined}
+        onClick={() => (open ? close(true) : setOpen(true))}
+      >
+        <span className="se-pagepick__current">{currentName(outline, page, mode, language)}</span>
+        <ChevronDown size={18} strokeWidth={1.8} aria-hidden="true" />
+      </button>
+      {open && (
+        <>
+          <div className="se-pagepick__scrim" aria-hidden="true" onClick={() => close(true)} />
+          <dialog open data-phase="show" ref={sheetRef} id={sheetId} className="se-pagepick__sheet" aria-modal="true" aria-label={ja ? "ページを選ぶ" : "Choose a page"}>
+            <ul className="se-pagepick__list">
+              {outline.pages.map((p) => row(p.id, ja ? p.ja : p.en, mode === "page" && page === p.id, () => onPage(p.id), p.parts))}
+            </ul>
+            <ul className="se-pagepick__list se-pagepick__list--groups">
+              {outline.groups.map((g) => row(g.id, ja ? g.ja : g.en, mode === g.id, () => onMode(g.id), [...g.parts, ...g.advanced]))}
+            </ul>
+          </dialog>
+        </>
+      )}
+    </div>
+  );
+}
+
+/**
+ * 上の帯。公開サイトのページと、ページに依らないまとまり。PC は全部を並べ、スマホは
+ * 「いまのページ ▾」と、右に「編集／プレビュー」（設定の画面が `viewHostRef` の所へ置く）。
+ */
 export function SiteEditorBar({
+  outline,
   page,
   mode,
   onPage,
   onMode,
   language,
+  viewHostRef,
+  onPart,
+  doors,
 }: {
+  outline: SiteOutline;
   page: SitePageId;
   mode: SiteEditorMode;
   onPage: (page: SitePageId) => void;
-  onMode: (mode: SiteEditorMode) => void;
+  onMode: (mode: SiteOutlineGroupId) => void;
   language: SiteEditorLanguage;
+  viewHostRef?: (element: HTMLElement | null) => void;
+  /** スマホの選ぶ欄から、部分を直接開く */
+  onPart?: (part: SitePartId) => void;
+  doors?: SiteOutlineContext["doors"];
 }) {
   const ja = language === "ja";
   return (
-    <div className="se-bar">
+    <div className="se-bar" data-structure={outline.structure}>
       <nav className="se-bar__pages" aria-label={ja ? "公開サイトのページ" : "Public pages"}>
-        {SITE_PAGES.map((p) => (
+        {outline.pages.map((p) => (
           <button
             key={p.id}
             type="button"
@@ -110,34 +280,56 @@ export function SiteEditorBar({
         ))}
       </nav>
       <div className="se-bar__more">
-        <button
-          type="button"
-          className="se-bar__mode"
-          data-site-mode="look"
-          aria-pressed={mode === "look"}
-          onClick={() => onMode("look")}
-        >
-          <Palette size={15} aria-hidden="true" />
-          {/* スマホは短く（帯を横に送らなくても見えるように） */}
-          <span className="se-bar__long">{ja ? "全体の見た目" : "Overall look"}</span>
-          <span className="se-bar__short">{ja ? "見た目" : "Look"}</span>
-        </button>
-        <button
-          type="button"
-          className="se-bar__mode"
-          data-site-mode="more"
-          aria-pressed={mode === "more"}
-          onClick={() => onMode("more")}
-        >
-          <SlidersHorizontal size={15} aria-hidden="true" />
-          {ja ? "そのほか" : "More"}
-        </button>
+        {outline.groups.map((g) => {
+          const Icon = GROUP_ICONS[g.id];
+          const long = ja ? g.ja : g.en;
+          const short = ja ? g.shortJa : g.shortEn;
+          return (
+            <button
+              key={g.id}
+              type="button"
+              className="se-bar__mode"
+              data-site-mode={g.id}
+              aria-pressed={mode === g.id}
+              onClick={() => onMode(g.id)}
+            >
+              <Icon size={15} aria-hidden="true" />
+              {long === short ? (
+                long
+              ) : (
+                <>
+                  {/* 細い画面は短く（帯を横に送らなくても見えるように） */}
+                  <span className="se-bar__long">{long}</span>
+                  <span className="se-bar__short">{short}</span>
+                </>
+              )}
+            </button>
+          );
+        })}
       </div>
+      <PagePicker
+        outline={outline}
+        page={page}
+        mode={mode}
+        onPage={onPage}
+        onMode={onMode}
+        onPart={onPart}
+        partName={(id) => partText(SITE_PARTS[id], outline.structure, language, doors).label}
+        language={language}
+      />
+      <div className="se-bar__view" ref={viewHostRef} />
     </div>
   );
 }
 
-type Row = { target: SiteEditorTarget; label: string; note?: string; missing?: boolean };
+type Row = {
+  target: SiteEditorTarget;
+  label: string;
+  note?: string;
+  /** 探して当たった欄 */
+  field?: string;
+  unused?: boolean;
+};
 
 /**
  * 出す・出さないを選べる部分。プレビューに見つからないときは「今は出ていません」と
@@ -147,12 +339,21 @@ export const SITE_PARTS_THAT_CAN_BE_HIDDEN: readonly string[] = [
   "statement", "cta", "works", "series-strip", "note", "print", "pricing", "contact-words",
 ];
 
-/** 右の欄の一覧（どのページ・全体の見た目・そのほか）と、その上の「探す」。 */
+/** 行の右端の印（設定はその場で開く、ほかの画面へ行く行は ↗、同じ設定を指す行は ↩）。 */
+function rowKind(target: SiteEditorTarget): "settings" | "away" | "ref" {
+  if (!target || target.startsWith("section:")) return "settings";
+  const part: SitePart | undefined = (SITE_PARTS as Record<string, SitePart>)[target];
+  if (part?.ref) return "ref";
+  if (part?.pagesTab || part?.view) return "away";
+  return "settings";
+}
+
+/** 右の欄の一覧（どのページ・まとまり）と、その上の「探す」。 */
 export function SitePartsPanel({
   mode,
   page,
-  skeleton,
-  showService,
+  outline,
+  context,
   foundParts,
   changedSections,
   sectionsFor,
@@ -162,91 +363,68 @@ export function SitePartsPanel({
 }: {
   mode: SiteEditorMode;
   page: SitePageId;
-  skeleton: SiteSkeleton;
-  showService: boolean;
+  outline: SiteOutline;
+  context: SiteOutlineContext;
   /** プレビューの中で見つかった部分（押せる所） */
   foundParts: readonly string[];
   changedSections: readonly string[];
   sectionsFor: (target: SiteEditorTarget) => readonly string[];
-  onOpen: (target: SiteEditorTarget) => void;
+  /** 開く。探して欄に当たったときは、その欄の名前も渡す（開いたらその欄へ送る） */
+  onOpen: (target: SiteEditorTarget, field?: string) => void;
   onHover: (target: SiteEditorTarget) => void;
   language: SiteEditorLanguage;
 }) {
   const ja = language === "ja";
+  const structure = outline.structure;
   const [query, setQuery] = useState("");
-  const listed = (id: SitePartId) => partIsListed(SITE_PARTS[id], skeleton, showService);
-  const pageDef = SITE_PAGES.find((p) => p.id === page) ?? SITE_PAGES[0]!;
-  const ids: readonly SitePartId[] =
-    mode === "look" ? SITE_LOOK_PARTS : mode === "more" ? SITE_MORE_PARTS : pageDef.parts;
-  const rowFor = (id: SitePartId): Row => ({
-    target: id,
-    label: partLabel(SITE_PARTS[id], language),
-    note: partNote(SITE_PARTS[id], language),
-  });
-  // ふだん触る物と、めったに触らない物（「詳しい設定」にしまう、2026-09-30）。
-  const isAdvanced = (id: SitePartId) => SITE_ADVANCED_PARTS.includes(id);
-  const rows: Row[] = ids.filter(listed).filter((id) => !isAdvanced(id)).map(rowFor);
-  const advancedRows: Row[] = ids.filter(listed).filter(isAdvanced).map(rowFor);
-
-  // 探す: すべての部分と、すべての設定の節から（名前・一言・関連語で）。
-  const words = query.trim().toLocaleLowerCase().split(/\s+/).filter(Boolean);
-  const searching = words.length > 0;
-  const matches = (text: string) => {
-    const haystack = text.toLocaleLowerCase();
-    return words.every((word) => haystack.includes(word));
+  const pageDef = outline.pages.find((p) => p.id === page) ?? outline.pages[0]!;
+  const group = mode === "page" ? undefined : outline.groups.find((g) => g.id === mode);
+  const rowFor = (id: SitePartId): Row => {
+    const text = partText(SITE_PARTS[id], structure, language, context.doors);
+    return { target: id, label: text.label, note: text.note };
   };
-  const searchRows: Row[] = [];
-  if (searching) {
-    const seenSections = new Set<string>();
-    const allIds = Array.from(
-      new Set<SitePartId>([...SITE_PAGES.flatMap((p) => p.parts), ...SITE_LOOK_PARTS, ...SITE_MORE_PARTS]),
-    ).filter(listed);
-    for (const id of allIds) {
-      const part: SitePart = SITE_PARTS[id];
-      const sectionWords = sectionsFor(id).map((sid) => {
-        const item = settingsNavigationItems.find((i) => i.id === sid);
-        return item ? `${item.ja} ${item.en} ${item.keywords}` : "";
-      });
-      if (!matches(`${part.ja} ${part.en} ${part.noteJa ?? ""} ${part.noteEn ?? ""} ${part.keywords ?? ""} ${sectionWords.join(" ")} ${sectionsFor(id).join(" ")}`)) continue;
-      const sections = sectionsFor(id);
-      if (sections.length && sections.every((sid) => seenSections.has(sid))) continue;
-      sections.forEach((sid) => seenSections.add(sid));
-      searchRows.push(rowFor(id));
-    }
-    // 今の骨格の一覧に無い節も、探せば開ける（値は残っている）。ただし止めた骨格
-    // （写真中心）だけの節と骨格の切り替えは出さない（2026-09-30、構成を1つにした）。
-    for (const group of SETTINGS_NAVIGATION) {
-      for (const item of group.items) {
-        if (seenSections.has(item.id)) continue;
-        if (!BOOK_DESIGN_ENABLED && (item.id === "page-layout" || ("only" in item && item.only === "book"))) continue;
-        if (!matches(`${item.ja} ${item.en} ${item.keywords} ${item.id}`)) continue;
-        seenSections.add(item.id);
-        searchRows.push({ target: `section:${item.id}`, label: ja ? item.ja : item.en });
-      }
-    }
-  }
+  const rows: Row[] = (group ? group.parts : pageDef.parts).map(rowFor);
+  const advancedRows: Row[] = (group?.advanced ?? []).map(rowFor);
 
-  const heading =
-    mode === "look"
-      ? ja ? "全体の見た目" : "Overall look"
-      : mode === "more"
-        ? ja ? "そのほか" : "More"
-        : ja ? `${pageDef.ja}で変えられるところ` : `What you can change on ${pageDef.en}`;
-  const lede =
-    mode === "look"
-      ? ja ? "すべてのページに効く書体・色・文字と、どのページにも出るメニュー・フッター・見出しです。" : "Typefaces, colour and text for every page, and the menu, footer and headings that appear on each page."
-      : mode === "more"
-        ? ja ? "ページの見た目に出ない設定と、ほかの編集画面です。" : "Settings that do not show on a page, and other editors."
-        : ja ? "プレビューの中の変えたい所を押しても選べます。" : "You can also click the part you want in the preview.";
+  // 探す: 並びにある部分・設定の節と、その中の欄の名前から（今の構成で使わない節は印付き）。
+  const searching = query.trim().length > 0;
+  const searchRows: Row[] = searching
+    ? searchSite(query, outline, context, language).map((hit) => {
+        if (hit.target.startsWith("section:")) {
+          const sid = hit.target.slice("section:".length);
+          return { target: hit.target as SiteEditorTarget, label: sectionLabel(sid, language), field: hit.field, unused: hit.unused };
+        }
+        return { ...rowFor(hit.target as SitePartId), field: hit.field, unused: hit.unused };
+      })
+    : [];
+
+  const heading = group
+    ? ja ? group.ja : group.en
+    : ja ? `${pageDef.ja}で変えられるところ` : `What you can change on ${pageDef.en}`;
+  const lede = group
+    ? group.id === "shared"
+      ? ja ? "どのページにも出るメニュー・フッター・写真の開き方・見出しです。" : "The menu, footer, photo viewer and headings shared by every page."
+      : group.id === "look"
+        ? structure === "develop"
+          ? ja ? "すべてのページに効く書体・色・文字・余白です。" : "Typefaces, colour, text and spacing for every page."
+          : ja ? "すべてのページに効く書体・色・文字と、どのページにも出るメニュー・フッター・見出しです。" : "Typefaces, colour and text for every page, and the menu, footer and headings that appear on each page."
+        : ja ? "ページの見た目に出ない設定と、ほかの編集画面です。" : "Settings that do not show on a page, and other editors."
+    : structure === "develop"
+      ? ja ? "ページの上から見える順に並んでいます。" : "Listed in the order they appear on the page."
+      : ja ? "プレビューの中の変えたい所を押しても選べます。" : "You can also click the part you want in the preview.";
 
   const shown = searching ? searchRows : rows;
   const renderRow = (row: Row) => {
     const changed = sectionsFor(row.target).some((sid) => changedSections.includes(sid));
     const onPage = mode === "page" && !searching && typeof row.target === "string" && foundParts.includes(row.target);
+    // 「今は出ていません」はプレビューの中の部品の目印（今までの構成の物）で決める。新しい構成の
+    // ページには目印が無いので、付けない（出ている物まで「出ていません」と言ってしまう）。
     const offPage =
-      mode === "page" && !searching && foundParts.length > 0 && typeof row.target === "string" &&
+      structure === "classic" && mode === "page" && !searching && foundParts.length > 0 && typeof row.target === "string" &&
       SITE_PARTS_THAT_CAN_BE_HIDDEN.includes(row.target) && !foundParts.includes(row.target);
     const Icon = iconFor(row.target);
+    const kind = rowKind(row.target);
+    const note = row.field ? (ja ? `「${row.field}」の欄` : `Field: ${row.field}`) : row.note;
     return (
       <li key={String(row.target)}>
         <button
@@ -254,9 +432,11 @@ export function SitePartsPanel({
           className="se-part"
           data-site-part={row.target ?? undefined}
           data-site-sections={sectionsFor(row.target).join(" ") || undefined}
+          data-site-row={kind === "settings" ? undefined : kind}
           data-on-page={onPage || undefined}
           data-off-page={offPage || undefined}
-          onClick={() => onOpen(row.target)}
+          data-unused={row.unused || undefined}
+          onClick={() => onOpen(row.target, row.field)}
           onMouseEnter={() => onHover(row.target)}
           onMouseLeave={() => onHover(null)}
           onFocus={() => onHover(row.target)}
@@ -273,13 +453,14 @@ export function SitePartsPanel({
               </span>
             )}
           </span>
-          {row.note && (
+          {(note || row.unused || offPage) && (
             <span className="se-part__note">
               {offPage && <em className="se-part__off">{ja ? "今は出ていません" : "Not shown now"}</em>}
-              {row.note}
+              {row.unused && <em className="se-part__off">{ja ? "今の構成では使いません" : "Not used by the current structure"}</em>}
+              {note}
             </span>
           )}
-          <span className="se-part__go" aria-hidden="true">›</span>
+          <span className="se-part__go" aria-hidden="true">{kind === "away" ? "↗" : kind === "ref" ? "↩" : "›"}</span>
         </button>
       </li>
     );
@@ -294,11 +475,11 @@ export function SitePartsPanel({
           onKeyDown={(e) => {
             if (e.key === "Enter" && shown[0]) {
               e.preventDefault();
-              onOpen(shown[0].target);
+              onOpen(shown[0].target, shown[0].field);
             }
           }}
           aria-label={ja ? "設定を探す" : "Find a setting"}
-          placeholder={ja ? "設定を探す（メール・書体…）" : "Find a setting (email, typeface…)"}
+          placeholder={ja ? "設定を探す（メール・書体・Instagram…）" : "Find a setting (email, typeface, Instagram…)"}
         />
       </div>
       {!searching && (
@@ -333,6 +514,7 @@ export function SitePartHeader({
   onBack,
   target,
   offPage,
+  unused,
   title,
   note,
   links,
@@ -343,6 +525,8 @@ export function SitePartHeader({
   target?: SiteEditorTarget;
   /** 今このページに出ていない（出す・出さないを選べる部分） */
   offPage?: string;
+  /** 今の構成では使わない（値は残っている） */
+  unused?: string;
   title: string;
   note?: string;
   links?: readonly { label: string; onClick: () => void }[];
@@ -363,6 +547,7 @@ export function SitePartHeader({
         })()}
         <h2 className="se-part-head__title">{title}</h2>
       </div>
+      {unused && <p className="se-part-head__off" data-structure-unused role="note">{unused}</p>}
       {note && <p className="se-part-head__note">{note}</p>}
       {offPage && <p className="se-part-head__off">{offPage}</p>}
       {links && links.length > 0 && (

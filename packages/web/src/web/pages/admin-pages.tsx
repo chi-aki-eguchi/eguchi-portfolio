@@ -130,6 +130,19 @@ export default function AdminPagesPage() {
     return TABS.find((kind) => kind === raw) ?? null;
   });
   const [backHref] = useState(() => safeAdminFrom(new URLSearchParams(window.location.search).get("from"), "/admin#site"));
+  // 「サイト」→ トップ →「扉の名前」から来たときは、扉の名前の欄を開いて見せる（?focus=doors、2026-11-12）。
+  const [focusDoors] = useState(() => new URLSearchParams(window.location.search).get("focus") === "doors");
+  const pageReady = Boolean(settingsQ.data && photosQ.data);
+  useEffect(() => {
+    if (!focusDoors || !pageReady) return;
+    const id = requestAnimationFrame(() => {
+      const doors = document.querySelector<HTMLDetailsElement>(".pp-doors");
+      if (!doors) return;
+      doors.open = true;
+      doors.scrollIntoView({ block: "start" });
+    });
+    return () => cancelAnimationFrame(id);
+  }, [focusDoors, pageReady]);
   const [chosenTab, setTab] = useState<Tab | null>(null);
   // 展示のタブで、いま編集している展示（slug）。選んでいなければ、一覧の先頭。
   const [chosenShow, setShow] = useState<string | null>(null);

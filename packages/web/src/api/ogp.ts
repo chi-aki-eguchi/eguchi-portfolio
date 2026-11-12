@@ -38,6 +38,7 @@ import {
   TOKYO_LANGS,
   TOKYO_OG_LOCALE,
   TOKYO_PATHS,
+  TOKYO_SHOOT,
   tokyoDescription,
   tokyoDocumentTitle,
   tokyoFallbackParagraphs,
@@ -1186,6 +1187,33 @@ function buildJsonLd(
   // 新しい構成の Info も同じ依頼のページ（料金と依頼フォームを含む。2026-10-24）。依頼の入口は
   // Info なので、ここに無いと、メニューから行く依頼のページが「撮影を受ける」と名乗らない。
   // （/info は新しい構成のサイトでしか indexable にならず、この関数は indexable なときだけ呼ばれる）
+  // 東京の撮影プラン。何を・いくらで・どこで・何語で頼めるかを、検索側が読める形でも名乗る。
+  // 中身は shared/tokyo-shoot.ts の数字と文のまま（ここで言葉を足さない）。
+  // （このページはオーナーのサイトでしか indexable にならず、この関数は indexable なときだけ呼ばれる）
+  const tokyoLang = tokyoLangFromPath(pathname);
+  if (tokyoLang) {
+    const copy = TOKYO_COPY[tokyoLang];
+    const url = `${siteUrl}${TOKYO_PATHS[tokyoLang]}`;
+    graph.push({
+      "@type": "Service",
+      name: copy.pageTitle,
+      serviceType: "Portrait photography",
+      url,
+      inLanguage: tokyoLang,
+      description: tokyoDescription(tokyoLang, { nameJa: settings.siteName || "", nameEn }),
+      provider: { "@type": "Person", name, alternateName: nameEn, url: siteUrl },
+      areaServed: { "@type": "City", name: "Tokyo" },
+      availableLanguage: ["zh-Hant", "ja", "en"],
+      offers: TOKYO_SHOOT.plans.map((plan) => ({
+        "@type": "Offer",
+        name: `${copy.plan[plan.id].name} ${copy.duration(plan.minutes)}`,
+        description: copy.plan[plan.id].detail(plan),
+        price: String(plan.priceYen),
+        priceCurrency: "JPY",
+        url,
+      })),
+    });
+  }
   if (pathname === "/contact" || pathname === "/en/contact" || pathname === "/info") {
     const isEn = pathname === "/en/contact";
     // 日本語ページは**既定値まで解決する。**DB に行が無いキーは `settings` に

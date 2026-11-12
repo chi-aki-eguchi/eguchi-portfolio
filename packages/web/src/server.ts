@@ -66,7 +66,7 @@ import {
   isServiceVisibilityGatedPath,
   resolveServiceVisibility,
 } from "./shared/service-visibility";
-import { TOKYO_PATHS } from "./shared/tokyo-shoot";
+import { TOKYO_PATHS, TOKYO_SHOOT, tokyoLangFromPath } from "./shared/tokyo-shoot";
 import { PORTFOLIO_DISCOVERY_GUIDE } from "./shared/portfolio-guide";
 import {
   EXHIBITION_CARD_COOKIE,
@@ -1229,6 +1229,17 @@ async function serveNonApi(request: Request, url: URL): Promise<Response> {
       } else if (routePathname === "/info" && settings.profilePhotoUrl) {
         override = { image: settings.profilePhotoUrl };
       }
+    }
+    // 東京の撮影プランは、共有したときの写真をそのページの表紙にする（題と説明は ogp.ts が言語ごとに決める）。
+    if (
+      !override &&
+      tokyoLangFromPath(routePathname) &&
+      isServiceOwnerSite(siteUrlFrom(settings, publicOrigin), "")
+    ) {
+      const coverId = TOKYO_SHOOT.photoIds[0];
+      const cover = coverId != null ? await getPhotoOg(coverId) : null;
+      if (cover?.image)
+        override = { image: cover.image, imageRotationDeg: cover.imageRotationDeg };
     }
     // 共有したときの説明にも展示の名前を出す。会期が過ぎても読める、記録の形の文。
     if (!override && exhibitionOn) {

@@ -122,6 +122,24 @@
   text-wrap: pretty;
 }
 
+/* 題のすぐ下：いちばん安いプランの時間と料金、申し込みへの入口。 */
+.tk-from {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0 1.5rem;
+  margin-top: 1.25rem;
+}
+.tk-from__price {
+  font-size: 1.0625rem;
+  letter-spacing: 0.02em;
+  color: var(--foreground);
+  font-variant-numeric: lining-nums;
+}
+.tk-from .tk-to-form {
+  margin-top: 0;
+}
+
 /* 写真 */
 .tk-row {
   display: flex;
@@ -257,6 +275,77 @@
 }
 .tk-notes li + li {
   margin-top: 0.5rem;
+}
+
+/* 撮る人 */
+.tk-about__img {
+  display: block;
+  width: 100%;
+  max-width: 20rem;
+  height: auto;
+}
+.tk-about__name {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.25rem 0.75rem;
+  margin-top: 0.75rem;
+  font-size: var(--body-size, 0.9375rem);
+  color: var(--foreground);
+}
+.tk-about__name [lang="ja"] {
+  font-family: var(--font-ja);
+}
+.tk-dm {
+  margin: -0.25rem 0 1.25rem;
+}
+
+/* スマホの下の帯：料金と申し込みへの入口。濃淡だけで出入りする（動かさない）。 */
+.tk-sticky {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.625rem var(--page-inset) calc(0.625rem + var(--sai-bottom, 0px));
+  background: rgba(var(--background-rgb), 0.94);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  border-top: 1px solid var(--tk-rule);
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity 0.3s,
+    visibility 0s linear 0.3s;
+}
+.tk-sticky[data-show] {
+  opacity: 1;
+  visibility: visible;
+  transition:
+    opacity 0.3s,
+    visibility 0s;
+}
+.tk-sticky__price {
+  min-width: 0;
+  font-size: 0.9375rem;
+  color: var(--foreground);
+  font-variant-numeric: lining-nums;
+}
+.tk-sticky__cta {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 1.25rem;
+  font-size: 0.875rem;
+  letter-spacing: 0.06em;
+  color: var(--background);
+  background: var(--foreground);
+  border-radius: 2px;
 }
 
 /* フォーム */
@@ -402,8 +491,7 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  /* スマホでは左に寄せる（右下には「上へ戻る」の丸いボタンが来る）。 */
-  justify-content: flex-start;
+  justify-content: space-between;
   gap: 0.25rem 1.5rem;
   margin-top: 1.5rem;
   font-size: 0.8125rem;
@@ -428,8 +516,9 @@
   .tk-bar {
     margin-bottom: 1rem;
   }
-  .tk-foot__row {
-    justify-content: space-between;
+  /* 広い画面では下の帯は出さない（題の下とプランの下の入口で足りる）。 */
+  .tk-sticky {
+    display: none;
   }
   .tk-top {
     display: grid;

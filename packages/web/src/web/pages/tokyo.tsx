@@ -2,7 +2,6 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { api, jsonOrThrow } from "../lib/api";
-import { BackToTop } from "../components/BackToTop";
 import { Picture } from "../components/Picture";
 import type { GalleryPhoto } from "../components/PhotoGallery";
 import { usePageEntrance } from "../hooks/usePageEntrance";
@@ -13,6 +12,7 @@ import { safeHref } from "../lib/utils";
 import { sendAnalyticsEvent } from "../lib/analytics";
 import { CLIENT_SITE_FALLBACKS } from "../lib/site-fallbacks";
 import { photoAltText } from "../../shared/photo-alt";
+import { profilePhotoSrc, profilePhotoSrcSet } from "../../shared/profile-photo";
 import { usableContactEmail, usableContactEndpoint } from "../../shared/contact-settings";
 import { buildFailoverMailto } from "../../shared/contact-failover";
 import {
@@ -24,6 +24,7 @@ import {
   TOKYO_PATHS,
   TOKYO_SHOOT,
   tokyoDocumentTitle,
+  tokyoFromLine,
   tokyoInquiryFields,
   tokyoPlanLine,
   type TokyoLang,
@@ -124,6 +125,32 @@ export default function TokyoPage({ language }: { language: TokyoLang }) {
   }, [status]);
 
   const entranceRef = usePageEntrance([photos.length, settings, status, language]);
+
+  // スマホの下の帯（料金と申し込みへの入口）。題の下の入口が画面から出たあと、フォームに着くまでの間だけ出す。
+  const headCtaRef = useRef<HTMLAnchorElement>(null);
+  const requestRef = useRef<HTMLElement>(null);
+  const [showBar, setShowBar] = useState(false);
+  useEffect(() => {
+    let frame = 0;
+    const update = () => {
+      frame = 0;
+      const cta = headCtaRef.current?.getBoundingClientRect();
+      const request = requestRef.current?.getBoundingClientRect();
+      setShowBar(!!cta && !!request && cta.bottom < 0 && request.top > window.innerHeight * 0.8);
+    };
+    const onScroll = () => {
+      if (!frame) frame = requestAnimationFrame(update);
+    };
+    update();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll);
+    return () => {
+      if (frame) cancelAnimationFrame(frame);
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onScroll);
+    };
+  }, []);
+  const fromLine = tokyoFromLine(language);
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -237,6 +264,15 @@ export default function TokyoPage({ language }: { language: TokyoLang }) {
               <p key={line}>{line}</p>
             ))}
           </div>
+          <p className="tk-from">
+            <span className="tk-from__price">{fromLine}</span>
+            <a ref={headCtaRef} href={`#${REQUEST_ANCHOR}`} className="tk-to-form">
+              {copy.toForm}
+              <span aria-hidden="true" className="font-en">
+                ↓
+              </span>
+            </a>
+          </p>
         </header>
       </div>
 
@@ -303,6 +339,33 @@ export default function TokyoPage({ language }: { language: TokyoLang }) {
       ))}
 
       <div className="tk-request">
+        <div className="tk-request__side">
+        {/* 知らない土地で会う相手なので、撮る人の顔が分かるようにする（Info と同じプロフィール写真）。 */}
+        {settings?.profilePhotoUrl && (
+          <section className="tk-section tk-about page-entrance" aria-labelledby="tk-about">
+            <h2 id="tk-about" className="tk-label">
+              {copy.aboutLabel}
+            </h2>
+            <img
+              src={profilePhotoSrc(settings.profilePhotoUrl)}
+              srcSet={profilePhotoSrcSet(settings.profilePhotoUrl)}
+              sizes="320px"
+              alt={photographerName}
+              loading="lazy"
+              decoding="async"
+              draggable={false}
+              className="tk-about__img"
+            />
+            <p className="tk-about__name">
+              {nameJa && nameJa !== nameEn && <span lang="ja">{nameJa}</span>}
+              {nameEn && (
+                <span className="font-en" lang="en">
+                  {nameEn}
+                </span>
+              )}
+            </p>
+          </section>
+        )}
         <section className="tk-section page-entrance" aria-labelledby="tk-notes" data-tokyo-provisional>
           <h2 id="tk-notes" className="tk-label">
             {copy.notesLabel}
@@ -313,11 +376,21 @@ export default function TokyoPage({ language }: { language: TokyoLang }) {
             ))}
           </ul>
         </section>
+        </div>
 
-        <section className="tk-section page-entrance" id={REQUEST_ANCHOR} aria-labelledby="tk-form">
+        <section ref={requestRef} className="tk-section page-entrance" id={REQUEST_ANCHOR} aria-labelledby="tk-form">
           <h2 id="tk-form" className="tk-label">
             {copy.form.label}
           </h2>
+          {settings?.profileInstagram && status !== "success" && (
+            <p className="tk-quiet tk-dm">
+              {copy.dm.before}
+              <a href={safeHref(settings.profileInstagram)} target="_blank" rel="noopener noreferrer" className="font-en tk-underline">
+                Instagram
+              </a>
+              {copy.dm.after}
+            </p>
+          )}
           {status === "success" ? (
             <div className="tk-sent">
               <p ref={sentRef} tabIndex={-1} aria-live="polite" className="tk-sent__text">
@@ -494,7 +567,12 @@ export default function TokyoPage({ language }: { language: TokyoLang }) {
           )}
         </div>
       </footer>
-      <BackToTop language={language === "ja" ? "ja" : "en"} />
+      <div className="tk-sticky" data-show={showBar || undefined} aria-hidden={!showBar}>
+        <span className="tk-sticky__price">{fromLine}</span>
+        <a href={`#${REQUEST_ANCHOR}`} className="tk-sticky__cta" tabIndex={showBar ? 0 : -1}>
+          {copy.toForm}
+        </a>
+      </div>
     </div>
   );
 }

@@ -23,7 +23,7 @@ describe("injectOgp /tokyo（東京の撮影プラン）", () => {
     const out = injectOgp(page, owner, "/tokyo");
     expect(out).toContain('<html lang="zh-Hant"');
     expect(out).toContain('property="og:locale" content="zh_TW"');
-    expect(titleOf(out)).toBe("東京旅拍・人像攝影 | 江口秋 | Aki Eguchi");
+    expect(titleOf(out)).toBe("東京旅拍｜中文攝影師・底片人像 | 江口秋 | Aki Eguchi");
     expect(descOf(out)).toContain("東京旅拍");
     expect(descOf(out)).toContain(formatYen(Math.min(...TOKYO_SHOOT.plans.map((p) => p.priceYen))));
     expect(out).toContain('rel="canonical" href="https://akieguchi.com/tokyo"');
@@ -33,11 +33,11 @@ describe("injectOgp /tokyo（東京の撮影プラン）", () => {
   test("英語のページは英語だけの題と説明、日本語のページは今までの題の形", () => {
     const en = injectOgp(page, owner, "/tokyo/en");
     expect(en).toContain('<html lang="en"');
-    expect(titleOf(en)).toBe("Portrait Sessions in Tokyo | Aki Eguchi");
+    expect(titleOf(en)).toBe("Tokyo Portrait Photographer | Film &amp; Digital Sessions | Aki Eguchi");
     expect(descOf(en)).not.toMatch(/[぀-ヿ一-鿿]/);
     const ja = injectOgp(page, owner, "/tokyo/ja");
     expect(ja).toContain('<html lang="ja"');
-    expect(titleOf(ja)).toBe("東京での撮影プラン | 江口秋 | Aki Eguchi | 写真学生");
+    expect(titleOf(ja)).toBe("東京での撮影プラン｜旅行中のポートレート・フィルム撮影 | 江口秋 | Aki Eguchi | 写真学生");
   });
 
   test("3言語のページが互いを指す", () => {
@@ -55,6 +55,20 @@ describe("injectOgp /tokyo（東京の撮影プラン）", () => {
     expect(out).toContain("noindex");
     expect(out).toContain('<html lang="ja"');
     expect(out).not.toContain('hreflang="zh-Hant"');
+  });
+
+  test("検索側が読める形でも、プランと料金・地域・対応する言語を名乗る（オーナーのサイトだけ）", () => {
+    const ld = (html: string) =>
+      [...html.matchAll(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/g)].flatMap((m) => {
+        const data = JSON.parse(m[1]!);
+        return (data["@graph"] ?? [data]) as Record<string, any>[];
+      });
+    const service = ld(injectOgp(page, owner, "/tokyo")).find((node) => node["@type"] === "Service");
+    expect(service?.inLanguage).toBe("zh-Hant");
+    expect(service?.areaServed?.name).toBe("Tokyo");
+    expect(service?.offers.map((o: any) => o.price)).toEqual(TOKYO_SHOOT.plans.map((p) => String(p.priceYen)));
+    expect(service?.offers.every((o: any) => o.priceCurrency === "JPY")).toBe(true);
+    expect(ld(injectOgp(page, buyer, "/tokyo")).some((node) => node["@type"] === "Service")).toBe(false);
   });
 
   test("JavaScript を動かさない読み手にも、その言語でプランと料金が届く", () => {

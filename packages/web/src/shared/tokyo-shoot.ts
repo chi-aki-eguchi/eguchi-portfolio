@@ -88,6 +88,12 @@ export type TokyoCopy = {
   film: string;
   /** ページの下に1本だけ置く、ポートフォリオへの出口。 */
   morePhotos: string;
+  /** いちばん安いプランの時間と料金の1行（題のすぐ下と、スマホの下の帯）。 */
+  from: (time: string, price: string) => string;
+  /** 撮る人の写真に付ける見出し。 */
+  aboutLabel: string;
+  /** フォームの代わりに Instagram のDMでも連絡できる、の一文（Instagram の語の前後）。 */
+  dm: { before: string; after: string };
   plansLabel: string;
   plan: Record<TokyoPlanId, { name: string; detail: (plan: TokyoPlan) => string }>;
   duration: (minutes: number) => string;
@@ -140,7 +146,7 @@ export const TOKYO_FORM_LANGUAGE_DEFAULT: Record<TokyoLang, string> = {
 export const TOKYO_COPY: Record<TokyoLang, TokyoCopy> = {
   "zh-Hant": {
     langName: "繁體中文",
-    pageTitle: "東京旅拍・人像攝影",
+    pageTitle: "東京旅拍｜中文攝影師・底片人像",
     heading: "東京旅拍",
     lead: [
       "台灣出生，現在住東京。中文可以直接溝通。",
@@ -148,6 +154,9 @@ export const TOKYO_COPY: Record<TokyoLang, TokyoCopy> = {
     ],
     film: "底片",
     morePhotos: "看更多照片",
+    from: (time, price) => `${time} ${price} 起`,
+    aboutLabel: "攝影師",
+    dm: { before: "也可以用 ", after: " 私訊聯絡。" },
     plansLabel: "方案",
     plan: {
       digital: {
@@ -206,7 +215,7 @@ export const TOKYO_COPY: Record<TokyoLang, TokyoCopy> = {
   },
   en: {
     langName: "English",
-    pageTitle: "Portrait Sessions in Tokyo",
+    pageTitle: "Tokyo Portrait Photographer | Film & Digital Sessions",
     heading: "Portrait sessions in Tokyo",
     lead: [
       "Born in Taiwan, based in Tokyo. You can write to me in Chinese, English or Japanese.",
@@ -214,6 +223,9 @@ export const TOKYO_COPY: Record<TokyoLang, TokyoCopy> = {
     ],
     film: "Film",
     morePhotos: "More photographs",
+    from: (time, price) => `From ${price} · ${time}`,
+    aboutLabel: "Photographer",
+    dm: { before: "Or message me on ", after: "." },
     plansLabel: "Plans",
     plan: {
       digital: {
@@ -280,7 +292,7 @@ export const TOKYO_COPY: Record<TokyoLang, TokyoCopy> = {
   },
   ja: {
     langName: "日本語",
-    pageTitle: "東京での撮影プラン",
+    pageTitle: "東京での撮影プラン｜旅行中のポートレート・フィルム撮影",
     heading: "東京での撮影",
     lead: [
       "台湾出身、東京在住。中国語・日本語・英語でやりとりできます。",
@@ -288,6 +300,9 @@ export const TOKYO_COPY: Record<TokyoLang, TokyoCopy> = {
     ],
     film: "フィルム",
     morePhotos: "ほかの写真を見る",
+    from: (time, price) => `${time} ${price}から`,
+    aboutLabel: "撮る人",
+    dm: { before: "", after: " のDMでも受け付けています。" },
     plansLabel: "プラン",
     plan: {
       digital: {
@@ -367,16 +382,31 @@ export function tokyoDocumentTitle(lang: TokyoLang, names: { nameJa: string; nam
   return [page, nameJa, names.nameEn, names.subtitle].filter(Boolean).join(" | ");
 }
 
-/** 検索・共有に出る説明文。名前と、いちばん安いプランの時間と料金だけ（数字は上の表から）。 */
+/** いちばん安いプラン。「〜から」の表示と、検索・共有の説明文が同じ数字を読む。 */
+export function tokyoCheapestPlan(): TokyoPlan {
+  return [...TOKYO_SHOOT.plans].sort((a, b) => a.priceYen - b.priceYen)[0]!;
+}
+
+/** そのページの言語での「1時間 ¥15,000 から」。 */
+export function tokyoFromLine(lang: TokyoLang): string {
+  const cheapest = tokyoCheapestPlan();
+  return TOKYO_COPY[lang].from(TOKYO_COPY[lang].duration(cheapest.minutes), formatYen(cheapest.priceYen));
+}
+
+/**
+ * 検索・共有に出る説明文。探している人の言葉（東京・旅拍・中文・底片・地名）と、いちばん安いプランの
+ * 時間と料金。事実だけで組み、数字とエリアは上の表から読む。
+ */
 export function tokyoDescription(lang: TokyoLang, names: { nameJa: string; nameEn: string }): string {
-  const cheapest = [...TOKYO_SHOOT.plans].sort((a, b) => a.priceYen - b.priceYen)[0];
   const copy = TOKYO_COPY[lang];
-  const price = formatYen(cheapest.priceYen);
-  const time = copy.duration(cheapest.minutes);
+  const areas = TOKYO_SHOOT.areas.map((id) => copy.areas[id]);
+  const from = tokyoFromLine(lang);
   const name = lang === "en" ? names.nameEn : names.nameJa || names.nameEn;
-  if (lang === "en") return `Portrait sessions in Tokyo with ${name}. Digital and film. From ${time}, ${price}.`;
-  if (lang === "zh-Hant") return `${name}的東京旅拍。數位與底片。${time} ${price} 起。`;
-  return `${name}による東京での撮影プラン。デジタルとフィルム。${time} ${price}から。`;
+  if (lang === "en")
+    return `Portrait sessions in Tokyo with ${name}, a Taiwan-born photographer. Digital and film (Pentax 67, Hasselblad) in ${areas.join(", ")}. ${from}.`;
+  if (lang === "zh-Hant")
+    return `${name}的東京旅拍。台灣出生，中文溝通。數位與底片（Pentax 67、Hasselblad）人像，${areas.join("、")}。${from}。`;
+  return `${name}による東京での撮影プラン。台湾出身、中国語・日本語・英語に対応。デジタルとフィルム（PENTAX 67、ハッセルブラッド）、${areas.join("、")}。${from}。`;
 }
 
 /** JavaScript を動かさない読み手（検索など）向けの本文。画面と同じ事実だけを並べる。 */

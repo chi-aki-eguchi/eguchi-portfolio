@@ -56,9 +56,9 @@ describe("東京の撮影プラン（/tokyo）", () => {
 
   test("題：英語と繁體中文には日本語の肩書きを入れない", () => {
     const names = { nameJa: "江口秋", nameEn: "Aki Eguchi", subtitle: "写真学生" };
-    expect(tokyoDocumentTitle("zh-Hant", names)).toBe("東京旅拍・人像攝影 | 江口秋 | Aki Eguchi");
-    expect(tokyoDocumentTitle("en", names)).toBe("Portrait Sessions in Tokyo | Aki Eguchi");
-    expect(tokyoDocumentTitle("ja", names)).toBe("東京での撮影プラン | 江口秋 | Aki Eguchi | 写真学生");
+    expect(tokyoDocumentTitle("zh-Hant", names)).toBe("東京旅拍｜中文攝影師・底片人像 | 江口秋 | Aki Eguchi");
+    expect(tokyoDocumentTitle("en", names)).toBe("Tokyo Portrait Photographer | Film & Digital Sessions | Aki Eguchi");
+    expect(tokyoDocumentTitle("ja", names)).toBe("東京での撮影プラン｜旅行中のポートレート・フィルム撮影 | 江口秋 | Aki Eguchi | 写真学生");
     expect(tokyoDescription("en", names)).not.toMatch(/[぀-ヿ一-鿿]/);
   });
 

@@ -30,6 +30,7 @@ export const TOKYO_SHOOT: {
   areas: readonly TokyoAreaId[];
   photoIds: readonly number[];
   maxPeople: number;
+  extraPerson: { includedPeople: number; perPersonYen: number };
   openDays: { year: number; month: number; weekdays: readonly number[]; closed: readonly string[] };
 } = {
   plans: [
@@ -48,6 +49,11 @@ export const TOKYO_SHOOT: {
   photoIds: [2080, 2237, 2232, 2053, 2408, 2404, 2183],
   /** 人数の選択肢の上限（これ以上は「以上」としてまとめる）。 */
   maxPeople: 5,
+  /**
+   * 人数と料金（2026-11-12、オーナー承認）。プランの料金は includedPeople 人まで同じ。
+   * それより多い人数は、1人につき perPersonYen を足す。
+   */
+  extraPerson: { includedPeople: 2, perPersonYen: 3000 },
   /**
    * 受けられる日（2026-11-12、オーナー「一旦12月の日曜日と火曜日だったらいいよ」）。
    * 年・月・曜日（0=日、1=月、2=火…6=土）で決める。受けられなくなった日は closed に "2026-12-29" の形で足す。
@@ -140,6 +146,8 @@ export type TokyoCopy = {
   plansLabel: string;
   plan: Record<TokyoPlanId, { name: string; detail: (plan: TokyoPlan) => string }>;
   duration: (minutes: number) => string;
+  /** 人数と料金の1行（プランの下）。 */
+  people: (included: number, extra: string) => string;
   toForm: string;
   areasLabel: string;
   areas: Record<TokyoAreaId, string>;
@@ -219,6 +227,7 @@ export const TOKYO_COPY: Record<TokyoLang, TokyoCopy> = {
       medium: { name: "中片幅底片", detail: () => "Pentax 67 或 Hasselblad 1 卷＋數位。底片沖洗後另外交件" },
     },
     duration: (m) => `${hours(m)} 小時`,
+    people: (included, extra) => `${included} 人以內同價。第 ${included + 1} 人起，每人加 ${extra}。`,
     toForm: "預約詢問",
     areasLabel: "地點",
     areas: { shibuya: "澀谷・原宿", asakusa: "淺草", yanaka: "谷中", shimokita: "下北澤" },
@@ -297,6 +306,7 @@ export const TOKYO_COPY: Record<TokyoLang, TokyoCopy> = {
       },
     },
     duration: (m) => `${hours(m)} ${m === 60 ? "hour" : "hours"}`,
+    people: (included, extra) => `Same price for up to ${included} people. ${extra} for each person beyond that.`,
     toForm: "Request a session",
     areasLabel: "Areas",
     areas: { shibuya: "Shibuya · Harajuku", asakusa: "Asakusa", yanaka: "Yanaka", shimokita: "Shimokitazawa" },
@@ -380,6 +390,7 @@ export const TOKYO_COPY: Record<TokyoLang, TokyoCopy> = {
       },
     },
     duration: (m) => `${hours(m)}時間`,
+    people: (included, extra) => `${included}人まで同じ料金です。${included + 1}人目から、1人につき ${extra}。`,
     toForm: "撮影を申し込む",
     areasLabel: "エリア",
     areas: { shibuya: "渋谷・原宿", asakusa: "浅草", yanaka: "谷中", shimokita: "下北沢" },
@@ -438,6 +449,18 @@ export const TOKYO_COPY: Record<TokyoLang, TokyoCopy> = {
 export function tokyoPlanLine(lang: TokyoLang, plan: TokyoPlan): string {
   const copy = TOKYO_COPY[lang];
   return `${copy.plan[plan.id].name}　${copy.duration(plan.minutes)}　${formatYen(plan.priceYen)}`;
+}
+
+/** 人数と料金の1行（その言語で）。 */
+export function tokyoPeopleLine(lang: TokyoLang): string {
+  const { includedPeople, perPersonYen } = TOKYO_SHOOT.extraPerson;
+  return TOKYO_COPY[lang].people(includedPeople, formatYen(perPersonYen));
+}
+
+/** その人数での料金（プランの料金＋人数ぶん）。 */
+export function tokyoPriceFor(plan: TokyoPlan, people: number): number {
+  const { includedPeople, perPersonYen } = TOKYO_SHOOT.extraPerson;
+  return plan.priceYen + Math.max(0, people - includedPeople) * perPersonYen;
 }
 
 /** 「12月の日曜・火曜」。受けられる日のまとめ（その言語で）。 */
@@ -503,10 +526,26 @@ export function tokyoFallbackParagraphs(lang: TokyoLang): string[] {
   return [
     ...copy.lead,
     ...TOKYO_SHOOT.plans.map((plan) => `${tokyoPlanLine(lang, plan)}　${copy.plan[plan.id].detail(plan)}`),
+    tokyoPeopleLine(lang),
     `${copy.datesLabel}: ${tokyoOpenSummary(lang)}`,
     `${copy.areasLabel}: ${TOKYO_SHOOT.areas.map((id) => copy.areas[id]).join(" / ")}`,
     copy.flow.join(" → "),
   ];
+}
+
+/**
+ * 通知に添える料金の目安。人数の選択肢（「3人」「5人以上」）から人数を読み、プランの料金に人数ぶんを足す。
+ * 「以上」の人数は、その人数での金額に「〜」を付ける。読めないときは出さない。
+ */
+function tokyoQuoteForNotice(plan: TokyoPlan | undefined, peopleLabel: string): string {
+  const people = Number.parseInt(peopleLabel, 10);
+  if (!plan || !Number.isFinite(people) || people < 1) return "";
+  const total = tokyoPriceFor(plan, people);
+  const extra = total - plan.priceYen;
+  const orMore = peopleLabel.includes("以上") ? "〜" : "";
+  return extra > 0
+    ? `${formatYen(total)}${orMore}（プラン ${formatYen(plan.priceYen)}＋人数ぶん ${formatYen(extra)}${orMore}）`
+    : formatYen(total);
 }
 
 /**
@@ -542,12 +581,13 @@ export function tokyoInquiryFields(input: {
     人数: input.people,
     プラン: plan ? tokyoPlanLine("ja", plan) : input.planId,
     エリア: area ? ja.areas[area] : ja.form.areaOther,
+    料金の目安: tokyoQuoteForNotice(plan, input.people),
     使う言語: input.language,
     "Instagram・LINE": input.social.trim(),
     message: input.message.trim(),
     ページ: TOKYO_PATHS[input.pageLang],
   };
   // 空の任意項目は送らない（通知メールに空行を並べない）。
-  for (const key of ["Instagram・LINE", "message"]) if (!fields[key]) delete fields[key];
+  for (const key of ["Instagram・LINE", "message", "料金の目安"]) if (!fields[key]) delete fields[key];
   return fields;
 }

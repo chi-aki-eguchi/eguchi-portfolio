@@ -13,8 +13,10 @@ import {
   tokyoLangFromPath,
   tokyoOpenDates,
   tokyoOpenSummary,
+  tokyoPeopleLine,
   tokyoPhotoIds,
   tokyoPlanLine,
+  tokyoPriceFor,
 } from "./tokyo-shoot";
 
 describe("東京の撮影プラン（/tokyo）", () => {
@@ -88,6 +90,24 @@ describe("東京の撮影プラン（/tokyo）", () => {
     expect(tokyoDateLabel("zh-Hant", "2026-12-01")).toBe("12/1（二）");
     expect(tokyoDateLabel("en", "2026-12-01")).toBe("Tue 1 Dec");
     expect(tokyoDateLabel("ja", "未定")).toBe("未定");
+  });
+
+  test("人数と料金：2人まで同じ、3人目から1人につき ¥3,000", () => {
+    const digital = TOKYO_SHOOT.plans[0]!;
+    expect(tokyoPriceFor(digital, 1)).toBe(15000);
+    expect(tokyoPriceFor(digital, 2)).toBe(15000);
+    expect(tokyoPriceFor(digital, 3)).toBe(18000);
+    expect(tokyoPriceFor(digital, 5)).toBe(24000);
+    expect(tokyoPeopleLine("ja")).toBe("2人まで同じ料金です。3人目から、1人につき ¥3,000。");
+    for (const lang of TOKYO_LANGS) {
+      expect(tokyoPeopleLine(lang)).toContain("¥3,000");
+      expect(tokyoFallbackParagraphs(lang)).toContain(tokyoPeopleLine(lang));
+    }
+    const fields = (people: string) =>
+      tokyoInquiryFields({ pageLang: "ja", date: "2026-12-06", people, planId: "digital", areaId: "", name: "a", email: "b", social: "", language: "日本語", message: "" });
+    expect(fields("2人")["料金の目安"]).toBe("¥15,000");
+    expect(fields("4人")["料金の目安"]).toBe("¥21,000（プラン ¥15,000＋人数ぶん ¥6,000）");
+    expect(fields("5人以上")["料金の目安"]).toBe("¥24,000〜（プラン ¥15,000＋人数ぶん ¥9,000〜）");
   });
 
   test("作例：管理画面で選んだ物があればその順、無ければ仮の並び", () => {

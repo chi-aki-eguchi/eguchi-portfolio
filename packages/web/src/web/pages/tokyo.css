@@ -222,6 +222,9 @@
   color: var(--text-quiet);
   text-wrap: pretty;
 }
+.tk-plans__people {
+  margin-top: 1rem;
+}
 .tk-to-form {
   display: inline-flex;
   align-items: center;

@@ -30,6 +30,7 @@ import {
   tokyoInquiryFields,
   tokyoOpenDates,
   tokyoOpenSummary,
+  tokyoPeopleLine,
   tokyoPhotoIds,
   tokyoPlanLine,
   type TokyoLang,
@@ -305,6 +306,7 @@ export default function TokyoPage({ language }: { language: TokyoLang }) {
             </li>
           ))}
         </ul>
+        <p className="tk-quiet tk-plans__people">{tokyoPeopleLine(language)}</p>
         <a href={`#${REQUEST_ANCHOR}`} className="tk-to-form">
           {copy.toForm}
           <span aria-hidden="true" className="font-en">

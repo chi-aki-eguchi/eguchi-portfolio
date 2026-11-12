@@ -6,7 +6,7 @@
 
 - 本番は `main` の製品 `d6bb70a` と同じ（2026-11-12、`/api/health` の build `d6bb70a8`・status ok）。
 - 2026-11-11 公開: Info・Worksの読み込みの安定と、短い横向き画面のトップ（[site-arrival-20261111.md](docs/specs/site-arrival-20261111.md)）。
-- 2026-11-11 公開: 英語ページの題、トップとWorksの写真の説明文、サイトマップの更新日（[seo-review-20261111.md](docs/specs/seo-review-20261111.md)）。公開後の記録 3 commit は `origin/claude/seo-records-20261111` にあり `main` へ未統合。
+- 2026-11-11 公開: 英語ページの題、トップとWorksの写真の説明文、サイトマップの更新日（[seo-review-20261111.md](docs/specs/seo-review-20261111.md)）。公開後の確認手順と基準値も同じ文書にある。
 - 2026-11-10 公開: 展示の欄 `/exhibition`、見開きのトップ、Works、管理画面の「言葉」とスマホの入口（[exhibition-section-20261110.md](docs/specs/exhibition-section-20261110.md)）。
 - サイトの目的は、ポートレート撮影を頼めるサイトとして依頼1件につなげること（2026-10-08 決定）。
 

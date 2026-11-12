@@ -4,7 +4,7 @@
 
 ## Current State — 2026-11-12
 
-- 本番は `main` の製品 `860c52e` と同じ（2026-11-12 19:2x JST、`/api/health` の build `580de0d8`・status ok。以後の commit は文書だけ）。
+- 本番は `main` の製品 `860c52e` と同じ（2026-11-12 19:17 JST、`/api/health` の build `580de0d5`・status ok。以後の commit は文書だけ）。
 - 2026-11-12 公開: 東京の旅行者向け撮影プラン `/tokyo`（繁體中文）・`/tokyo/en`・`/tokyo/ja`（[tokyo-shoot-20261112.md](docs/specs/tokyo-shoot-20261112.md)）。文章・作例・注意事項は下書きと仮のまま（オーナー「一回任せるからとりあえず公開して」）。
 - 2026-11-11 公開: Info・Worksの読み込みの安定と、短い横向き画面のトップ（[site-arrival-20261111.md](docs/specs/site-arrival-20261111.md)）。
 - 2026-11-11 公開: 英語ページの題、トップとWorksの写真の説明文、サイトマップの更新日（[seo-review-20261111.md](docs/specs/seo-review-20261111.md)）。公開後の確認手順と基準値も同じ文書にある。

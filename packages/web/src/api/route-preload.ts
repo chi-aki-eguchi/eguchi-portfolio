@@ -38,6 +38,10 @@ export const ROUTE_MODULES: Record<string, string> = {
   "/works": "src/web/pages/works.tsx",
   // 展示の一覧（2026-11-10）。1件のページはトップと同じ組み立て（下の DYNAMIC_ROUTES）。
   "/exhibition": "src/web/pages/exhibition-list.tsx",
+  // 東京の撮影プラン（2026-11-12）。3言語とも同じページ。
+  "/tokyo": "src/web/pages/tokyo.tsx",
+  "/tokyo/en": "src/web/pages/tokyo.tsx",
+  "/tokyo/ja": "src/web/pages/tokyo.tsx",
   "/series": "src/web/pages/series.tsx",
   // Work の棚（2026-08-30）。シリーズと同じ部品なので、読む先も同じ。
   "/work": "src/web/pages/series.tsx",

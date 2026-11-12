@@ -1,5 +1,6 @@
 import { isDevelopOnlyPath } from "../shared/develop-structure";
 import { EXHIBITION_LIST_PATH, exhibitionSlugFromPath } from "../shared/exhibitions";
+import { tokyoLangFromPath } from "../shared/tokyo-shoot";
 
 const SPA_STATIC_PATHS = new Set([
   "/",
@@ -111,10 +112,16 @@ export function isExhibitionPath(pathname: string): boolean {
   return normalized === EXHIBITION_LIST_PATH || exhibitionSlugFromPath(normalized) !== null;
 }
 
+/** 東京の旅行者向け撮影プラン（/tokyo・/tokyo/en・/tokyo/ja、shared/tokyo-shoot.ts）。 */
+export function isTokyoShootPath(pathname: string): boolean {
+  return tokyoLangFromPath(normalizeSpaPathname(pathname)) !== null;
+}
+
 export function isKnownSpaPath(pathname: string): boolean {
   const normalized = normalizeSpaPathname(pathname);
   return (
     SPA_STATIC_PATHS.has(normalized) ||
+    isTokyoShootPath(normalized) ||
     isExhibitionPath(normalized) ||
     isSeriesDetailPath(normalized) ||
     isPhotoDetailPath(normalized)
@@ -130,9 +137,13 @@ export function htmlStatusForSpaPath(
     developStructure?: boolean;
     /** 展示の一覧なら公開中の展示が1件でもあるか、1件のページならその展示が公開中か。 */
     exhibitionFound?: boolean;
+    /** オーナー本人のサイト（akieguchi.com）か。本人の撮影プランのページはここにだけ在る。 */
+    ownerSite?: boolean;
   } = {},
 ): number {
   const normalized = normalizeSpaPathname(pathname);
+  // 東京の撮影プランはオーナー本人の案内。Portfolio Kit を買った人のサイトでは無いページ。
+  if (isTokyoShootPath(normalized)) return options.ownerSite ? 200 : 404;
   // `/portrait`・`/life`・`/info` は新しい構成のサイトにだけ在る。今までの構成の
   // サイトでは、無いページを 200 で返さない。
   if (isDevelopOnlyPath(normalized)) return options.developStructure ? 200 : 404;

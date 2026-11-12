@@ -140,10 +140,19 @@ describe("app.tsx と各一覧の突き合わせ", () => {
 
   test("**公開ページを app.tsx へ足したら、SPA の経路一覧にも足す**（忘れると HTTP 404）", () => {
     // 新しい構成にだけ在る扉（/portrait など）は、その構成のサイトで 200 になること。
+    // オーナー本人の案内（/tokyo）は、本人のサイトで 200 になること。
     const missing = publicPaths.filter(
-      (p) => htmlStatusForSpaPath(p, { developStructure: true, exhibitionFound: true }) !== 200,
+      (p) => htmlStatusForSpaPath(p, { developStructure: true, exhibitionFound: true, ownerSite: true }) !== 200,
     );
     expect(missing).toEqual([]);
+  });
+
+  test("東京の撮影プランは、オーナー本人のサイトにだけ在る（3言語とも）", () => {
+    for (const path of ["/tokyo", "/tokyo/en", "/tokyo/ja", "/tokyo/"]) {
+      expect(htmlStatusForSpaPath(path, { ownerSite: true })).toBe(200);
+      expect(htmlStatusForSpaPath(path, {})).toBe(404);
+    }
+    expect(htmlStatusForSpaPath("/tokyo/zh", { ownerSite: true })).toBe(404);
   });
 
   test("展示の欄は、公開中の展示があるときだけ在る（一覧も、1件のページも）", () => {

@@ -33,6 +33,16 @@ import {
 } from "../shared/service-visibility";
 import { OWNER_SERVICE_FAQ } from "../shared/portfolio-service-copy";
 import { hasPublicEnglishContent } from "../shared/public-english";
+import {
+  TOKYO_COPY,
+  TOKYO_LANGS,
+  TOKYO_OG_LOCALE,
+  TOKYO_PATHS,
+  tokyoDescription,
+  tokyoDocumentTitle,
+  tokyoFallbackParagraphs,
+  tokyoLangFromPath,
+} from "../shared/tokyo-shoot";
 import { photographyInquiryFor } from "../shared/photography-inquiry";
 import { resolveContactText } from "../shared/contact-defaults";
 import {
@@ -268,6 +278,18 @@ export function publicPageFallbackText(
   fallbackOrigin = "",
 ): { heading: string; description: string; paragraphs: string[] } {
   const name = displayNameFrom(settings);
+  // 東京の撮影プラン。画面と同じ事実（プラン・料金・エリア・流れ）を、その言語で。
+  const tokyoLang = tokyoLangFromPath(pathname);
+  if (tokyoLang) {
+    return {
+      heading: TOKYO_COPY[tokyoLang].heading,
+      description: tokyoDescription(tokyoLang, {
+        nameJa: settings.siteName || "",
+        nameEn: displayNameEnFrom(settings),
+      }),
+      paragraphs: tokyoFallbackParagraphs(tokyoLang),
+    };
+  }
   if (SERVICE_LP_PATHS.has(pathname)) {
     const og = pathname === "/portfolio-kit/en" ? SERVICE_OG_EN : SERVICE_OG;
     // 題は「見出し | 説明的な語」で組んである。見出しに要るのは前半だけ。
@@ -607,6 +629,10 @@ export function injectOgp(
     "/info",
     "/works",
     "/exhibition",
+    // 東京の撮影プラン。オーナー本人のサイトにだけ在る（下の tokyoMissing）。
+    "/tokyo",
+    "/tokyo/en",
+    "/tokyo/ja",
     "/about",
     "/profile",
     "/contact",
@@ -642,9 +668,14 @@ export function injectOgp(
   // 展示の一覧は、公開中の展示があるサイトにだけ在る。
   const exhibitionListMissing =
     pathname === EXHIBITION_LIST_PATH && publicExhibitions(settings, siteUrl).length === 0;
+  // 東京の撮影プランはオーナー本人の案内。ほかのサイトでは無いページ（題・robots・計測とも）。
+  const tokyoLang = tokyoLangFromPath(pathname);
+  const tokyoMissing = tokyoLang !== null && !isServiceHost;
+  const tokyoNames = { nameJa, nameEn: siteName, subtitle };
   const isKnown =
     !developMissing &&
     !exhibitionListMissing &&
+    !tokyoMissing &&
     (KNOWN_ROUTES.includes(pathname) ||
       // 展示の1件のページ。在るときだけ server.ts が題を渡す。
       (pathname.startsWith(`${EXHIBITION_LIST_PATH}/`) && !!override?.title) ||
@@ -657,6 +688,8 @@ export function injectOgp(
     ? `Not Found | ${base}`
     : isService
       ? serviceOg.title
+      : tokyoLang
+        ? tokyoDocumentTitle(tokyoLang, tokyoNames)
       : override?.title
         ? `${override.title} | ${base}`
         : page
@@ -676,6 +709,8 @@ export function injectOgp(
     ? "お探しのページは見つかりませんでした。"
     : isService
       ? serviceOg.desc + (isServiceHost && !isBuyerStartPath ? (isEnglishServicePath ? " Photo selection and Japanese text editing with publishing: ¥69,800 total. Free consultation before payment." : " 写真の選定・日本語文章の整理も含む編集付き公開は総額69,800円。無料相談で内容を確認してからお支払い。") : "")
+      : tokyoLang
+        ? tokyoDescription(tokyoLang, tokyoNames)
       : override?.desc
         ? override.desc
         : override?.title
@@ -712,6 +747,15 @@ export function injectOgp(
       out,
       /(<meta\s+property="og:locale"\s+content=")[^"]*(")/,
       "en_US",
+    );
+  }
+  // 東京の撮影プランは言語ごとの住所。繁體中文・英語のページは、その言語を名乗る。
+  if (tokyoLang && !tokyoMissing && tokyoLang !== "ja") {
+    out = out.replace(/<html\s+lang="[^"]*"/, `<html lang="${tokyoLang}"`);
+    out = setAttr(
+      out,
+      /(<meta\s+property="og:locale"\s+content=")[^"]*(")/,
+      TOKYO_OG_LOCALE[tokyoLang],
     );
   }
   // Title (escaped; the <title> body can't contain raw < anyway)
@@ -865,6 +909,11 @@ export function injectOgp(
   if (alternates) {
     headInjection += `\n  <link rel="alternate" hreflang="ja" href="${escapeHtml(`${siteUrl}${alternates.ja}`)}">`;
     headInjection += `\n  <link rel="alternate" hreflang="en" href="${escapeHtml(`${siteUrl}${alternates.en}`)}">`;
+  }
+  // 東京の撮影プランは3言語が互いを指す。
+  if (tokyoLang && !tokyoMissing) {
+    for (const lang of TOKYO_LANGS)
+      headInjection += `\n  <link rel="alternate" hreflang="${lang}" href="${escapeHtml(`${siteUrl}${TOKYO_PATHS[lang]}`)}">`;
   }
   // Search Console site verification — paste the `content` value of Google's
   // HTML-tag method into admin settings; without this, every verification

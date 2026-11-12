@@ -19,6 +19,12 @@
       "runtimeExecutable": "bun",
       "runtimeArgs": ["run", "try"],
       "port": 4400
+    },
+    {
+      "name": "try-develop",
+      "runtimeExecutable": "env",
+      "runtimeArgs": ["TRY_DESIGN=develop", "TRY_IGNORE_LOCAL_SETTINGS=1", "bun", "run", "try"],
+      "port": 4400
     }
   ]
 }

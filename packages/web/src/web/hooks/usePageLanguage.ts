@@ -14,7 +14,7 @@ import { useEffect } from "react";
  * 途中で一度 `ja` に落ちる。直前の値を覚えて戻せば、その取りこぼしが無い。
  * この形は `admin-i18n.tsx` の言語プロバイダが既に採っている（発明ではない）。
  */
-export function usePageLanguage(language: "ja" | "en") {
+export function usePageLanguage(language: "ja" | "en" | "zh-Hant") {
   useEffect(() => {
     if (typeof document === "undefined") return;
     const previous = document.documentElement.lang;

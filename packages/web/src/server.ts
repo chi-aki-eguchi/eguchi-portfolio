@@ -66,6 +66,7 @@ import {
   isServiceVisibilityGatedPath,
   resolveServiceVisibility,
 } from "./shared/service-visibility";
+import { TOKYO_PATHS } from "./shared/tokyo-shoot";
 import { PORTFOLIO_DISCOVERY_GUIDE } from "./shared/portfolio-guide";
 import {
   EXHIBITION_CARD_COOKIE,
@@ -671,6 +672,8 @@ async function buildSitemap(fallbackOrigin: string): Promise<string> {
     ...(resolveServiceVisibility(settings.servicePageMode, siteUrl, "")
       ? ["/portfolio-kit", "/portfolio-kit/en", "/portfolio-kit/guide"]
       : []),
+    // 東京の撮影プラン（3言語）。オーナー本人のサイトだけ。
+    ...(isServiceOwnerSite(siteUrl, "") ? Object.values(TOKYO_PATHS) : []),
     ...(isServiceOwnerSite(siteUrl, "")
       ? ["/tools/photo-select-bin.html", "/tools/photo-select-bin/guide.html", "/tools/photo-select-bin/request.html", "/tools/small-work/index.html", "/tools/small-work/ledger.html", "/tools/small-work/classroom.html", "/tools/small-work/gallery.html", "/tools/small-work/audit.html", "/workroom/index.html", "/workroom/small-jobs.html", "/workroom/product-data.html", "/workroom/shop-menu.html", "/workroom/announcement.html", "/workroom/build.html", "/workroom/care.html", "/workroom/site-brief.html", "/workroom/customize.html", "/workroom/exhibition-site.html", "/workroom/review.html", "/workroom/monthly.html", "/workroom/notes.html", "/workroom/print-budget.html", "/workroom/photo-files.html", "/workroom/site-check.html", "/workroom/materials.html"]
       : []),
@@ -1303,6 +1306,7 @@ async function serveNonApi(request: Request, url: URL): Promise<Response> {
           photoFound: photoId != null ? photoFound : undefined,
           developStructure: isDevelopDesignValue(settings.siteDesign),
           exhibitionFound,
+          ownerSite: isServiceOwnerSite(siteUrlFrom(settings, publicOrigin), ""),
         });
     // 実在するページにだけ本文を入れる。404 の <noscript> に本文と
     // リンクを並べると、無いページを「中身のあるページ」として配ることになる。

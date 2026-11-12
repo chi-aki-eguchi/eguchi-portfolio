@@ -16,6 +16,8 @@ import { useQuery } from "@tanstack/react-query";
 import { api, jsonOrThrow } from "./lib/api";
 import { siteDesignFrom } from "./lib/book";
 import { EXHIBITION_NAV_LABEL, exhibitionDisplayTitle, publicExhibitions } from "../shared/exhibitions";
+import { isServiceOwnerSite } from "../shared/service-visibility";
+import type { TokyoLang } from "../shared/tokyo-shoot";
 
 // Lazy-load all pages — only the shell is eagerly loaded
 const TopPage = lazy(() => import("./pages/top"));
@@ -30,6 +32,7 @@ const DevelopListPage = lazy(() => import("./pages/develop-list"));
 const DevelopInfoPage = lazy(() => import("./pages/develop-info"));
 const WorksPage = lazy(() => import("./pages/works"));
 const ExhibitionListPage = lazy(() => import("./pages/exhibition-list"));
+const TokyoPage = lazy(() => import("./pages/tokyo"));
 const ServicePage = lazy(() => import("./pages/service"));
 const PortfolioGuidePage = lazy(() => import("./pages/portfolio-guide"));
 const ServiceConsultPage = lazy(() => import("./pages/service-consult"));
@@ -174,6 +177,27 @@ function ExhibitionRoute({ slug }: { slug?: string }) {
   );
 }
 
+/**
+ * 東京の旅行者向け撮影プラン（2026-11-12、shared/tokyo-shoot.ts）。オーナー本人のサイトにだけ在る。
+ * Portfolio Kit を買った人のサイトでは「見つかりませんでした」（サーバーも 404 を返す）。
+ * 題は言語ごとにページの中で付ける（サーバーと同じ式）。
+ */
+function TokyoRoute({ language }: { language: TokyoLang }) {
+  const { data, isLoading } = useQuery({
+    queryKey: ["settings"],
+    queryFn: async () => jsonOrThrow(await api.settings.$get()),
+  });
+  if (isLoading) return <PageFallback />;
+  if (!isServiceOwnerSite(data?.siteUrl, window.location.hostname)) return <NotFoundPage />;
+  return (
+    <PageTransition>
+      <Suspense fallback={<PageFallback />}>
+        <TokyoPage language={language} />
+      </Suspense>
+    </PageTransition>
+  );
+}
+
 function App() {
   return (
     <Provider>
@@ -309,6 +333,22 @@ function App() {
           <Route path="/exhibition">
             <Layout>
               <ExhibitionRoute />
+            </Layout>
+          </Route>
+          {/* 東京の撮影プラン。住所は shared/tokyo-shoot.ts の TOKYO_PATHS と同じ（経路の見張りが読めるよう、ここは文字で書く）。 */}
+          <Route path="/tokyo/en">
+            <Layout>
+              <TokyoRoute language="en" />
+            </Layout>
+          </Route>
+          <Route path="/tokyo/ja">
+            <Layout>
+              <TokyoRoute language="ja" />
+            </Layout>
+          </Route>
+          <Route path="/tokyo">
+            <Layout>
+              <TokyoRoute language="zh-Hant" />
             </Layout>
           </Route>
           <Route path="/about">

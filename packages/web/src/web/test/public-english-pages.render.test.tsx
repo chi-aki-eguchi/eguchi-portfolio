@@ -335,7 +335,10 @@ describe("public English routes keep one language", () => {
     const ContactPage = (await import("../pages/contact")).default;
     const page = await mount(createElement(ContactPage, { language: "en" }));
     try {
-      const text = page.host.textContent ?? "";
+      // 東京の撮影プランへの入口（オーナー本人のサイトにだけ出るリンク）は、地域の推測ではないので外して見る。
+      const body = page.host.cloneNode(true) as HTMLElement;
+      body.querySelector("[data-tokyo-links]")?.remove();
+      const text = body.textContent ?? "";
       expect(text).not.toContain("Tokyo");
       expect(text).not.toContain("Fukuoka");
       expect(text).not.toContain("Taipei");

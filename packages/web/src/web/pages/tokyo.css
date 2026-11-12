@@ -235,6 +235,31 @@
   text-decoration-thickness: 1px;
 }
 
+/* 受けられる日 */
+.tk-dates__summary {
+  font-size: var(--body-size, 0.9375rem);
+  line-height: 2;
+  color: var(--foreground);
+}
+.tk-dates {
+  list-style: none;
+  margin: 0.25rem 0 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 1.25rem;
+  font-size: 0.8125rem;
+  line-height: 2;
+  color: var(--text-quiet);
+  font-variant-numeric: lining-nums;
+}
+.tk[lang="en"] .tk-dates__summary {
+  font-size: calc(var(--body-size, 0.9375rem) * 1.12);
+}
+.tk[lang="en"] .tk-dates {
+  font-size: 0.9375rem;
+}
+
 /* エリアと流れ */
 .tk-areas {
   list-style: none;
@@ -549,7 +574,12 @@
   .tk-photo__note {
     padding-inline: 0;
   }
-  .tk-facts,
+  .tk-facts {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+    gap: 0 clamp(2rem, 5vw, 4.5rem);
+    align-items: start;
+  }
   .tk-request {
     display: grid;
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
@@ -558,5 +588,9 @@
   }
   .tk-request {
     grid-template-columns: minmax(0, 5fr) minmax(0, 6fr);
+  }
+  /* 人数の欄より日付の欄を広く（日付は「12/6（日）」や「ほかの日…」が入る）。 */
+  .tk-form__pair {
+    grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
   }
 }

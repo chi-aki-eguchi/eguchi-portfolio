@@ -66,7 +66,7 @@ import {
   isServiceVisibilityGatedPath,
   resolveServiceVisibility,
 } from "./shared/service-visibility";
-import { TOKYO_PATHS, TOKYO_SHOOT, tokyoLangFromPath } from "./shared/tokyo-shoot";
+import { TOKYO_PATHS, tokyoLangFromPath, tokyoPhotoIds } from "./shared/tokyo-shoot";
 import { PORTFOLIO_DISCOVERY_GUIDE } from "./shared/portfolio-guide";
 import {
   EXHIBITION_CARD_COOKIE,
@@ -1236,7 +1236,7 @@ async function serveNonApi(request: Request, url: URL): Promise<Response> {
       tokyoLangFromPath(routePathname) &&
       isServiceOwnerSite(siteUrlFrom(settings, publicOrigin), "")
     ) {
-      const coverId = TOKYO_SHOOT.photoIds[0];
+      const coverId = tokyoPhotoIds(settings.tokyoPhotoIds)[0];
       const cover = coverId != null ? await getPhotoOg(coverId) : null;
       if (cover?.image)
         override = { image: cover.image, imageRotationDeg: cover.imageRotationDeg };
@@ -1389,15 +1389,24 @@ async function serveNonApi(request: Request, url: URL): Promise<Response> {
         : routePathname === "/portfolio-kit"
           ? [...sectionLinks, { href: "/portfolio-kit/guide", label: PORTFOLIO_DISCOVERY_GUIDE.title }]
         : sectionLinks;
+      // 東京の撮影プラン（オーナー本人のサイトだけ）。画面ではサイトのどこからも遠いページなので、
+      // JavaScript を動かさない読み手（検索など）にも、どのページからも辿れる道を1本置く。
+      const tokyoLinks = isServiceOwnerSite(siteUrlFrom(settings, publicOrigin), "")
+        ? [
+            { href: TOKYO_PATHS["zh-Hant"], label: "東京旅拍" },
+            { href: TOKYO_PATHS.en, label: "Tokyo sessions for travelers" },
+          ].filter((link) => link.href !== routePathname)
+        : [];
       injected = injectNoscriptFallback(injected, {
         ...text,
         // シリーズの一覧を全ページに繰り返さない。束ねているページにだけ置く。
         links: isIndexPage
           ? [
               ...fallbackLinks,
+              ...tokyoLinks,
               ...shelfLinks.map((n) => ({ href: n.path, label: n.title })),
             ]
-          : fallbackLinks,
+          : [...fallbackLinks, ...tokyoLinks],
         noticeJa: "このサイトの閲覧には JavaScript が必要です。",
         noticeEn: "Please enable JavaScript to view this portfolio.",
       });

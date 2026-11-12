@@ -1601,6 +1601,8 @@ const app = new Hono()
         // 新しい構成の Portrait／Life に出す写真（選んだ順）。空なら分類から出す（shared/develop-structure.ts）。
         developPortraitIds: settings.developPortraitIds ?? "",
         developLifeIds: settings.developLifeIds ?? "",
+        // 東京の撮影プラン（/tokyo）の作例。空なら、コードにある仮の並び（shared/tokyo-shoot.ts）。
+        tokyoPhotoIds: settings.tokyoPhotoIds ?? "",
         // 扉の名前と添え書き（JSON。空なら初めの値）。読み方は shared/develop-structure.ts。
         developDoors: settings.developDoors ?? "",
         // トップを展示にするか。既定は off（shared/exhibition.ts の exhibitionStatus）。展示そのものは /exhibition に在る。

@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { siteDesignFrom } from "../lib/book";
 import { useQuery } from "@tanstack/react-query";
-import { useSearch } from "wouter";
+import { Link, useSearch } from "wouter";
 import { PageTitle } from "../components/PageTitle";
 import { api, jsonOrThrow } from "../lib/api";
 import { usePageEntrance } from "../hooks/usePageEntrance";
@@ -621,6 +621,38 @@ export default function ContactPage({
             className={`${leadAlign} font-en text-xs tracking-[0.02em] text-[color:var(--text-quiet)] ${titleVisible ? "-mt-6" : ""} mb-8 break-words page-entrance page-entrance-delay-1`}
           >
             {englishWelcome}
+          </p>
+        )}
+        {/* 旅行で東京に来る人向けの撮影プラン（/tokyo、オーナー本人のサイトだけ）への入口。
+            ここは日本語と英語のページなので、中国語・英語で探している人が自分のページへ行けるように置く。
+            料金も中身も別のプラン（枚数・納期・対応言語）なので、名前で分けて見せる。 */}
+        {status !== "success" && serviceOwner && !monthlyInquiry && (
+          <p
+            data-tokyo-links
+            className={`${leadAlign} text-xs text-[color:var(--text-quiet)] ${englishWelcome || titleVisible ? "-mt-6" : ""} mb-8 break-words page-entrance page-entrance-delay-1`}
+          >
+            {/* 英語のページには英語の入口だけ（1つの言語で通す決まり）。繁體中文へは行き先のページで切り替えられる。 */}
+            {!english && (
+              <>
+                <Link
+                  to="/tokyo"
+                  lang="zh-Hant"
+                  className="tap-target py-1.5 underline underline-offset-4 decoration-[rgba(var(--foreground-rgb),0.25)] hover:text-[rgba(var(--foreground-rgb),0.70)] transition-colors duration-300"
+                >
+                  東京旅拍（繁體中文）
+                </Link>
+                <span aria-hidden="true" className="mx-2">
+                  ·
+                </span>
+              </>
+            )}
+            <Link
+              to="/tokyo/en"
+              lang="en"
+              className="tap-target py-1.5 font-en tracking-[0.02em] underline underline-offset-4 decoration-[rgba(var(--foreground-rgb),0.25)] hover:text-[rgba(var(--foreground-rgb),0.70)] transition-colors duration-300"
+            >
+              Tokyo sessions for travelers
+            </Link>
           </p>
         )}
 

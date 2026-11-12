@@ -247,6 +247,7 @@ export const SETTINGS_SECTION_KEYS = {
     "developPortraitIds",
     "developLifeIds",
     "developDoors",
+    "tokyoPhotoIds",
     "exhibitionOnTop",
     "exhibitionTitle",
     "exhibitionDates",

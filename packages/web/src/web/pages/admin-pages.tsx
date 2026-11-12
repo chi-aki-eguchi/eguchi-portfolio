@@ -11,6 +11,7 @@ import {
   parsePhotoIdList,
   type DevelopListKind,
 } from "../../shared/develop-structure";
+import { tokyoPhotoIds } from "../../shared/tokyo-shoot";
 import { EXHIBITION_BUILT_IN, exhibitionPhotoList, exhibitionShowsWall } from "../../shared/exhibition";
 import {
   EXHIBITION_ARCHIVE_MAX,
@@ -39,15 +40,19 @@ async function loadCoverRows(): Promise<{ heroPhotos: HeroPhotoRow[] }> {
 }
 
 const LIST_KEY = { portrait: "developPortraitIds", life: "developLifeIds" } as const;
+/** 東京の撮影プラン（/tokyo）の作例。オーナー本人のサイトにだけ在るページなので、タブもそこでだけ出す。 */
+const TOKYO_KEY = "tokyoPhotoIds";
+const TOKYO_NAME = "東京";
 /** 表紙のタブの名前。Portrait／Life は扉の名前（設定 developDoors）から。 */
 const COVER_NAME = "表紙";
 /** 展示のタブの名前。 */
 const EXHIBITION_NAME = "展示";
 /** トップの展示、表紙（トップの最初の写真）と、写真を選んで並べる2つのページ。 */
-type Tab = "exhibition" | "cover" | DevelopListKind;
-const TABS: readonly Tab[] = ["exhibition", "cover", "portrait", "life"];
+type Tab = "exhibition" | "cover" | DevelopListKind | "tokyo";
+const TABS: readonly Tab[] = ["exhibition", "cover", "portrait", "life", "tokyo"];
 type SavedKey =
   | (typeof LIST_KEY)[DevelopListKind]
+  | typeof TOKYO_KEY
   | "siteDesign"
   | "heroMode"
   | "developDoors"
@@ -217,6 +222,12 @@ export default function AdminPagesPage() {
     }),
     [photos, savedValue],
   );
+  // 東京の撮影プランの作例。選んでいなければ仮の並び（消した・公開をやめた写真は飛ばす）。
+  const tokyoIds = useMemo(() => {
+    const live = new Set(photos.map((photo) => photo.id));
+    return tokyoPhotoIds(savedValue(TOKYO_KEY)).filter((id) => live.has(id));
+  }, [photos, savedValue]);
+  const usedOnTokyo = useMemo(() => new Set<number>(tokyoIds), [tokyoIds]);
   // 展示の候補は、同梱の写真＋公開中の写真。
   const exhibitionCatalog = useMemo(() => [...EXHIBITION_BUILT_IN, ...photos] as PagePhoto[], [photos]);
   const exhibitionPhotos = useMemo(
@@ -295,7 +306,7 @@ export default function AdminPagesPage() {
       </p>,
     );
 
-  const key = tab === "cover" || tab === "exhibition" ? null : LIST_KEY[tab];
+  const key = tab === "cover" || tab === "exhibition" ? null : tab === "tokyo" ? TOKYO_KEY : LIST_KEY[tab];
   const picked = key ? parsePhotoIdList(savedValue(key)).length > 0 : coverIds.length > 0;
   // 表紙の出し方。今までの設定 heroMode をそのまま使う（1枚＝single、それ以外はスライドとして出る）。
   const heroMode = savedValue("heroMode") || "carousel";
@@ -305,6 +316,7 @@ export default function AdminPagesPage() {
     cover: coverIds.length,
     portrait: lists.portrait.length,
     life: lists.life.length,
+    tokyo: tokyoIds.length,
   };
   // タブの名前は、扉の名前に合わせる（名前を変えたら、ここも変わる）。
   const doorCopy = developDoorCopy(savedValue("developDoors"));
@@ -313,6 +325,7 @@ export default function AdminPagesPage() {
     cover: COVER_NAME,
     portrait: doorCopy.portrait.label,
     life: doorCopy.life.label,
+    tokyo: TOKYO_NAME,
   };
   const design = savedValue("siteDesign");
   const isDevelop = isDevelopDesignValue(design);
@@ -320,11 +333,9 @@ export default function AdminPagesPage() {
   // 見開きのトップ（SpreadTop）では、表紙の1枚目と2枚目が左右の頁になる。
   const spreadTop = developTopStyle(settings?.developTopStyle as string | undefined) === "spread";
   // 同梱の写真は持ち主の物なので、配布版の管理画面には展示のタブを出さない。
-  const tabs = TABS.filter(
-    (kind) =>
-      kind !== "exhibition" ||
-      exhibitionShown ||
-      isServiceOwnerSite(settings?.siteUrl as string | undefined, window.location.hostname),
+  const ownerSite = isServiceOwnerSite(settings?.siteUrl as string | undefined, window.location.hostname);
+  const tabs = TABS.filter((kind) =>
+    kind === "tokyo" ? ownerSite : kind !== "exhibition" || exhibitionShown || ownerSite,
   );
 
   return frame(
@@ -349,7 +360,7 @@ export default function AdminPagesPage() {
               : tab === "cover"
                 ? "/"
                 : `/${tab}`
-          }?design=develop`}
+          }${tab === "tokyo" ? "" : "?design=develop"}`}
           target="_blank"
           rel="noopener"
         >
@@ -574,6 +585,23 @@ export default function AdminPagesPage() {
             series={series}
             name={COVER_NAME}
             onChange={(next, message) => saveCover(next, message, coverIds)}
+          />
+        </>
+      ) : tab === "tokyo" ? (
+        <>
+          <p className="pp-note">
+            {picked
+              ? "東京の撮影プラン（/tokyo）の作例です。1枚目が表紙で、あとは2枚ずつ並びます。"
+              : "まだ選んでいないので、仮の写真が出ています。動かしたり足したりすると、その並びが保存されます。1枚目が表紙です。"}
+          </p>
+          <PagePhotoEditor
+            key="tokyo"
+            photos={photos}
+            value={tokyoIds}
+            used={usedOnTokyo}
+            series={series}
+            name={TOKYO_NAME}
+            onChange={(next, message) => save(TOKYO_KEY, next.join(","), message, savedValue(TOKYO_KEY))}
           />
         </>
       ) : (

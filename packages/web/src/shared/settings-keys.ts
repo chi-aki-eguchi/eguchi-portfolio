@@ -176,6 +176,9 @@ export const SETTINGS_PREVIEW_KEYS = [
   "developPortraitIds",
   "developLifeIds",
   "developDoors",
+  // 東京の撮影プラン（/tokyo、shared/tokyo-shoot.ts）に出す作例（写真IDをカンマで並べた文字列。並び順＝表示順）。
+  // 空なら、コードにある仮の並び。
+  "tokyoPhotoIds",
   // トップの展示（shared/exhibition.ts）。出すか・題・会期・添える文・写真の並び・写真ごとの題。
   "exhibitionOnTop",
   "exhibitionTitle",

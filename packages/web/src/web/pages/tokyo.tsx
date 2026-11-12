@@ -18,14 +18,19 @@ import { buildFailoverMailto } from "../../shared/contact-failover";
 import {
   formatYen,
   TOKYO_COPY,
+  TOKYO_DATE_OTHER,
   TOKYO_FORM_LANGUAGE_DEFAULT,
   TOKYO_FORM_LANGUAGES,
   TOKYO_LANGS,
   TOKYO_PATHS,
   TOKYO_SHOOT,
+  tokyoDateLabel,
   tokyoDocumentTitle,
   tokyoFromLine,
   tokyoInquiryFields,
+  tokyoOpenDates,
+  tokyoOpenSummary,
+  tokyoPhotoIds,
   tokyoPlanLine,
   type TokyoLang,
 } from "../../shared/tokyo-shoot";
@@ -98,11 +103,16 @@ export default function TokyoPage({ language }: { language: TokyoLang }) {
     });
   }, [language, settings, settingsError]);
 
-  // 選んだ写真を、選んだ順で。公開をやめた・消した写真は飛ばす。
+  // 選んだ写真を、選んだ順で（管理画面の「ページの写真」→「東京」。まだ選んでいなければ仮の並び）。
+  // 公開をやめた・消した写真は飛ばす。
   const photos = useMemo(() => {
     const byId = new Map(((photosQ.data?.photos ?? []) as GalleryPhoto[]).map((p) => [p.id, p]));
-    return TOKYO_SHOOT.photoIds.map((id) => byId.get(id)).filter((p): p is GalleryPhoto => !!p);
-  }, [photosQ.data]);
+    return tokyoPhotoIds(settings?.tokyoPhotoIds)
+      .map((id) => byId.get(id))
+      .filter((p): p is GalleryPhoto => !!p);
+  }, [photosQ.data, settings?.tokyoPhotoIds]);
+  // 受けられる日。過ぎた日は出さない。1日も残っていなければ、日付を自由に選ぶ欄に戻す。
+  const openDates = useMemo(() => tokyoOpenDates(todayForDateInput()), []);
   const [cover, ...rest] = photos;
   // 表紙のあとは2枚ずつ、文の合間に置く。
   const pairs: GalleryPhoto[][] = [];
@@ -306,6 +316,21 @@ export default function TokyoPage({ language }: { language: TokyoLang }) {
       {pairs[1] && <PhotoRow photos={pairs[1]} copy={copy} name={photographerName} />}
 
       <div className="tk-facts">
+        {openDates.length > 0 && (
+          <section className="tk-section page-entrance" aria-labelledby="tk-dates">
+            <h2 id="tk-dates" className="tk-label">
+              {copy.datesLabel}
+            </h2>
+            <p className="tk-dates__summary">{tokyoOpenSummary(language)}</p>
+            <ul className="tk-dates">
+              {openDates.map((iso) => (
+                <li key={iso}>
+                  <time dateTime={iso}>{tokyoDateLabel(language, iso)}</time>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
         <section className="tk-section page-entrance" aria-labelledby="tk-areas">
           <h2 id="tk-areas" className="tk-label">
             {copy.areasLabel}
@@ -412,17 +437,40 @@ export default function TokyoPage({ language }: { language: TokyoLang }) {
               <input type="text" name="_gotcha" tabIndex={-1} autoComplete="off" aria-hidden="true" className="tk-trap" />
               <div className="tk-form__pair">
                 <Field id="tk-date" label={copy.form.date} error={errors.date}>
-                  <input
-                    id="tk-date"
-                    type="date"
-                    name="date"
-                    min={todayForDateInput()}
-                    aria-required="true"
-                    aria-invalid={!!errors.date || undefined}
-                    aria-describedby={errors.date ? "tk-date-error" : undefined}
-                    onChange={() => clear("date")}
-                    className="tk-input"
-                  />
+                  {openDates.length > 0 ? (
+                    <select
+                      id="tk-date"
+                      name="date"
+                      defaultValue=""
+                      aria-required="true"
+                      aria-invalid={!!errors.date || undefined}
+                      aria-describedby={errors.date ? "tk-date-error" : undefined}
+                      onChange={() => clear("date")}
+                      className="tk-input tk-select"
+                    >
+                      <option value="" disabled>
+                        {copy.form.choose}
+                      </option>
+                      {openDates.map((iso) => (
+                        <option key={iso} value={iso}>
+                          {tokyoDateLabel(language, iso)}
+                        </option>
+                      ))}
+                      <option value={TOKYO_DATE_OTHER}>{copy.form.dateOther}</option>
+                    </select>
+                  ) : (
+                    <input
+                      id="tk-date"
+                      type="date"
+                      name="date"
+                      min={todayForDateInput()}
+                      aria-required="true"
+                      aria-invalid={!!errors.date || undefined}
+                      aria-describedby={errors.date ? "tk-date-error" : undefined}
+                      onChange={() => clear("date")}
+                      className="tk-input"
+                    />
+                  )}
                 </Field>
                 <Field id="tk-people" label={copy.form.people}>
                   <select id="tk-people" name="people" defaultValue="1人" className="tk-input tk-select">

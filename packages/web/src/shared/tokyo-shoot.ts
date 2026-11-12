@@ -9,6 +9,8 @@
  * キャンセル規定と注意事項は仮の文面で、画面でも「仮」と分かるように出す。
  */
 
+import { parsePhotoIdList } from "./develop-structure";
+
 export type TokyoLang = "zh-Hant" | "en" | "ja";
 export type TokyoPlanId = "digital" | "film35" | "medium";
 export type TokyoAreaId = "shibuya" | "asakusa" | "yanaka" | "shimokita";
@@ -28,6 +30,7 @@ export const TOKYO_SHOOT: {
   areas: readonly TokyoAreaId[];
   photoIds: readonly number[];
   maxPeople: number;
+  openDays: { year: number; month: number; weekdays: readonly number[]; closed: readonly string[] };
 } = {
   plans: [
     // デジタル: 約30枚、3日以内に納品。
@@ -45,7 +48,47 @@ export const TOKYO_SHOOT: {
   photoIds: [2080, 2237, 2232, 2053, 2408, 2404, 2183],
   /** 人数の選択肢の上限（これ以上は「以上」としてまとめる）。 */
   maxPeople: 5,
+  /**
+   * 受けられる日（2026-11-12、オーナー「一旦12月の日曜日と火曜日だったらいいよ」）。
+   * 年・月・曜日（0=日、1=月、2=火…6=土）で決める。受けられなくなった日は closed に "2026-12-29" の形で足す。
+   * 過ぎた日は自動で出なくなり、全部過ぎたら日付を自由に選ぶ欄に戻る。
+   */
+  openDays: { year: 2026, month: 12, weekdays: [0, 2], closed: [] },
 };
+
+/**
+ * 作例の写真。管理画面の「ページの写真」→「東京」で選んだ物（設定 `tokyoPhotoIds`）があればその順で、
+ * まだ選んでいなければ上の仮の並び。
+ */
+export function tokyoPhotoIds(picked: string | null | undefined): number[] {
+  const ids = parsePhotoIdList(picked);
+  return ids.length > 0 ? ids : [...TOKYO_SHOOT.photoIds];
+}
+
+const pad2 = (n: number) => String(n).padStart(2, "0");
+
+/** 受けられる日（"2026-12-06" の形、早い順）。`today` 以前の日は出さない。 */
+export function tokyoOpenDates(today: string): string[] {
+  const { year, month, weekdays, closed } = TOKYO_SHOOT.openDays;
+  const daysInMonth = new Date(Date.UTC(year, month, 0)).getUTCDate();
+  const dates: string[] = [];
+  for (let day = 1; day <= daysInMonth; day++) {
+    const iso = `${year}-${pad2(month)}-${pad2(day)}`;
+    const weekday = new Date(Date.UTC(year, month - 1, day)).getUTCDay();
+    if (weekdays.includes(weekday) && !closed.includes(iso) && iso > today) dates.push(iso);
+  }
+  return dates;
+}
+
+/** フォームで「ほかの日」を選んだときの値。 */
+export const TOKYO_DATE_OTHER = "other";
+
+function isoParts(iso: string): { month: number; day: number; weekday: number } | null {
+  const match = iso.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!match) return null;
+  const [year, month, day] = [Number(match[1]), Number(match[2]), Number(match[3])];
+  return { month, day, weekday: new Date(Date.UTC(year, month - 1, day)).getUTCDay() };
+}
 
 /** 言語ごとの住所。繁體中文を最初に見せるので、`/tokyo` が繁體中文。 */
 export const TOKYO_PATHS: Record<TokyoLang, string> = {
@@ -103,12 +146,20 @@ export type TokyoCopy = {
   areasNote: string;
   flowLabel: string;
   flow: string[];
+  /** 受けられる日。 */
+  datesLabel: string;
+  /** 曜日の短い名前（日〜土）と、まとめの文に使う名前。 */
+  weekdayShort: readonly string[];
+  weekdayLong: readonly string[];
+  openSummary: (month: number, weekdays: string[]) => string;
+  dateShort: (month: number, day: number, weekday: string) => string;
   /** 仮の文面。見出しに「仮」と分かる語を入れる。 */
   notesLabel: string;
   notes: string[];
   form: {
     label: string;
     date: string;
+    dateOther: string;
     people: string;
     peopleOption: (count: number, orMore: boolean) => string;
     plan: string;
@@ -134,6 +185,7 @@ export type TokyoCopy = {
   };
 };
 
+const EN_MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 const FORM_LANGUAGE_NAMES = ["中文", "English", "日本語"] as const;
 export const TOKYO_FORM_LANGUAGES: readonly string[] = FORM_LANGUAGE_NAMES;
 /** そのページの言語で書く人が多いので、フォームの「使う言語」の初めの値にする。 */
@@ -173,6 +225,11 @@ export const TOKYO_COPY: Record<TokyoLang, TokyoCopy> = {
     areasNote: "其他地點也可以討論。",
     flowLabel: "流程",
     flow: ["填寫下方表單", "確認日期和地點", "日期確定後，另行通知付款方式", "拍攝・交件"],
+    datesLabel: "日期",
+    weekdayShort: ["日", "一", "二", "三", "四", "五", "六"],
+    weekdayLong: ["星期日", "星期一", "星期二", "星期三", "星期四", "星期五", "星期六"],
+    openSummary: (month, weekdays) => `${month} 月的${weekdays.join("、")}`,
+    dateShort: (month, day, weekday) => `${month}/${day}（${weekday}）`,
     notesLabel: "注意事項（暫定）",
     notes: [
       "拍攝 2 天前為止，可以免費改期或取消。前一天取消收取 50%，當天取消收取 100%。",
@@ -183,6 +240,7 @@ export const TOKYO_COPY: Record<TokyoLang, TokyoCopy> = {
     form: {
       label: "預約詢問",
       date: "希望日期",
+      dateOther: "其他日期（請寫在下方）",
       people: "人數",
       peopleOption: (n, more) => (more ? `${n} 人以上` : `${n} 人`),
       plan: "方案",
@@ -250,6 +308,11 @@ export const TOKYO_COPY: Record<TokyoLang, TokyoCopy> = {
       "Once the date is set, I send payment details",
       "Shoot, then delivery",
     ],
+    datesLabel: "Dates",
+    weekdayShort: ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"],
+    weekdayLong: ["Sundays", "Mondays", "Tuesdays", "Wednesdays", "Thursdays", "Fridays", "Saturdays"],
+    openSummary: (month, weekdays) => `${weekdays.join(" and ")} in ${EN_MONTHS[month - 1]}`,
+    dateShort: (month, day, weekday) => `${weekday} ${day} ${EN_MONTHS[month - 1]?.slice(0, 3)}`,
     notesLabel: "Notes (provisional)",
     notes: [
       "Rescheduling or cancelling is free until 2 days before the shoot. 50% the day before, 100% on the day.",
@@ -260,6 +323,7 @@ export const TOKYO_COPY: Record<TokyoLang, TokyoCopy> = {
     form: {
       label: "Request a session",
       date: "Preferred date",
+      dateOther: "Another date (tell me below)",
       people: "People",
       peopleOption: (n, more) => (more ? `${n} or more` : String(n)),
       plan: "Plan",
@@ -322,6 +386,11 @@ export const TOKYO_COPY: Record<TokyoLang, TokyoCopy> = {
     areasNote: "ほかの場所も相談できます。",
     flowLabel: "流れ",
     flow: ["下のフォームを送る", "日程と場所を決める", "日程が決まったら、支払い方法をご案内", "撮影・納品"],
+    datesLabel: "日程",
+    weekdayShort: ["日", "月", "火", "水", "木", "金", "土"],
+    weekdayLong: ["日曜", "月曜", "火曜", "水曜", "木曜", "金曜", "土曜"],
+    openSummary: (month, weekdays) => `${month}月の${weekdays.join("・")}`,
+    dateShort: (month, day, weekday) => `${month}/${day}（${weekday}）`,
     notesLabel: "注意事項（仮）",
     notes: [
       "撮影の2日前までは、無料で日程変更・キャンセルできます。前日は50%、当日は100%をいただきます。",
@@ -332,6 +401,7 @@ export const TOKYO_COPY: Record<TokyoLang, TokyoCopy> = {
     form: {
       label: "撮影の申し込み",
       date: "希望日",
+      dateOther: "ほかの日（下に書いてください）",
       people: "人数",
       peopleOption: (n, more) => (more ? `${n}人以上` : `${n}人`),
       plan: "プラン",
@@ -368,6 +438,24 @@ export const TOKYO_COPY: Record<TokyoLang, TokyoCopy> = {
 export function tokyoPlanLine(lang: TokyoLang, plan: TokyoPlan): string {
   const copy = TOKYO_COPY[lang];
   return `${copy.plan[plan.id].name}　${copy.duration(plan.minutes)}　${formatYen(plan.priceYen)}`;
+}
+
+/** 「12月の日曜・火曜」。受けられる日のまとめ（その言語で）。 */
+export function tokyoOpenSummary(lang: TokyoLang): string {
+  const copy = TOKYO_COPY[lang];
+  const { month, weekdays } = TOKYO_SHOOT.openDays;
+  return copy.openSummary(
+    month,
+    weekdays.map((weekday) => copy.weekdayLong[weekday] ?? ""),
+  );
+}
+
+/** 「12/6（日）」。日付1つの短い書き方（その言語で）。読めない値はそのまま返す。 */
+export function tokyoDateLabel(lang: TokyoLang, iso: string): string {
+  const parts = isoParts(iso);
+  if (!parts) return iso;
+  const copy = TOKYO_COPY[lang];
+  return copy.dateShort(parts.month, parts.day, copy.weekdayShort[parts.weekday] ?? "");
 }
 
 /**
@@ -415,6 +503,7 @@ export function tokyoFallbackParagraphs(lang: TokyoLang): string[] {
   return [
     ...copy.lead,
     ...TOKYO_SHOOT.plans.map((plan) => `${tokyoPlanLine(lang, plan)}　${copy.plan[plan.id].detail(plan)}`),
+    `${copy.datesLabel}: ${tokyoOpenSummary(lang)}`,
     `${copy.areasLabel}: ${TOKYO_SHOOT.areas.map((id) => copy.areas[id]).join(" / ")}`,
     copy.flow.join(" → "),
   ];
@@ -443,7 +532,13 @@ export function tokyoInquiryFields(input: {
     subject: "東京撮影プランの申し込み",
     name: input.name.trim(),
     email: input.email.trim(),
-    希望日: input.date,
+    // 通知では曜日も添える。「ほかの日」を選んだ人は、その他の欄に書いてある。
+    希望日:
+      input.date === TOKYO_DATE_OTHER
+        ? "ほかの日（その他の欄を参照）"
+        : isoParts(input.date)
+          ? `${input.date}（${ja.weekdayShort[isoParts(input.date)!.weekday]}）`
+          : input.date,
     人数: input.people,
     プラン: plan ? tokyoPlanLine("ja", plan) : input.planId,
     エリア: area ? ja.areas[area] : ja.form.areaOther,

@@ -6,6 +6,5 @@ dist/
 *.png
 *.webp
 *.zip
-.claude/chat-backups/
 .claude/worktrees/
 scratch/smoke-evidence/

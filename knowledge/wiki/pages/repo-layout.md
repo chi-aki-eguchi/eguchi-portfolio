@@ -38,13 +38,13 @@ sources:
 - Active specs belong in `docs/specs/`; do not create `-v2`, `-v3`,
   `-final`, or `-draft` spec filenames.
 - Finished historical docs move to `docs/archive/` with `git mv`.
-- New Handoffs are appended to `docs/archive/task-handoffs.md`; standalone `*.handoff.md` files are banned.
+- `task.md` holds only the current state and next steps; finished work logs live in `docs/archive/` (2026-11-12). Standalone `*.handoff.md` files are not used.
 - Temporary prompts, drafts, and scratch scripts belong in `scratch/`.
 - Untracked files should be resolved within a few working sessions by
   committing, gitignoring, archiving, moving to `scratch/`, or deleting with
   owner approval.
-- Every Driver should check `git status` before finishing and report any
-  unrelated dirty files left alone.
+- Check `git status` before finishing and report any unrelated dirty files
+  left alone.
 
 ## Sources
 

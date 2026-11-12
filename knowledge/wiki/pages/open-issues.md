@@ -97,7 +97,8 @@ refine-and-loop-spec.md:11`'s old "3箇所 (admin previewPayload …)" list —
     in the same row use full paths — actual files live under
     `packages/web/`. Also, its "regenerate both" instructions don't state a
     preceding `cd packages/web`, but the configs are cwd-relative.
-14. **`.claude/chat-backups/compaction-log.txt`**: exists to log session ID
+14. **Resolved 2026-11-12**: `.claude/chat-backups/` had no caller and was
+    removed. Earlier note: `.claude/chat-backups/compaction-log.txt` existed to log session ID
     at each pre-compaction event, but all 4 recorded entries have a blank
     "Session:" field — `$CLAUDE_SESSION_ID` appears not to populate in the
     PreCompact hook's shell environment.

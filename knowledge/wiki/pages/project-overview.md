@@ -66,14 +66,11 @@ sources:
 - DB schema (high level): `photos`, `categories`, `hero_photos`,
   `site_settings` (key-value), plus `series` and `pricing_plans` — see
   database.md for the full dual-schema story. (AGENTS.md:88-93)
-- `task.md` contains the actively maintained Current State block; historical
-  work logs and Handoffs are kept in `docs/archive/task-handoffs.md`. Recent
-  entries (2026-06-29 through
-  2026-07-01) are authored by "Codex" per the dual-agent (Claude Code +
-  Codex) workflow documented in CLAUDE.md/AGENTS.md, and cover SNS
-  card/content-type fixes, `/service` pricing CTA fixes, and admin
-  Library/Inspector improvements. (historical Handoffs in
-  `docs/archive/task-handoffs.md`)
+- `task.md` contains only the current state and next steps (shortened
+  2026-11-12). Historical work logs are in
+  `docs/archive/task-log-2026-09-13_2026-11-11.md` and
+  `docs/archive/task-handoffs.md`. AI roles are not fixed; root `AGENTS.md`
+  is the canonical working policy.
 - docs/ folder audience split per README.md: `docs/setup-guide.md`
   (engineer setup), `docs/post-deploy-guide.md` (non-engineer Railway-button
   deploy), `docs/photographer-guide.md`, `docs/admin-guide.md`,
@@ -85,9 +82,6 @@ sources:
 - The separate "ivys-house" repository itself was not opened during this
   audit (it's a different local/remote repo, out of scope); its Astro-based
   nature is known only from AGENTS.md's description.
-- `task.md`'s attribution of recent entries to "Codex" reflects the
-  documented dual-AI (Claude Code + Codex) agmsg workflow, not independently
-  verified beyond reading the handoff text itself.
 
 ## Open Questions
 

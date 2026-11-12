@@ -71,14 +71,13 @@ git commit -m "..."
 git push
 ```
 
-`git push` は Railway の本番 auto-deploy につながります。途中の作業や壊れている状態は push せず、必要なら作業ブランチを使います。
+`main` への `git push` は Railway の本番 auto-deploy につながります。検証と push の進め方は `AGENTS.md`「検証とpush」が正本です。途中の作業や壊れている状態は `main` へ push せず、必要なら作業ブランチを使います。
 
 ## AI作業の引き継ぎ
 
-- 共有したい恒久ルールは `AGENTS.md` に書く。
-- 作業の引き継ぎは `docs/archive/task-handoffs.md` の末尾に Handoff として残す。
-- `.codex/USER_CONTEXT.md` はローカル専用なので、MacBook と Mac mini で自動共有される前提にしない。
-- Mac を切り替える前に、必要な差分と Handoff を commit / push しておく。
+- 共有したい恒久ルールは `AGENTS.md`、現在地と次の一手は `task.md` に書く。
+- `.codex/` や各AIの個人設定・記憶はそのMacだけのもの。もう1台へ自動では渡らない。
+- Mac を切り替える前に、必要な差分と `task.md` を commit / push しておく。
 
 ## 避けること
 

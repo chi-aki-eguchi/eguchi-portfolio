@@ -104,5 +104,4 @@ hreflang/OGP が正しく出て、`bun run check` + render テスト成功。配
 **Phase 1**: LP 英語文面 → ルート+辞書実装 → OGP/hreflang/sitemap →
 スタートページ+メール文面 → render テスト → check → Handoff
 **Phase 2**: 2a → 2b → 2c の順に、各段階で check+smoke を通してから次へ。
-体制: 実装=Codex（gpt-5.6-sol / reasoning ultra、2026-07-16 オーナー指示）、
-レビュー=Claude（リスク階層別、docs/agents/codex-workflow.md に従う）
+（2026-07-16 当時は実装=Codex・レビュー=Claudeの体制だった。現在は役割を固定しない。）

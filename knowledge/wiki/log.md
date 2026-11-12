@@ -14,11 +14,19 @@ sources: []
 This log tracks changes **to the wiki itself** (new pages, re-ingests,
 corrections, contradictions found/resolved). It is **not** the project's
 implementation work log — historical work logs and Handoffs are in
-`../../docs/archive/task-handoffs.md`. Do not record
-feature/bugfix work here; append its Handoff to `../../docs/archive/task-handoffs.md`
-instead, and only link to it from here if a wiki update was triggered by it.
+`../../docs/archive/`. Do not record feature/bugfix work here; that belongs in
+`git log` and the relevant spec, and is only linked from here if a wiki update
+was triggered by it.
 
 ## Entries
+
+### 2026-11-12 — task.md shortened; retired role wording removed
+
+`task.md` now holds only the current state and next steps; the old log moved to
+`docs/archive/task-log-2026-09-13_2026-11-11.md`. Updated `repo-layout.md`,
+`project-overview.md`, `open-issues.md` (item 14) and `WIKI_SCHEMA.md` to drop
+the "Driver", dual-AI handoff and `chat-backups` wording. `last_verified` dates
+were not advanced.
 
 ### 2026-09-28 — distribution の設置担当を訂正
 

@@ -25,7 +25,7 @@ The wiki summarizes; it does not replace. **Canonical sources always win:**
 
 1. Actual source code
 2. CLAUDE.md / AGENTS.md (behavior rules)
-3. `task.md` (Current State); historical Handoffs: `docs/archive/task-handoffs.md`
+3. `task.md` (current state and next steps); historical work logs: `docs/archive/`
 4. Other existing docs/specs (DISTRIBUTION.md, docs/*.md, spec files, etc.)
 5. `knowledge/wiki/*` — summary only, may be stale or wrong
 

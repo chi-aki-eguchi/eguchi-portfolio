@@ -143,6 +143,11 @@ export type TokyoCopy = {
   aboutLabel: string;
   /** フォームの代わりに Instagram のDMでも連絡できる、の一文（Instagram の語の前後）。 */
   dm: { before: string; after: string };
+  /**
+   * 送信できた後に添える一文（Instagram の語の前後）。送信先の迷惑メール判定で通知が届かないことがあり
+   * （2026-11-12、テスト3件のうち通知が届いたのは1件）、返信が無いまま待たせないための逃げ道。
+   */
+  noReply: { before: string; after: string };
   plansLabel: string;
   plan: Record<TokyoPlanId, { name: string; detail: (plan: TokyoPlan) => string }>;
   duration: (minutes: number) => string;
@@ -217,6 +222,7 @@ export const TOKYO_COPY: Record<TokyoLang, TokyoCopy> = {
     from: (time, price) => `${time} ${price} 起`,
     aboutLabel: "攝影師",
     dm: { before: "也可以用 ", after: " 私訊聯絡。" },
+    noReply: { before: "如果幾天後還沒收到回覆，請用 ", after: " 私訊。" },
     plansLabel: "方案",
     plan: {
       digital: {
@@ -293,6 +299,7 @@ export const TOKYO_COPY: Record<TokyoLang, TokyoCopy> = {
     from: (time, price) => `From ${price} · ${time}`,
     aboutLabel: "Photographer",
     dm: { before: "Or message me on ", after: "." },
+    noReply: { before: "If you have not heard back in a few days, please message me on ", after: "." },
     plansLabel: "Plans",
     plan: {
       digital: {
@@ -377,6 +384,7 @@ export const TOKYO_COPY: Record<TokyoLang, TokyoCopy> = {
     from: (time, price) => `${time} ${price}から`,
     aboutLabel: "撮る人",
     dm: { before: "", after: " のDMでも受け付けています。" },
+    noReply: { before: "数日たっても返信がない場合は、", after: " のDMでご連絡ください。" },
     plansLabel: "プラン",
     plan: {
       digital: {

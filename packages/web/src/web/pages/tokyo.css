@@ -487,6 +487,9 @@
   color: var(--foreground);
   outline: none;
 }
+.tk-sent__fallback {
+  margin-top: 0.5rem;
+}
 .tk-sent__again,
 .tk-mail {
   display: inline-flex;

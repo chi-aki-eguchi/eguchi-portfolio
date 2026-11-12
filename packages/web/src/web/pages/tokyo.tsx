@@ -423,6 +423,15 @@ export default function TokyoPage({ language }: { language: TokyoLang }) {
               <p ref={sentRef} tabIndex={-1} aria-live="polite" className="tk-sent__text">
                 {copy.form.sent}
               </p>
+              {settings?.profileInstagram && (
+                <p className="tk-quiet tk-sent__fallback">
+                  {copy.noReply.before}
+                  <a href={safeHref(settings.profileInstagram)} target="_blank" rel="noopener noreferrer" className="font-en tk-underline">
+                    Instagram
+                  </a>
+                  {copy.noReply.after}
+                </p>
+              )}
               <button type="button" className="tk-sent__again" onClick={() => setStatus("idle")}>
                 {copy.form.sendAnother}
               </button>

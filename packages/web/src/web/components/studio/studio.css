@@ -4,8 +4,10 @@
 
 .st-root {
   --st-ink: var(--admin-ink);
-  --st-quiet: rgba(var(--admin-ink-rgb), 0.62);
-  --st-faint: rgba(var(--admin-ink-rgb), 0.4);
+  /* 控えめな文字は --admin-muted の1色（2026-11-12）。ここだけ別の灰色（α0.62・α0.4）で、
+     同じ役割の文字が管理画面の中で3色に分かれていた。 */
+  --st-quiet: var(--admin-muted);
+  --st-faint: var(--admin-muted);
   --st-hair: rgba(var(--admin-ink-rgb), 0.1);
   --st-line: rgba(var(--admin-ink-rgb), 0.16);
   --st-paper: var(--admin-paper);
@@ -60,7 +62,7 @@
 }
 .st-side__label {
   margin: 14px 10px 6px;
-  font-size: 12px;
+  font-size: var(--admin-text-note);
   letter-spacing: 0.06em;
   color: var(--st-faint);
 }
@@ -185,8 +187,8 @@
 }
 .st-toolbar__title h2 {
   margin: 0;
-  font-size: 20px;
-  font-weight: 500;
+  font-size: var(--admin-text-page);
+  font-weight: 600;
   letter-spacing: 0.01em;
   white-space: nowrap;
   overflow: hidden;
@@ -315,7 +317,7 @@
   border-radius: 999px;
   background: rgba(0, 0, 0, 0.62);
   color: #fff;
-  font-size: 11px;
+  font-size: var(--admin-text-micro);
   line-height: 18px;
 }
 .st-tile__check {
@@ -361,7 +363,7 @@
 }
 .st-inspector__count {
   margin: 0;
-  font-size: 13px;
+  font-size: var(--admin-text-note);
   color: var(--st-quiet);
 }
 /* 開いたまま隣の写真へ（‹ 前・次 ›、2026-10-02）。閉じるの手前に寄せる。 */
@@ -417,7 +419,7 @@
   display: flex;
   flex-direction: column;
   gap: 2px;
-  font-size: 13px;
+  font-size: var(--admin-text-note);
   color: var(--st-quiet);
 }
 .st-preview__file {
@@ -436,7 +438,7 @@
 }
 .st-strip__more {
   align-self: center;
-  font-size: 13px;
+  font-size: var(--admin-text-note);
   color: var(--st-quiet);
   padding: 0 6px;
 }
@@ -451,12 +453,19 @@
   justify-content: space-between;
   gap: 10px;
 }
+/* 写真の欄の小見出し。以前は 13px・太さ 600・灰色で、下の欄の名前（15px・400）より弱く、
+   段が逆さまだった（2026-11-12 実測）。16px・600・墨にし、欄の名前（14px・600）より一段上に置く。 */
 .st-section__title {
   margin: 0;
-  font-size: 13px;
+  font-size: 16px;
   font-weight: 600;
-  letter-spacing: 0.06em;
-  color: var(--st-quiet);
+  letter-spacing: 0;
+  line-height: 1.4;
+  color: var(--st-ink);
+}
+.st-section + .st-section {
+  padding-top: 20px;
+  border-top: 1px solid var(--admin-line);
 }
 .st-context {
   display: flex;
@@ -471,11 +480,11 @@
 }
 .st-order__btn {
   padding: 0 6px;
-  font-size: 13px;
+  font-size: var(--admin-text-note);
   white-space: nowrap;
 }
 .st-order__pos {
-  font-size: 12px;
+  font-size: var(--admin-text-micro);
   color: var(--st-quiet);
   font-variant-numeric: tabular-nums;
 }
@@ -494,7 +503,7 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  min-height: 36px;
+  min-height: var(--admin-choice-h);
   padding: 2px 8px;
   border-radius: 2px;
   cursor: pointer;
@@ -503,8 +512,8 @@
   background: rgba(var(--admin-ink-rgb), 0.04);
 }
 .st-check input {
-  width: 18px;
-  height: 18px;
+  width: 22px;
+  height: 22px;
   /* 選択は黒で。青は、ドラッグ先など「今ここに入る」の合図だけに残す。 */
   accent-color: var(--st-ink);
   flex: none;
@@ -525,7 +534,7 @@
   border-radius: 4px;
   background: var(--st-deep);
   color: var(--st-quiet);
-  font-size: 11px;
+  font-size: var(--admin-text-micro);
   font-weight: 400;
   line-height: 18px;
 }
@@ -547,8 +556,9 @@
   min-width: 0;
 }
 .st-field__label {
-  font-size: 13px;
-  color: var(--st-quiet);
+  font-size: var(--admin-label-fs);
+  font-weight: 600;
+  color: var(--st-ink);
 }
 .st-field-row {
   display: grid;
@@ -556,24 +566,26 @@
   grid-template-columns: repeat(auto-fit, minmax(11.5rem, 1fr));
   gap: 10px;
 }
+/* 入力欄は白い地＋1pxの枠、高さ 48px（PC 40px）、スマホは 16px（admin-studio.css の変数）。 */
 .st-input {
   width: 100%;
-  min-height: 38px;
-  padding: 7px 10px;
-  border: 1px solid var(--st-line);
-  border-radius: 2px;
-  background: var(--st-paper);
+  min-height: var(--admin-field-h);
+  padding: 0 12px;
+  border: 1px solid var(--admin-field-border);
+  border-radius: 8px;
+  background: var(--admin-field-bg);
   color: var(--st-ink);
   font: inherit;
-  font-size: 15px;
+  font-size: var(--admin-field-fs);
 }
 .st-input:focus {
-  outline: 2px solid color-mix(in srgb, var(--st-accent) 55%, transparent);
+  outline: 2px solid var(--st-accent);
   outline-offset: 0;
-  border-color: var(--st-accent);
+  border-color: var(--st-ink);
 }
 .st-input--area {
-  min-height: 84px;
+  min-height: 96px;
+  padding-block: 10px;
   resize: vertical;
   line-height: 1.7;
 }
@@ -582,10 +594,10 @@
   align-items: center;
   justify-content: center;
   gap: 6px;
-  min-height: 36px;
+  min-height: var(--admin-choice-h);
   padding: 0 14px;
   border: 0;
-  border-radius: 2px;
+  border-radius: 8px;
   background: var(--st-deep);
   color: var(--st-ink);
   font: inherit;
@@ -643,38 +655,40 @@
 .st-link--danger:focus-visible {
   color: var(--st-danger);
 }
+/* 選ぶ物（2〜4択）は管理画面で同じ形（2026-11-12）: 高さ 44px（PC 36px）・8px 開け・
+   選んだ物は墨の地に紙の字。以前は灰色の枠の中で選んだ物だけ紙色になり、見分けにくかった。 */
 .st-seg {
   margin: 0;
   border: 0;
   min-width: 0;
   display: inline-flex;
-  padding: 3px;
-  gap: 2px;
-  border-radius: 2px;
-  background: var(--st-deep);
+  padding: 0;
+  gap: 8px;
 }
 .st-seg__item {
-  min-height: 34px;
+  min-height: var(--admin-choice-h);
   padding: 0 14px;
-  border: 0;
-  border-radius: 2px;
-  background: none;
-  color: var(--st-quiet);
+  border: 1px solid var(--admin-field-border);
+  border-radius: 8px;
+  background: var(--admin-field-bg);
+  color: var(--st-ink);
   font: inherit;
   font-size: 14px;
+  font-weight: 500;
   cursor: pointer;
   white-space: nowrap;
 }
 .st-seg__item[aria-pressed="true"] {
-  background: var(--st-paper);
-  color: var(--st-ink);
+  background: var(--st-ink);
+  border-color: var(--st-ink);
+  color: var(--st-paper);
   box-shadow: none;
   font-weight: 600;
 }
 .st-seg--small .st-seg__item {
-  min-height: 30px;
+  min-height: var(--admin-choice-h);
   padding: 0 10px;
-  font-size: 13px;
+  font-size: var(--admin-text-note);
 }
 .st-confirm {
   display: flex;

@@ -774,7 +774,7 @@
   gap: 3px;
   border-radius: var(--admin-radius-sm);
   color: var(--admin-muted);
-  font-size: 10px;
+  font-size: var(--admin-text-micro, 11px);
   line-height: 1;
 }
 
@@ -1234,9 +1234,10 @@
     min-width: 44px !important;
     min-height: 44px !important;
   }
+  /* 2026-11-12: 40px を 44px へ（分類の上へ・下へ移動が 40×40 だった）。 */
   .admin-atelier .admin-tap-sm {
-    min-width: 40px !important;
-    min-height: 40px !important;
+    min-width: 44px !important;
+    min-height: 44px !important;
   }
 }
 
@@ -1788,7 +1789,7 @@
   right: 6px;
   padding: 3px 7px;
   border-radius: 999px;
-  font-size: 10px;
+  font-size: var(--admin-text-micro, 11px);
   line-height: 1.2;
 }
 
@@ -2188,7 +2189,7 @@
   border-radius: 999px;
   color: var(--admin-paper);
   background: var(--admin-muted);
-  font-size: 10px;
+  font-size: var(--admin-text-micro, 11px);
 }
 
 .admin-atelier .admin-library-view-menu {
@@ -5573,7 +5574,7 @@ dialog.lightbox-morph[data-morph-closing] > :not(.lb-content):not(.lb-ghost) {
 .admin-atelier .admin-form-toc__advanced > summary {
   padding: 8px 8px 5px 14px;
   color: var(--admin-muted);
-  font-size: 10px;
+  font-size: var(--admin-text-micro, 11px);
   letter-spacing: 0.08em;
 }
 .admin-atelier .admin-form-toc__advanced > summary {
@@ -5907,7 +5908,7 @@ dialog.lightbox-morph[data-morph-closing] > :not(.lb-content):not(.lb-ghost) {
   }
   .admin-atelier .admin-settings-section-sheet__state em {
     color: var(--admin-accent);
-    font-size: 10px;
+    font-size: var(--admin-text-micro, 11px);
     font-style: normal;
     white-space: nowrap;
   }
@@ -7434,8 +7435,10 @@ body[data-photo-crop="whole"] img.series-stream-media {
   padding: 0 5px;
   border: 1px solid var(--admin-line);
   border-radius: 3px;
-  font-size: 10.5px;
-  line-height: 16px;
+  /* 10.5px は小さすぎた（2026-11-12 実測: スマホで最小 10px・10.5px の印が16か所）。
+     印・数は 12px（PC 11px）まで。大きさは管理画面の変数に従う（admin-studio.css）。 */
+  font-size: var(--admin-text-micro, 12px);
+  line-height: 18px;
   color: var(--admin-muted);
   vertical-align: 1px;
 }
@@ -7459,7 +7462,7 @@ body[data-photo-crop="whole"] img.series-stream-media {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  min-height: 40px;
+  min-height: 44px;
   padding: 0;
   border: 0;
   background: none;

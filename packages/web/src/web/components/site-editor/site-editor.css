@@ -76,46 +76,60 @@
 .se-search { padding: 0 0 18px; }
 .se-search input {
   width: 100%;
-  min-height: 40px;
+  min-height: var(--admin-field-h);
   padding: 0 12px;
-  font-size: 14px;
+  font-size: var(--admin-field-fs);
   color: var(--admin-ink);
-  background: var(--admin-paper-soft);
-  border: 1px solid transparent;
+  background: var(--admin-field-bg);
+  border: 1px solid var(--admin-field-border);
   border-radius: 8px;
 }
-.se-search input:focus { outline: 2px solid var(--admin-accent); outline-offset: 1px; background: var(--admin-paper); }
+.se-search input:focus { outline: 2px solid var(--admin-accent); outline-offset: 1px; border-color: var(--admin-ink); }
 .se-panel__head { margin: 4px 0 14px; }
+/* 画面の題は 22px（PC 24px）・太さ 600。以前は 21px・400 で、欄の名前と並ぶと段が見えなかった（2026-11-12）。 */
 .se-panel__title {
   margin: 0;
   font-family: var(--font-ja, "Shippori Mincho", "Hiragino Mincho ProN", serif);
-  font-size: 21px;
-  font-weight: 400;
+  font-size: var(--admin-text-page);
+  font-weight: 600;
   letter-spacing: 0.02em;
   line-height: 1.4;
   color: var(--admin-ink);
 }
-.se-panel__lede { margin: 6px 0 0; font-size: 13px; line-height: 1.7; color: var(--admin-muted); }
-.se-panel__empty { display: block; padding: 8px 0; font-size: 13px; line-height: 1.7; color: var(--admin-muted); }
+.se-panel__lede { margin: 6px 0 0; font-size: var(--admin-text-note); line-height: 1.7; color: var(--admin-muted); }
+.se-panel__empty { display: block; padding: 8px 0; font-size: var(--admin-text-note); line-height: 1.7; color: var(--admin-muted); }
 
-.se-parts { list-style: none; margin: 0 -10px; padding: 0; display: flex; flex-direction: column; gap: 2px; }
+/* 部分の一覧は1枚の面に載せ、行の間を罫で分ける。行は 56px 以上（以前は罫も面も無く、押せる行に見えなかった）。 */
+.se-parts {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-line);
+  border-radius: 10px;
+}
 .se-part {
   display: grid;
-  grid-template-columns: 38px minmax(0, 1fr) 14px;
+  grid-template-columns: 38px minmax(0, 1fr) 20px;
   grid-template-rows: auto auto;
   column-gap: 14px;
   align-items: center;
   width: 100%;
-  min-height: 60px;
-  padding: 10px;
+  min-height: 64px;
+  padding: 10px 14px;
   text-align: left;
   color: var(--admin-ink);
   background: none;
   border: 0;
-  border-radius: 12px;
+  border-radius: 0;
   cursor: pointer;
   transition: background-color 140ms ease;
 }
+.se-parts > li + li > .se-part,
+.se-parts > .se-part + .se-part { border-top: 1px solid var(--admin-line); }
 .se-part:hover,
 .se-part:focus-visible { background: var(--admin-paper-soft); }
 .se-part__icon {
@@ -138,19 +152,21 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 15px;
+  font-size: 16px;
+  font-weight: 500;
   line-height: 1.45;
   align-self: end;
 }
-.se-part__note { grid-column: 2; font-size: 12.5px; line-height: 1.55; color: var(--admin-muted); align-self: start; }
+.se-part__note { grid-column: 2; font-size: var(--admin-text-note); line-height: 1.55; color: var(--admin-muted); align-self: start; }
 .se-part:not(:has(.se-part__note)) .se-part__label { grid-row: 1 / span 2; align-self: center; }
 .se-part__go {
   grid-column: 3;
   grid-row: 1 / span 2;
   align-self: center;
-  font-size: 18px;
-  color: var(--admin-muted);
-  opacity: 0.6;
+  font-size: 24px;
+  line-height: 1;
+  color: var(--admin-ink);
+  opacity: 0.55;
   transition: transform 140ms ease, opacity 140ms ease;
 }
 .se-part:hover .se-part__go { opacity: 1; transform: translateX(2px); }
@@ -166,7 +182,7 @@
   min-height: 44px;
   margin: -12px 0 2px -2px;
   padding: 0 2px;
-  font-size: 13px;
+  font-size: var(--admin-text-body);
   color: var(--admin-muted);
   background: none;
   border: 0;
@@ -176,18 +192,18 @@
 .se-part-head__title {
   margin: 0;
   font-family: var(--font-ja, "Shippori Mincho", "Hiragino Mincho ProN", serif);
-  font-size: 22px;
-  font-weight: 400;
+  font-size: var(--admin-text-page);
+  font-weight: 600;
   letter-spacing: 0.02em;
   line-height: 1.4;
   color: var(--admin-ink);
 }
-.se-part-head__note { margin: 6px 0 0; font-size: 13px; line-height: 1.7; color: var(--admin-muted); }
+.se-part-head__note { margin: 6px 0 0; font-size: var(--admin-text-note); line-height: 1.7; color: var(--admin-muted); }
 .se-part-head__links { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; margin-top: 10px; }
 .se-part-head__link {
-  min-height: 36px;
+  min-height: 44px;
   padding: 0;
-  font-size: 13.5px;
+  font-size: var(--admin-text-body);
   color: var(--admin-ink);
   text-decoration: underline;
   text-underline-offset: 4px;
@@ -206,13 +222,14 @@
   min-height: 48px;
   padding: 0 24px;
   border-bottom: 1px solid var(--admin-line);
-  font-size: 13px;
+  font-size: var(--admin-text-note);
   color: var(--admin-muted);
 }
-.se-editor-back button {
-  min-height: 40px;
+.admin-atelier.admin-workbench .se-editor-back button {
+  min-height: 44px;
+  min-width: 44px;
   padding: 0;
-  font-size: 13px;
+  font-size: var(--admin-text-body);
   color: var(--admin-ink);
   background: none;
   border: 0;
@@ -229,8 +246,19 @@
 .admin-atelier .admin-settings-workspace[data-visual="overview"] [data-settings-section],
 .admin-atelier .admin-settings-workspace[data-visual="overview"] .admin-book-unused,
 .admin-atelier .admin-settings-workspace[data-visual="overview"] .admin-settings-save-panel-empty { display: none; }
-.admin-atelier .admin-settings-workspace[data-visual] .admin-settings-section { border: 0 !important; }
-.admin-atelier .admin-settings-workspace[data-visual] .admin-settings-section > div > div > div { padding-top: 0; }
+/* 設定のまとまりは面にする（2026-11-12）。紙より明るい面・角 10px・内側 16px・面の間 12px・面の中の欄の間 16px。
+   以前は罫と余白だけで、どこからどこまでが1まとまりか見えなかった。 */
+.admin-atelier .admin-settings-workspace[data-visual] .admin-settings-section[data-settings-section] {
+  padding: 16px;
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-line) !important;
+  border-radius: 10px;
+}
+.admin-atelier .admin-settings-workspace[data-visual] .admin-settings-section[data-settings-section] + .admin-settings-section[data-settings-section] { margin-top: 12px; }
+/* 本文の下 40px・上 8px（pb-10 pt-2）は面の内側 16px に置き換える。欄の間の gap-6（24px）は 16px へ。
+   中の囲い（overflow:hidden）は欄のフォーカスの輪を切るので、4px の余白で逃がす。 */
+.admin-atelier .admin-settings-workspace[data-visual] .admin-settings-section[data-settings-section] > div > div { margin: -4px; padding: 4px; }
+.admin-atelier .admin-settings-workspace[data-visual] .admin-settings-section[data-settings-section] > div > div > div { padding: 0; gap: 16px; }
 .admin-atelier .admin-settings-workspace[data-visual] .studio-preview { background: var(--admin-paper-deep); }
 
 @media (min-width: 900px) {
@@ -272,14 +300,8 @@
   .se-editor-back { padding: 0 16px; }
 }
 
-/* 選んでいる状態は墨の塗りにしない（塗りは保存など実行の操作だけ）。 */
-.admin-atelier.admin-atelier.admin-atelier.admin-atelier .admin-settings-workspace[data-visual]
-  [data-settings-section] button.admin-btn-primary[aria-pressed="true"] {
-  background-color: var(--admin-selected-bg, rgba(var(--admin-ink-rgb), 0.05)) !important;
-  border-color: var(--admin-selected-border, transparent) !important;
-  color: var(--admin-ink) !important;
-  box-shadow: var(--admin-selected-shadow, inset 0 -1.5px 0 var(--admin-ink)) !important;
-}
+/* 選ぶ物（2〜5択）の選んでいる状態は、墨の地に紙の字（admin-studio.css「管理画面の見た目の決まり」）。
+   以前はここで塗りを外して薄い地＋下線にしていたが、選んだ物が周りと見分けにくかった（2026-11-12）。 */
 
 /* ── プレビューの操作は、下に浮かぶ1本の帯だけ（上の帯・下の帯をやめる） ───────── */
 /* 帯は描く面（studio-preview-canvas）の下に浮かべる。保存の帯（スマホで未保存のとき）はその下に並ぶので重ならない。 */
@@ -377,9 +399,9 @@
   }
   .admin-atelier.admin-workbench.admin-studio .admin-settings-workspace[data-visual] .admin-settings-mobile-current__view-switch > button {
     min-width: 5.5em;
-    min-height: 38px;
-    padding: 0 16px;
-    font-size: 13px;
+    min-height: 44px;
+    padding: 0 18px;
+    font-size: var(--admin-text-body);
     color: var(--admin-muted);
     background: transparent !important;
     border: 0 !important;
@@ -401,7 +423,7 @@
   .admin-atelier.admin-workbench.admin-studio .studio-preview .studio-preview-float .studio-history-controls,
   .admin-atelier.admin-workbench.admin-studio .studio-preview .studio-preview-float .studio-history-controls + .studio-preview-float__sep,
   .admin-atelier.admin-workbench.admin-studio .studio-preview .studio-preview-float .studio-preview-float__sep:has(+ .studio-history-controls) { display: none; }
-  .admin-atelier.admin-workbench.admin-studio .studio-preview .studio-preview-float :is(button, a, .studio-preview-public) { padding: 0 10px; font-size: 12.5px; gap: 5px; }
+  .admin-atelier.admin-workbench.admin-studio .studio-preview .studio-preview-float :is(button, a, .studio-preview-public) { min-height: 44px; min-width: 44px; padding: 0 10px; font-size: var(--admin-text-note); gap: 5px; }
 }
 
 /* Series では、作品ごとのページも帯から選べる。 */
@@ -421,7 +443,7 @@
 }
 .admin-atelier.admin-workbench.admin-studio .studio-preview .studio-preview-float .studio-preview-float__page:hover { background-color: var(--admin-paper-soft) !important; }
 @media (max-width: 899px) {
-  .admin-atelier.admin-workbench.admin-studio .studio-preview .studio-preview-float .studio-preview-float__page { max-width: 120px; padding: 0 22px 0 10px !important; font-size: 12.5px; }
+  .admin-atelier.admin-workbench.admin-studio .studio-preview .studio-preview-float .studio-preview-float__page { max-width: 120px; min-height: 44px; padding: 0 22px 0 10px !important; font-size: var(--admin-text-note); }
 }
 
 /* ── 部分の設定（2026-09-30）───────────────────────────── */
@@ -434,7 +456,7 @@
   min-height: 44px;
   margin: 4px 0 24px;
   padding: 0;
-  font-size: 13px;
+  font-size: var(--admin-text-note);
   color: var(--admin-muted);
   text-decoration: underline;
   text-underline-offset: 4px;
@@ -445,21 +467,17 @@
 }
 .se-inactive-toggle:hover { color: var(--admin-ink); }
 
-/* 1つの部分に2つ以上の節を並べるときは、2つ目からの節の名前を小見出しにする
-   （1つ目は上の部分の名前と同じになる）。 */
+/* 1つの部分に2つ以上の節を並べるときは、2つ目からの節の名前をその面の題にする
+   （1つ目は上の部分の名前と同じになる）。面の題は 16px・太さ 600。 */
 .admin-atelier.admin-atelier .admin-settings-workspace[data-visual][data-visual-sections] [data-settings-section]:not([style*="order: 0"]) h2[data-settings-section-heading] {
   display: flex !important;
   min-height: 0 !important;
-  margin: 4px 0 0 !important;
+  margin: 0 0 12px !important;
   font-family: inherit !important;
-  font-size: 12.5px !important;
+  font-size: 16px !important;
   font-weight: 600 !important;
-  letter-spacing: 0.04em !important;
-  color: var(--admin-muted) !important;
-}
-.admin-atelier .admin-settings-workspace[data-visual][data-visual-sections] [data-settings-section]:not([style*="order: 0"]) {
-  border-top: 1px solid var(--admin-line) !important;
-  padding-top: 14px;
+  letter-spacing: 0 !important;
+  color: var(--admin-ink) !important;
 }
 /* 今の骨格で効く欄には「〜のとき」の札を出さない（開いた欄だけに付く）。 */
 .admin-atelier .admin-settings-workspace[data-visual] .ax-field:not([data-skeleton-inactive]) .admin-skeleton-tag { display: none; }
@@ -470,7 +488,7 @@
   margin-right: 8px;
   padding: 0 6px;
   font-style: normal;
-  font-size: 11.5px;
+  font-size: var(--admin-text-micro);
   line-height: 18px;
   color: var(--admin-muted);
   background: var(--admin-paper-deep);
@@ -480,7 +498,7 @@
 .se-part-head__off {
   margin: 8px 0 0;
   padding: 8px 10px;
-  font-size: 12.5px;
+  font-size: var(--admin-text-note);
   line-height: 1.6;
   color: var(--admin-ink);
   background: var(--admin-paper-soft);
@@ -510,7 +528,7 @@
   gap: 8px;
   min-height: 44px;
   padding: 0 8px;
-  font-size: 13px;
+  font-size: var(--admin-text-body);
   color: var(--admin-muted);
 }
 .se-parts-more > summary::-webkit-details-marker { display: none; }

@@ -1,24 +1,24 @@
 /* Admin Studio: a photo workspace and a page editor, sharing one navigation and control language. */
 .admin-atelier.admin-workbench.admin-studio { --studio-field: color-mix(in srgb, var(--admin-paper) 94%, var(--admin-ink)); --studio-hover: color-mix(in srgb, var(--admin-paper) 88%, var(--admin-ink)); font-variant-numeric: tabular-nums; }
 .admin-atelier.admin-workbench.admin-studio :is(button,input,select,textarea) { letter-spacing: normal; }
-.admin-atelier.admin-workbench.admin-studio { --admin-selected-bg: var(--studio-hover); --admin-selected-shadow: none; --admin-text-page: 22px; --admin-text-body: 14px; --admin-text-note: 12px; --admin-text-micro: 11px; --admin-radius-sm: 2px; --admin-radius-md: 3px; --admin-radius-lg: 4px; }
+.admin-atelier.admin-workbench.admin-studio { --admin-selected-bg: var(--studio-hover); --admin-selected-shadow: none; --admin-text-page: 24px; --admin-text-body: 14px; --admin-text-note: 12px; --admin-text-micro: 11px; --admin-radius-sm: 2px; --admin-radius-md: 3px; --admin-radius-lg: 4px; }
 .admin-atelier.admin-workbench.admin-studio button:focus-visible { outline: 2px solid var(--admin-accent); outline-offset: 2px; }
 .admin-atelier.admin-workbench.admin-studio .admin-sidebar:not([data-collapsed=true]) { width: 216px; flex-basis: 216px; padding: 20px 12px 14px; border-right: 1px solid var(--admin-line); background: var(--studio-field); }
 .admin-atelier.admin-workbench.admin-studio .admin-sidebar__brand { padding: 0 4px 24px; margin-bottom: 0; border: 0; }
-.admin-atelier.admin-workbench.admin-studio .admin-sidebar__eyebrow { font-size: 10px; letter-spacing: .14em; margin-bottom: 7px; }
-.admin-atelier.admin-workbench.admin-studio .admin-sidebar__title { font-size: var(--admin-text-page); font-weight: 500; letter-spacing: 0; }
+.admin-atelier.admin-workbench.admin-studio .admin-sidebar__eyebrow { font-size: 11px; letter-spacing: .14em; margin-bottom: 7px; }
+.admin-atelier.admin-workbench.admin-studio .admin-sidebar__title { font-size: 22px; font-weight: 500; letter-spacing: 0; }
 .admin-atelier.admin-workbench.admin-studio .admin-sidebar__indicator { display: none; }
 .admin-atelier.admin-workbench.admin-studio .studio-workspace-switch { display: flex; flex: 0 0 auto; gap: 16px; padding: 0; border: 0; border-bottom: 1px solid var(--admin-line); border-radius: 0; background: transparent; }
 .admin-atelier.admin-workbench.admin-studio .studio-workspace-switch button { position: relative; flex: 1; min-height: 36px; border: 0; background: none !important; color: var(--admin-muted) !important; padding: 6px 4px !important; font-size: 13px; font-weight: 500; border-radius: 0; }
 .admin-atelier.admin-workbench.admin-studio .studio-workspace-switch button[aria-pressed=true] { color: var(--admin-ink) !important; background: transparent !important; box-shadow: inset 0 -2px var(--admin-ink); }
 .admin-atelier.admin-workbench.admin-studio .studio-command-search { display: flex; align-items: center; gap: 8px; margin: 14px 0 20px; min-height: 38px; padding: 8px; border: 0; border-radius: 6px; color: var(--admin-muted); text-align: left; font-size: 12px; }
 .admin-atelier.admin-workbench.admin-studio .studio-command-search span { flex: 1; }
-.admin-atelier.admin-workbench.admin-studio .studio-command-search kbd { white-space: nowrap; font-size: 10px; }
+.admin-atelier.admin-workbench.admin-studio .studio-command-search kbd { white-space: nowrap; font-size: 11px; }
 .admin-atelier.admin-workbench.admin-studio .admin-sidebar__nav { min-height: 0; flex: 1; padding: 4px 0; }
 .admin-atelier.admin-workbench.admin-studio .admin-sidebar__group + .admin-sidebar__group { margin-top: 12px; }
 .admin-atelier.admin-workbench.admin-studio .admin-sidebar__tab[data-active=true]::before { display: none; }
 .admin-atelier.admin-workbench.admin-studio .admin-sidebar__group { margin-bottom: 12px; }
-.admin-atelier.admin-workbench.admin-studio .admin-sidebar__group-title { font-size: 10px; margin: 5px 8px; }
+.admin-atelier.admin-workbench.admin-studio .admin-sidebar__group-title { font-size: 11px; margin: 5px 8px; }
 .admin-atelier.admin-workbench.admin-studio .admin-sidebar__tab { min-height: 40px; padding: 8px 10px; gap: 10px; font-size: 13px; border-radius: 0; color: var(--admin-muted); }
 .admin-atelier.admin-workbench.admin-studio .admin-sidebar__tab svg { display: block; width: 14px; height: 14px; opacity: .8; }
 .admin-atelier.admin-workbench.admin-studio .admin-sidebar__tab[data-active=true] { background: var(--studio-hover); color: var(--admin-ink); }
@@ -35,7 +35,6 @@
 .admin-atelier.admin-workbench.admin-studio .studio-editor-outline { flex: 1; min-height: 0; overflow: auto; overscroll-behavior: contain; border-top: 1px solid var(--admin-line); margin-top: 16px; padding-top: 16px; }
 .admin-atelier.admin-workbench.admin-studio .admin-form-toc__nav { max-height: none; overflow: visible; gap: 3px; padding: 0; }
 .admin-atelier.admin-workbench.admin-studio .admin-settings-search { min-height: 32px; margin: 0 0 10px; border: 0; border-bottom: 1px solid var(--admin-line); background: transparent; border-radius: 0; }
-.admin-atelier.admin-workbench.admin-studio .admin-settings-search input { font-size: 11px; }
 .admin-atelier.admin-workbench.admin-studio .studio-settings-nav-group { margin: 0 0 13px; }
 .admin-atelier.admin-workbench.admin-studio .studio-settings-nav-group h3 { margin: 16px 10px 8px; font-size: var(--admin-text-note); color: var(--admin-muted); font-weight: 500; }
 .admin-atelier.admin-workbench.admin-studio .studio-settings-nav-group button { display: flex; align-items: center; gap: 6px; width: 100%; min-height: 36px; padding: 7px 10px; text-align: left; font-size: 13px; color: var(--admin-muted); border: 0; border-radius: 4px; background: transparent; }
@@ -57,7 +56,7 @@
 .admin-atelier.admin-workbench.admin-studio .studio-history-controls { display: flex; gap: 2px; }
 .admin-atelier.admin-workbench.admin-studio .studio-history-controls button { min-width: 30px; min-height: 30px; display: grid; place-items: center; color: var(--admin-muted); background: transparent; }
 .admin-atelier.admin-workbench.admin-studio .studio-history-controls button:disabled { opacity: .3; }
-.admin-atelier.admin-workbench.admin-studio .admin-settings-section h2 { font-size: var(--admin-text-page); font-weight: 500; letter-spacing: 0; line-height: 1.45; margin-bottom: 20px; }
+.admin-atelier.admin-workbench.admin-studio .admin-settings-section h2 { font-size: var(--admin-text-page); font-weight: 600; letter-spacing: 0; line-height: 1.45; margin-bottom: 20px; }
 .admin-atelier.admin-workbench.admin-studio .admin-settings-form-layout__body [data-settings-group-label] { display: none; }
 .admin-atelier.admin-workbench.admin-studio .studio-context-actions:empty { display: none; }
 .admin-atelier.admin-workbench.admin-studio .studio-context-actions button { display: flex; align-items: center; gap: 8px; padding: 0 0 16px; color: var(--admin-muted); font-size: 12px; text-decoration: underline; text-underline-offset: 4px; }
@@ -71,7 +70,7 @@
 .admin-atelier.admin-workbench.admin-studio .studio-option-preview { grid-column: 1; grid-row: 1; width: 88px; padding: 4px; background: var(--admin-paper); }
 .admin-atelier.admin-workbench.admin-studio .studio-option-label { grid-column: 2; grid-row: 1; min-width: 0; padding: 0; border: 0; }
 .admin-atelier.admin-workbench.admin-studio .studio-option-label strong { display: block; font-size: var(--admin-text-body); font-weight: 500; line-height: 1.5; }
-.admin-atelier.admin-workbench.admin-studio .studio-option-label small { display: block; margin-top: 3px; font-size: 12px; color: var(--admin-muted); font-weight: 400; line-height: 1.6; }
+.admin-atelier.admin-workbench.admin-studio .studio-option-label small { display: block; margin-top: 3px; font-size: var(--admin-text-note); color: var(--admin-muted); font-weight: 400; line-height: 1.6; }
 .admin-atelier.admin-workbench.admin-studio .studio-preview { background: var(--studio-field); }
 .admin-atelier.admin-workbench.admin-studio .studio-preview-toolbar { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 10px; min-height: 56px; padding: 8px 16px; border-bottom: 1px solid var(--admin-line); background: var(--admin-paper); z-index: 5; }
 .admin-atelier.admin-workbench.admin-studio .studio-preview-toolbar :is(button,select,summary) { min-height: 32px; font-size: 12px; color: var(--admin-muted); background: transparent !important; border: 0 !important; box-shadow: none !important; padding: 4px !important; }
@@ -81,7 +80,7 @@
 .admin-atelier.admin-workbench.admin-studio .studio-preview-devices button[aria-pressed=true] { color: var(--admin-ink) !important; background: var(--studio-hover) !important; border-radius: 5px; text-decoration: none; }
 .admin-atelier.admin-workbench.admin-studio .studio-preview-dimensions { position: relative; }
 .admin-atelier.admin-workbench.admin-studio .studio-preview-dimensions summary { cursor: pointer; white-space: nowrap; list-style: none; }
-.admin-atelier.admin-workbench.admin-studio .studio-preview-dimensions summary span { color: var(--admin-muted); font-size: 9px; margin-left: 3px; }
+.admin-atelier.admin-workbench.admin-studio .studio-preview-dimensions summary span { color: var(--admin-muted); font-size: 11px; margin-left: 3px; }
 .admin-atelier.admin-workbench.admin-studio .studio-preview-dimensions > div { position: absolute; right: 0; top: 38px; width: 230px; display: flex; flex-wrap: wrap; gap: 10px; padding: 14px; border: 1px solid var(--admin-line); border-radius: 6px; background: var(--admin-paper); box-shadow: 0 8px 24px #0003; }
 .admin-atelier.admin-workbench.admin-studio .studio-preview-dimensions label { width: calc(50% - 5px); font-size: 11px; color: var(--admin-muted); }
 .admin-atelier.admin-workbench.admin-studio .studio-preview-dimensions input { width: 100%; padding: 6px; margin-top: 5px; border: 1px solid var(--admin-line); border-radius: 3px; background: var(--studio-field); color: var(--admin-ink); }
@@ -91,9 +90,9 @@
 .admin-atelier.admin-workbench.admin-studio .studio-preview-frame { flex: 0 0 auto; position: relative; overflow: hidden; background: #fff; border-radius: 4px; box-shadow: 0 0 0 1px #0002, 0 12px 32px #0003; }
 .admin-atelier.admin-workbench.admin-studio .studio-preview-frame iframe { display: block; border: 0; max-width: none; max-height: none; }
 .admin-atelier.admin-workbench.admin-studio .studio-preview-status { display: flex; align-items: center; gap: 12px; min-height: 42px; padding: 6px 16px; border-top: 1px solid var(--admin-line); font-size: 11px; color: var(--admin-muted); background: var(--admin-paper); }
-.admin-atelier.admin-workbench.admin-studio .studio-preview-status :is(select,button,a) { color: inherit; background: transparent; border: 0; font-size: 10px; }
+.admin-atelier.admin-workbench.admin-studio .studio-preview-status :is(select,button,a) { color: inherit; background: transparent; border: 0; font-size: var(--admin-text-micro); }
 .admin-atelier.admin-workbench.admin-studio .studio-preview-status a { display: flex; align-items: center; gap: 5px; margin-left: auto; }
-.admin-atelier.admin-workbench.admin-studio .studio-preview-status span.studio-preview-public { display: flex; align-items: center; gap: 5px; margin-left: auto; font-size: 10px; opacity: .45; cursor: not-allowed; }
+.admin-atelier.admin-workbench.admin-studio .studio-preview-status span.studio-preview-public { display: flex; align-items: center; gap: 5px; margin-left: auto; font-size: var(--admin-text-micro); opacity: .45; cursor: not-allowed; }
 .admin-atelier.admin-workbench.admin-studio .admin-settings-save-dock { position: sticky; bottom: 0; display: block; }
 /* 未保存の帯は、中身が短い画面（部分の一覧など）でも欄の一番下に置く（2026-10-01）。
    以前は一覧のすぐ下、欄の途中に浮いて、画面ごとに帯の高さが変わっていた。
@@ -104,27 +103,28 @@
    （styles.css）と帯の中央揃え（admin-workbench.css）が重なって、文字だけが帯の
    真ん中に寄り、ボタンは右端、と揃いがばらばらだった。左右の余白は右の欄の
    入力欄の端（PC 24px・スマホ 16px）にそろえる。 */
-.admin-atelier.admin-workbench.admin-studio .admin-settings-save-dock .admin-form-save-panel { flex-direction: row; align-items: baseline; padding: 10px 24px; font-size: 11px; }
+.admin-atelier.admin-workbench.admin-studio .admin-settings-save-dock .admin-form-save-panel { flex-direction: row; align-items: baseline; padding: 10px 24px; font-size: var(--admin-text-note); }
 .admin-atelier.admin-workbench.admin-studio .admin-settings-save-dock .admin-form-save-panel__actions button { min-height: 34px; border-radius: 4px; padding: 6px 10px; }
-.admin-atelier.admin-workbench.admin-studio .ax-page-title__text { font-size: var(--admin-text-page); font-weight: 500; line-height: 1.45; letter-spacing: 0; }
+.admin-atelier.admin-workbench.admin-studio .ax-page-title__text { font-size: var(--admin-text-page); font-weight: 600; line-height: 1.45; letter-spacing: 0; }
 .admin-atelier.admin-workbench.admin-studio .ax-page-title { padding-bottom: 18px; margin-bottom: 20px; border-bottom: 1px solid var(--admin-line); }
 .admin-atelier.admin-workbench.admin-studio .ax-row { padding-block: 18px; }
-.admin-atelier.admin-workbench.admin-studio .ax-input { border: 1px solid var(--admin-line) !important; border-radius: 2px !important; background-color: var(--studio-field) !important; padding: 10px 12px; min-height: 42px; font-size: 14px; line-height: 1.5; }
-.admin-atelier.admin-workbench.admin-studio .ax-select { padding-right: 28px; }
-.admin-atelier.admin-workbench.admin-studio .studio-choice-hint { font-size: 12px; color: var(--admin-muted); margin: 0; }
+/* 入力欄は白い地＋1pxの枠（下の「管理画面の見た目の決まり」の変数）。灰色の地は押せない欄に見えた。 */
+.admin-atelier.admin-workbench.admin-studio :is(.ax-input, .admin-input) { border: 1px solid var(--admin-field-border) !important; border-radius: 8px !important; background-color: var(--admin-field-bg) !important; padding: 0 12px; min-height: var(--admin-field-h); font-size: var(--admin-field-fs) !important; line-height: 1.5; }
+.admin-atelier.admin-workbench.admin-studio :is(.ax-input, .admin-input):is(select) { padding-right: 32px; }
+.admin-atelier.admin-workbench.admin-studio .ax-select { padding-right: 32px; }
+.admin-atelier.admin-workbench.admin-studio .studio-choice-hint { font-size: var(--admin-text-note); color: var(--admin-muted); margin: 0; }
 .admin-atelier.admin-workbench.admin-studio .ax-field:has(> .studio-choice-hint) { position: relative; }
 .admin-atelier.admin-workbench.admin-studio .ax-field:has(> .studio-choice-hint) .ax-field__label { padding-right: 32px; }
 .admin-atelier.admin-workbench.admin-studio .studio-choice-hint summary { position: absolute; right: -6px; top: -8px; display: grid; place-items: center; width: 36px; height: 36px; cursor: pointer; list-style: none; border-radius: 6px; }
 .admin-atelier.admin-workbench.admin-studio .studio-choice-hint summary::-webkit-details-marker { display: none; }
 .admin-atelier.admin-workbench.admin-studio .studio-choice-hint summary:hover { background: var(--studio-hover); color: var(--admin-ink); }
 .admin-atelier.admin-workbench.admin-studio .studio-choice-hint p { margin-top: 10px; padding: 10px 12px; border-left: 2px solid var(--admin-line-strong); line-height: 1.7; }
-.admin-atelier.admin-workbench.admin-studio .ax-input:focus { outline: 1px solid var(--admin-accent); outline-offset: 0; }
 .admin-atelier.admin-workbench.admin-studio .admin-palette { border-radius: 8px !important; max-height: min(640px,80dvh); background: var(--admin-paper) !important; backdrop-filter: none !important; }
 .admin-atelier.admin-workbench.admin-studio .admin-library-selection-toolbar { padding: 7px 12px; background: var(--studio-field); }
 .admin-atelier.admin-workbench.admin-studio .admin-library-selection-toolbar > div:first-child { border: 0; }
 .admin-atelier.admin-workbench.admin-studio .studio-selection-review { display: flex; gap: 4px; align-items: center; }
 .admin-atelier.admin-workbench.admin-studio .studio-selection-review button { display: flex; align-items: center; gap: 8px; padding: 5px 8px; font-size: 12px; }
-.admin-atelier.admin-workbench.admin-studio .studio-selection-review kbd { color: var(--admin-muted); font-size: 10px; }
+.admin-atelier.admin-workbench.admin-studio .studio-selection-review kbd { color: var(--admin-muted); font-size: 11px; }
 .admin-atelier .admin-library-photo-preview { grid-template-rows: 52px minmax(0, 1fr) 30px 64px; }
 .admin-atelier .admin-library-photo-preview header { align-items: center; padding: 4px 12px; gap: 8px; }
 .admin-atelier .admin-library-photo-preview header > button { white-space: nowrap; }
@@ -136,7 +136,7 @@
 .admin-library-photo-preview .studio-filmstrip button[aria-current=true] { border-color: white; }
 .admin-atelier .admin-library-photo-preview .studio-filmstrip img { height: 100%; width: 100%; object-fit: contain; padding: 0; }
 .studio-library-preview-stage { height: 100%; display: flex; align-items: center; justify-content: center; padding: 12px; }
-.studio-mobile-nav-heading { padding: 14px 18px 4px; font-size: 11px; color: var(--admin-muted); }
+.studio-mobile-nav-heading { padding: 14px 18px 4px; font-size: var(--admin-text-micro, 11px); color: var(--admin-muted); }
 .admin-atelier.admin-workbench.admin-studio .admin-bottom-nav { grid-template-columns: 1fr 1fr 1fr; }
 .admin-atelier.admin-workbench.admin-studio .admin-bottom-nav__btn { min-height: 48px; }
 /* Composition samples retain a neutral canvas when the library is empty. */
@@ -155,16 +155,16 @@
 .admin-atelier.admin-workbench.admin-studio .studio-option:hover .studio-option-label { background: transparent; }
 .admin-atelier.admin-workbench.admin-studio .studio-option[aria-pressed=true]:hover { border-color: var(--admin-line) !important; }
 .admin-atelier.admin-workbench.admin-studio .studio-option:not([aria-pressed=true]) .studio-option-indicator { visibility: hidden; }
-.admin-atelier.admin-workbench.admin-studio .ax-field__label { color: var(--admin-ink); font-size: 13px; font-weight: 500; line-height: 1.5; }
-.admin-atelier.admin-workbench.admin-studio .ax-field__hint { font-size: 12px; line-height: 1.7; margin-top: 5px; margin-bottom: 12px; }
+.admin-atelier.admin-workbench.admin-studio .ax-field__label { color: var(--admin-ink); font-size: var(--admin-label-fs); font-weight: 600; line-height: 1.5; letter-spacing: 0; margin-bottom: 6px; }
+.admin-atelier.admin-workbench.admin-studio .ax-field__hint { font-size: var(--admin-text-note); line-height: 1.65; margin-top: 0; margin-bottom: 8px; color: var(--admin-muted); }
 .admin-atelier.admin-workbench.admin-studio .ax-field-grid { gap: 24px 20px; }
 .admin-atelier.admin-workbench.admin-studio .admin-settings-field-group { padding-block: 8px 24px; }
 .admin-atelier.admin-workbench.admin-studio .admin-settings-field-group > :is(h3,summary) { font-size: 16px; font-weight: 550; padding-block: 8px 14px; margin-bottom: 20px; }
 .admin-atelier.admin-workbench.admin-studio .admin-settings-section__heading + div > div { gap: 28px; }
 .admin-atelier.admin-workbench.admin-studio .studio-command-search:hover { background: var(--studio-hover); color: var(--admin-ink); }
 .admin-atelier.admin-workbench.admin-studio .studio-command-search kbd { border: 1px solid var(--admin-line); border-radius: 4px; padding: 3px 4px; }
-.admin-atelier.admin-workbench.admin-studio .admin-settings-search { border: 1px solid var(--admin-line); border-radius: 6px; background: var(--admin-paper); min-height: 36px; margin-bottom: 20px; }
-.admin-atelier.admin-workbench.admin-studio .admin-settings-search input { font-size: 12px; }
+.admin-atelier.admin-workbench.admin-studio .admin-settings-search { border: 1px solid var(--admin-field-border); border-radius: 8px; background: var(--admin-field-bg); min-height: var(--admin-field-h); margin-bottom: 20px; padding: 0 8px 0 12px; }
+.admin-atelier.admin-workbench.admin-studio .admin-settings-search input { font-size: var(--admin-field-fs); min-height: calc(var(--admin-field-h) - 2px); }
 .admin-atelier.admin-workbench.admin-studio .studio-settings-nav-group button[aria-current=location] { box-shadow: inset 2px 0 var(--admin-accent); }
 .admin-atelier.admin-workbench.admin-studio .admin-sidebar__tab:hover { color: var(--admin-ink); background: var(--studio-hover); }
 .admin-atelier.admin-workbench.admin-studio .admin-sidebar__collapse { min-width: 30px; min-height: 30px; width: 30px; height: 30px; border: 0; border-radius: 6px; }
@@ -217,7 +217,6 @@
 }
 @media (max-width: 767px) {
   .admin-atelier.admin-workbench.admin-studio .studio-option { grid-template-columns: 72px minmax(0, 1fr) 18px; gap: 12px; }
-  .admin-atelier.admin-workbench.admin-studio { --admin-text-page: 18px; }
   .admin-atelier.admin-workbench.admin-studio .admin-settings-workspace .admin-settings-form-layout__inner { padding: 20px 16px 32px; }
   .admin-atelier.admin-workbench.admin-studio .admin-library-main > .admin-workspace__header { padding: 4px 12px; grid-template-columns: max-content minmax(0, 1fr) 44px; }
   .admin-atelier.admin-workbench.admin-studio .admin-library-main > .admin-workspace__header .ax-page-title__text { font-size: 16px !important; white-space: nowrap; }
@@ -228,9 +227,7 @@
   .admin-atelier.admin-workbench.admin-studio .admin-settings-section h2 { font-size: var(--admin-text-page); }
   .admin-atelier.admin-workbench.admin-studio .studio-option-preview { padding: 4px; width: 72px; }
   .admin-atelier.admin-workbench.admin-studio .studio-option-label { padding: 0; }
-  .admin-atelier.admin-workbench.admin-studio .studio-option-label strong { font-size: 13px; }
-  .admin-atelier.admin-workbench.admin-studio .studio-option-label small { font-size: 11px; }
-  .admin-atelier.admin-workbench.admin-studio .ax-input { font-size: 16px; min-height: 44px; }
+  .admin-atelier.admin-workbench.admin-studio .studio-option-label strong { font-size: 14px; }
   .admin-atelier.admin-workbench.admin-studio .admin-library-workbar__row { display: flex; flex-wrap: wrap; gap: 4px 8px; }
   .admin-atelier.admin-workbench.admin-studio .admin-library-find-tools { display: contents; }
   .admin-atelier.admin-workbench.admin-studio .admin-library-search { order: 1; flex: 1 1 calc(100% - 96px); width: auto; min-width: 100px; }
@@ -240,7 +237,7 @@
   .admin-atelier.admin-workbench.admin-studio .admin-library-mobile-select, .admin-atelier.admin-workbench.admin-studio [data-library-mobile-arrange] { order: 3; width: auto; flex: 0 0 auto; padding-inline: 8px; }
   .admin-atelier.admin-workbench.admin-studio .admin-library-shortcuts { display: none; }
   .admin-atelier.admin-workbench.admin-studio .admin-library-selection-toolbar > div:first-child > span:first-child { flex-basis: auto; }
-  .admin-atelier.admin-workbench.admin-studio [data-library-publication-actions] button { font-size: 11px; white-space: nowrap; }
+  .admin-atelier.admin-workbench.admin-studio [data-library-publication-actions] button { font-size: var(--admin-text-micro); white-space: nowrap; }
   .admin-atelier.admin-workbench.admin-studio [data-library-publication-actions] svg { display: none; }
   .admin-atelier .admin-library-photo-preview header > button > span { display: none; }
   .admin-atelier.admin-workbench.admin-studio .admin-selection-actions > .studio-selection-review { grid-column: 1 / -1; display: flex; border-bottom: 1px solid var(--admin-line); padding-bottom: 5px; }
@@ -257,6 +254,7 @@
   .admin-atelier.admin-workbench.admin-studio .studio-preview-status { gap: 6px; }
   .admin-atelier.admin-workbench.admin-studio .admin-settings-save-dock .admin-form-save-panel { padding: 10px 16px; align-items: center; }
   .admin-atelier.admin-workbench.admin-studio .admin-settings-save-dock .admin-form-save-panel__actions { margin-left: auto; }
+  .admin-atelier.admin-workbench.admin-studio .admin-settings-save-dock .admin-form-save-panel__actions button { min-height: 44px; }
   .admin-atelier.admin-workbench.admin-studio .admin-settings-save-dock .admin-form-save-panel > span:not(.admin-form-save-panel__actions) { display: none; }
 }
 
@@ -292,7 +290,7 @@
 /* 公開準備は作業一覧。完了・未完了と操作を同じ列で読む。 */
 .admin-atelier.admin-workbench.admin-studio .studio-setup-list { display: block; border-top: 1px solid var(--admin-line); }
 .admin-atelier.admin-workbench.admin-studio .studio-setup-row { display: flex; align-items: baseline; gap: 16px; padding: 20px 0; border-bottom: 1px solid var(--admin-line); background: transparent; }
-.admin-atelier.admin-workbench.admin-studio .studio-setup-state { flex: 0 0 48px; font-size: 11px; color: var(--admin-muted); }
+.admin-atelier.admin-workbench.admin-studio .studio-setup-state { flex: 0 0 48px; font-size: var(--admin-text-micro); color: var(--admin-muted); }
 .admin-atelier.admin-workbench.admin-studio .studio-setup-row p { max-width: 58ch; }
 .admin-atelier.admin-workbench.admin-studio .studio-setup-row button { min-height: 36px; text-decoration: underline; text-underline-offset: 4px; }
 .admin-atelier.admin-workbench.admin-studio .studio-setup-note { padding: 0 0 16px; border-bottom: 1px solid var(--admin-line); font-size: 12px; line-height: 1.8; color: var(--admin-muted); }
@@ -301,3 +299,214 @@
    ドック（「保存して公開」）と浮かぶ帯（「保存」）が同時に出て、言葉の違う
    保存ボタンが2つ並んでいた。 */
 .admin-atelier.admin-workbench.admin-studio .admin-settings-mobile-save { display: none; }
+
+/* ───────────── 管理画面の見た目の決まり（2026-11-12）─────────────
+   オーナー「変にシンプルすぎて見づらい」「スマホだと画面が詰まりすぎ」。実測（練習用の管理画面・
+   スマホ 390×664）: 見出しは18pxの1段だけ／欄の名前も小見出しも13px・同じ太さ／注記の灰色が3種類で
+   11・12・13px／13px未満の文字が38%（最小10px）／44px未満の押す物が590個／入力欄は灰色の地。
+   大きさ・太さ・面で段を作る。値は docs/specs/admin-redesign-20261112.md 2.3 の表のとおり。
+   欄の高さ・文字の大きさ・面の色は下の変数に集め、スマホとPCの差はこの変数の差だけにする。 */
+.admin-atelier.admin-workbench.admin-studio {
+  --admin-surface: color-mix(in srgb, var(--admin-paper) 25%, #fff);
+  --admin-field-bg: color-mix(in srgb, var(--admin-paper) 8%, #fff);
+  /* 罫（--admin-line）は紙の上の区切り用で薄い。入力欄の枠は、白い面の上でも欄だと分かる濃さにする。 */
+  --admin-field-border: color-mix(in srgb, var(--admin-paper) 56%, var(--admin-ink));
+  --admin-field-h: 40px;
+  --admin-field-fs: 14px;
+  --admin-label-fs: 13px;
+  --admin-choice-h: 36px;
+}
+/* 暗い表示でも同じ段の差。面は紙より明るく、入力欄はさらに明るい紙の色にして枠も見せる。 */
+.admin-atelier.admin-workbench.admin-studio[data-admin-theme="dark"] {
+  --admin-surface: color-mix(in srgb, var(--admin-paper) 93%, var(--admin-ink));
+  --admin-field-bg: color-mix(in srgb, var(--admin-paper) 86%, var(--admin-ink));
+  --admin-field-border: color-mix(in srgb, var(--admin-paper) 55%, var(--admin-ink));
+}
+@media (max-width: 767px) {
+  .admin-atelier.admin-workbench.admin-studio {
+    --admin-text-note: 13px;
+    --admin-text-micro: 12px;
+    --admin-field-h: 48px;
+    --admin-field-fs: 16px;
+    --admin-label-fs: 14px;
+    --admin-choice-h: 44px;
+  }
+}
+/* iPad など幅の広いタッチ端末でも、16px 未満の欄は iOS が画面を拡大する。 */
+@media (pointer: coarse) {
+  .admin-atelier.admin-workbench.admin-studio { --admin-field-fs: 16px; }
+}
+
+/* 入力欄: 打った文字は墨、薄いのは見本（placeholder）。押せない欄は点線の枠・紙の濃い地で通常と分ける。 */
+.admin-atelier.admin-workbench.admin-studio :is(input, textarea):is(.ax-input, .admin-input)::placeholder,
+.admin-atelier.admin-workbench.admin-studio :is(.st-input, input[type="number"])::placeholder {
+  color: color-mix(in srgb, var(--admin-ink) 42%, var(--admin-field-bg)) !important;
+}
+.admin-atelier.admin-workbench.admin-studio :is(.ax-input, .admin-input, .st-input, input[type="number"]):is(:disabled, [readonly]) {
+  border-style: dashed !important;
+  background-color: var(--admin-paper-deep) !important;
+  color: var(--admin-muted) !important;
+  cursor: not-allowed;
+}
+.admin-atelier.admin-workbench.admin-studio :is(.ax-input, .admin-input, .st-input, input[type="number"]):focus {
+  border-color: var(--admin-ink) !important;
+  box-shadow: inset 0 0 0 1px var(--admin-ink) !important;
+}
+.admin-atelier.admin-workbench.admin-studio textarea:is(.ax-input, .admin-input) { padding-block: 10px; line-height: 1.7; }
+
+/* 標準の選択欄は高さを聞かない（WebKit で 21〜23px）。矢印を自前で描き、欄全体を指定の高さにする。 */
+.admin-atelier.admin-workbench.admin-studio select.st-input {
+  appearance: none;
+  padding-right: 32px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='m1 1 4 4 4-4' fill='none' stroke='%23777777' stroke-width='1.4'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+}
+/* 数値の欄（スライダーの横）。スマホは指で押せる 44px。 */
+.admin-atelier.admin-workbench.admin-studio input[type="number"] {
+  min-height: 36px;
+  padding: 0 8px;
+  border: 1px solid var(--admin-field-border);
+  border-radius: 8px;
+  background-color: var(--admin-field-bg);
+  font-size: var(--admin-field-fs);
+}
+/* スライダー: 行ごと 44px。つまみを掴める縦幅を取る（以前は高さ 4px）。 */
+.admin-atelier.admin-workbench.admin-studio input[type="range"] { accent-color: var(--admin-ink); cursor: pointer; }
+.admin-atelier.admin-workbench.admin-studio :is(.admin-settings-form-layout__body, .st-inspector) input[type="color"] {
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--admin-field-border) !important;
+  border-radius: 8px;
+}
+@media (max-width: 767px) {
+  .admin-atelier.admin-workbench.admin-studio input[type="number"] { min-height: 44px; width: 5rem; }
+  .admin-atelier.admin-workbench.admin-studio .admin-settings-form-layout__body input[type="range"] { height: 44px; }
+  .admin-atelier.admin-workbench.admin-studio .admin-settings-form-layout__body div:has(> input[type="range"]) { min-height: 44px; gap: 12px; }
+  /* 名前の欄（128px）が幅を食い、つまみの溝が 110px まで縮んでいた。名前は 6.5em に収め、溝を広く取る。 */
+  .admin-atelier.admin-workbench.admin-studio .admin-settings-form-layout__body div:has(> input[type="range"]) > span:first-child { width: 6.5em; flex: none; }
+  .admin-atelier.admin-workbench.admin-studio :is(.admin-settings-form-layout__body, .st-inspector) input[type="color"] { width: 44px; height: 44px; }
+}
+
+/* 選ぶ物（2〜5択）は同じ形（選んだ物の墨の地は、下の高い強さの規則）: 高さ 44px（PC 36px）・8px 開け・選んだ物は墨の地に紙の字。
+   文字は縮めず折り返さない。1行に入らないときは、次の行へ送る（幅いっぱいに伸びる）。 */
+.admin-atelier.admin-workbench.admin-studio .ax-field > :is(.grid, .flex):has(> button[aria-pressed]):not(:has(> .studio-option)) {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.admin-atelier.admin-workbench.admin-studio .ax-field > :is(.grid, .flex) > button[aria-pressed]:not(.studio-option) {
+  flex: 1 1 auto;
+  min-width: 44px;
+  min-height: var(--admin-choice-h);
+  padding: 0 14px;
+  border: 1px solid var(--admin-field-border) !important;
+  border-radius: 8px !important;
+  font-size: var(--admin-text-body);
+  font-weight: 500;
+  line-height: 1.35;
+  white-space: nowrap;
+}
+.admin-atelier.admin-workbench.admin-studio .ax-field > :is(.grid, .flex) > button[aria-pressed="false"]:not(.studio-option) {
+  background-color: var(--admin-field-bg) !important;
+  color: var(--admin-ink) !important;
+}
+/* 切り替えの「自動／表示／非表示」のような短い3択は、3つで1行に収まる幅まで揃える。 */
+.admin-atelier.admin-workbench.admin-studio .ax-field > :is(.grid, .flex):has(> button[aria-pressed]:nth-child(3):last-child) > button[aria-pressed]:not(.studio-option) { padding-inline: 10px; }
+@media (min-width: 768px) {
+  .admin-atelier.admin-workbench.admin-studio .ax-field > :is(.grid, .flex) > button[aria-pressed]:not(.studio-option) { padding: 0 12px; }
+}
+/* 写真・シリーズの画面の切り替え（.st-seg）と、写真の閲覧／選択の切り替えも同じ選んだ印にする。
+   共通の「aria-pressed の選択状態」の規則（styles.css・薄い地＋下線、強さ 0,8,1）と、「サイト」の選択肢の規則
+   （admin-book.css の `.admin-book[data-view="site"] .grid > button.admin-btn-primary`、強さ 0,10,1）に勝つため、
+   クラスを重ねる。後者は今回の決まりで不要になった（持ち主が消せる）。 */
+.admin-atelier.admin-atelier.admin-atelier.admin-atelier.admin-atelier.admin-atelier.admin-workbench.admin-studio :is(.st-seg__item, .admin-library-mode-switcher button, .ax-field > :is(.grid, .flex) > button:not(.studio-option))[aria-pressed="true"] {
+  background-color: var(--admin-ink) !important;
+  border-color: var(--admin-ink) !important;
+  color: var(--admin-paper) !important;
+  box-shadow: none !important;
+  font-weight: 600;
+}
+@media (max-width: 767px) {
+  .admin-atelier.admin-workbench.admin-studio .admin-library-mode-switcher button { min-height: 44px; font-size: 13px; }
+  .admin-atelier.admin-workbench.admin-studio .studio-choice-hint summary { width: 44px; height: 44px; }
+  .admin-atelier.admin-workbench.admin-studio :is(.admin-settings-form-layout__body, .se-editor .admin-content) :is(button, summary) { min-height: 44px; }
+  .admin-atelier.admin-workbench.admin-studio .ax-add__title { min-height: 44px; }
+  /* 写真・シリーズの画面のボタン。studio.css の 44px は強さが足りず、共通のボタン規則（40px）に負けていた。 */
+  .admin-atelier.admin-workbench.admin-studio :is(.st-root, .st-dialog) :is(button, summary) { min-height: 44px; }
+  .admin-atelier.admin-workbench.admin-studio .st-toolbar__tools .st-seg.st-seg--small .st-seg__item { min-width: 44px; }
+  .admin-atelier.admin-workbench.admin-studio .st-title-input { min-height: 44px; }
+  /* 並べ替えの矢印・削除（制作案内など）。見た目は小さいまま、押す面を 44px にする。行（60px）には収まる。 */
+  .admin-atelier.admin-workbench.admin-studio .ax-nudge { width: 44px; height: 44px; min-height: 44px; }
+}
+
+/* 設定の中の小見出し・印 */
+.admin-atelier.admin-workbench.admin-studio .admin-settings-subhead {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.4;
+  letter-spacing: 0;
+  color: var(--admin-ink);
+}
+/* まとまりの題は、上に 1px の罫と 24px の間（欄どうしの間 16px に 8px を足す）。先頭は罫を付けない。 */
+.admin-atelier.admin-workbench.admin-studio .admin-settings-subhead:not(:first-child) {
+  margin-top: 8px;
+  padding-top: 16px;
+  border-top: 1px solid var(--admin-line);
+}
+.admin-atelier.admin-workbench.admin-studio .admin-typo-auto {
+  padding: 0 6px;
+  font-size: var(--admin-text-micro);
+  line-height: 18px;
+  border-radius: 4px;
+}
+
+/* 「トップの写真と順番」: 「＋」の押す面（写真の全面）の上に「拡大」を重ねていた（2026-11-12 実測: 44×8px が3か所）。
+   スマホでは「拡大」を写真の下の行へ出し、写真の上には何も重ねない。あわせて、ページの中に入れ子だった
+   候補の送り枠（368px の中の 119px）をやめ、ページ全体で送る。写真は loading="lazy" なので、
+   枠が無くても見える所だけ読む。PC は選んだ写真の列を上に残したまま候補だけ送る今の形のまま。 */
+@media (max-width: 767px) {
+  .admin-atelier.admin-workbench.admin-studio .admin-content .hero-picker { min-height: 0; flex: none; }
+  .admin-atelier.admin-workbench.admin-studio .admin-content .hero-picker-scroll { overflow: visible; flex: none; min-height: 0; padding: 6px 0 20px; }
+  .admin-atelier.admin-workbench.admin-studio .admin-content .hero-candidate footer {
+    position: static;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 4px;
+    min-height: 44px;
+    padding: 0 0 0 4px;
+    opacity: 1;
+  }
+  .admin-atelier.admin-workbench.admin-studio .admin-content .hero-candidate footer > span {
+    display: block;
+    flex: 1;
+    min-width: 0;
+    font-size: var(--admin-text-note);
+    color: var(--admin-muted);
+  }
+  .admin-atelier.admin-workbench.admin-studio .admin-content .hero-candidate footer button { color: var(--admin-ink) !important; }
+  .admin-atelier.admin-workbench.admin-studio .admin-content .hero-candidate footer button svg { background: var(--admin-paper-deep); }
+  .admin-atelier.admin-workbench.admin-studio .admin-content .hero-picker-sort,
+  .admin-atelier.admin-workbench.admin-studio .admin-content .hero-picker-summary,
+  .admin-atelier.admin-workbench.admin-studio .admin-content .hero-selected-heading span,
+  .admin-atelier.admin-workbench.admin-studio .admin-content .hero-picker-filters label,
+  .admin-atelier.admin-workbench.admin-studio .admin-content .hero-picker-footnote { font-size: var(--admin-text-note); }
+  .admin-atelier.admin-workbench.admin-studio .admin-content .hero-picker-summary button,
+  .admin-atelier.admin-workbench.admin-studio .admin-content .hero-picker-density select,
+  .admin-atelier.admin-workbench.admin-studio .admin-content .hero-picker-filters button { min-height: 44px; font-size: var(--admin-text-note); }
+  .admin-atelier.admin-workbench.admin-studio .admin-content .hero-picker-filter-toggle { min-height: 44px; font-size: var(--admin-text-note); }
+  /* WebKit の標準の選択欄は高さを聞かない（21px）。矢印を自前で描き、欄全体を 44px にする。 */
+  .admin-atelier.admin-workbench.admin-studio .admin-content :is(.hero-picker-toolbar, .hero-picker-summary, .hero-picker-filters) select {
+    appearance: none;
+    min-height: 44px;
+    padding: 0 28px 0 12px;
+    border: 1px solid var(--admin-field-border);
+    border-radius: 8px;
+    background-color: var(--admin-field-bg);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='m1 1 4 4 4-4' fill='none' stroke='%23777777' stroke-width='1.4'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+  }
+}

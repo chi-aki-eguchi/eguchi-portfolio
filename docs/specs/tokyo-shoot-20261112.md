@@ -38,4 +38,12 @@
 
 - 2026-11-12：`bun run check` 成功。確認用サーバー（`TRY_DESIGN=develop bun run try`）で 375px・1280px、3言語、入力チェック。
 - 2026-11-12：localhost からテスト送信2件。どちらも送信先は成功を返し、2件目（差出人が自サイトのドメイン）の通知メールはオーナーが受信を確認。1件目（差出人 example.com）は届いていない。
-- 公開後の本番確認と検索への登録は `task.md` に書く。
+
+## 公開の記録（2026-11-12）
+
+- 19:15 JST に `main` へ push（`ab7cb80` → `580de0d`、早送りのみ）。直前に `bun run check`（1716 pass）と `bun run smoke` 全体（958 passed・308 skipped）が成功。`/api/health` の build が `580de0d8` に切り替わったのを確認。
+- 本番で確認: `/tokyo` `/tokyo/en` `/tokyo/ja` が HTTP 200、`<html lang>` は zh-Hant／en／ja、題・説明はその言語、`index, follow`、canonical は自分自身、3言語が互いを指す hreflang、プランと料金の構造化データ（Service・Offer 3件）、JavaScript なしの本文に料金、共有画像は表紙の写真（取得 200）。`/tokyo/zh` は 404。`/sitemap.xml` に3ページ。`/info` の最初のHTMLに `/tokyo` `/tokyo/en` へのリンク。
+- 画面（スマホ 375px、`/tokyo`）: 表紙・作例7枚・プロフィール写真が読める、横はみ出し 0、画面エラー 0、サイト共通のメニューは出ない、受けられる日は9日。PC幅の本番表示は公開前の確認用サーバーでのみ確認。
+- 本番からテスト送信1件（名前「テスト送信（本番・Claude）」、3人・フィルム＋デジタル・12/6）→ 送信先は 200・ok。通知メールの到着はオーナーの確認待ち。
+- Search Console（`sc-domain:akieguchi.com`）: 3ページとも申請前は「URL が Google に登録されていません」。「インデックス登録をリクエスト」→ 3件とも受理。`https://akieguchi.com/sitemap.xml` を再送信 → 「サイトマップを送信しました」。**申請したことと登録されたことは別。**
+- 戻す場合: `git revert 251eb10..860c52e` に当たる5つの commit を打ち消して push（DB・設定の変更なし。管理画面で `tokyoPhotoIds` を保存していた場合、その値は残るが、どこにも使われなくなる）。`docs/rollback-guide.md`。

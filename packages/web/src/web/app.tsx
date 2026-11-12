@@ -188,7 +188,13 @@ function TokyoRoute({ language }: { language: TokyoLang }) {
     queryFn: async () => jsonOrThrow(await api.settings.$get()),
   });
   if (isLoading) return <PageFallback />;
-  if (!isServiceOwnerSite(data?.siteUrl, window.location.hostname)) return <NotFoundPage />;
+  if (!isServiceOwnerSite(data?.siteUrl, window.location.hostname))
+    return (
+      <Layout>
+        <NotFoundPage />
+      </Layout>
+    );
+  // サイトのメニュー・帯・フッター（Layout）は付けない。この1枚で閉じる（pages/tokyo.tsx の説明）。
   return (
     <PageTransition>
       <Suspense fallback={<PageFallback />}>
@@ -337,19 +343,13 @@ function App() {
           </Route>
           {/* 東京の撮影プラン。住所は shared/tokyo-shoot.ts の TOKYO_PATHS と同じ（経路の見張りが読めるよう、ここは文字で書く）。 */}
           <Route path="/tokyo/en">
-            <Layout>
-              <TokyoRoute language="en" />
-            </Layout>
+            <TokyoRoute language="en" />
           </Route>
           <Route path="/tokyo/ja">
-            <Layout>
-              <TokyoRoute language="ja" />
-            </Layout>
+            <TokyoRoute language="ja" />
           </Route>
           <Route path="/tokyo">
-            <Layout>
-              <TokyoRoute language="zh-Hant" />
-            </Layout>
+            <TokyoRoute language="zh-Hant" />
           </Route>
           <Route path="/about">
             <Layout>

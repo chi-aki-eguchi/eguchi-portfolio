@@ -7,7 +7,8 @@
   --tk-rule: rgba(var(--foreground-rgb), 0.14);
   max-width: 1080px;
   margin-inline: auto;
-  padding-bottom: var(--tk-gap);
+  padding-top: var(--sai-top, 0px);
+  padding-bottom: calc(2rem + var(--sai-bottom, 0px));
 }
 /* 繁體中文は台湾の字形の明朝で（サイトの和文書体に無い字で書体が混ざらないように）。 */
 .tk[lang="zh-Hant"] {
@@ -26,12 +27,29 @@
   font-size: calc(var(--body-size, 0.9375rem) * 1.12);
 }
 
-/* 言語の切り替え */
+/* 上の帯：名前と言語の切り替えだけ（サイトのメニューは出さない）。 */
+.tk-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  min-height: 3.5rem;
+  margin-bottom: 0.25rem;
+}
+.tk-bar__name {
+  font-size: 0.875rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: var(--foreground);
+}
 .tk-lang {
   display: flex;
   justify-content: flex-end;
-  gap: 1.25rem;
-  margin-bottom: 0.75rem;
+  flex-wrap: wrap;
+  gap: 0 1rem;
+  margin-left: auto;
   font-size: 0.8125rem;
 }
 .tk-lang__link {
@@ -363,10 +381,55 @@
   text-underline-offset: 4px;
 }
 
+/* 下：ポートフォリオへの出口を1本と、Instagram・名前。 */
+.tk-foot {
+  margin-top: var(--tk-gap);
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--tk-rule);
+}
+.tk-foot__more {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 44px;
+  font-size: var(--body-size, 0.9375rem);
+  color: var(--foreground);
+  text-decoration: underline;
+  text-underline-offset: 6px;
+  text-decoration-thickness: 1px;
+}
+.tk-foot__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  /* スマホでは左に寄せる（右下には「上へ戻る」の丸いボタンが来る）。 */
+  justify-content: flex-start;
+  gap: 0.25rem 1.5rem;
+  margin-top: 1.5rem;
+  font-size: 0.8125rem;
+  color: var(--text-quiet);
+}
+.tk-foot__link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  letter-spacing: 0.06em;
+  transition: color 0.3s;
+}
+.tk-foot__link:hover {
+  color: var(--foreground);
+}
+.tk-foot__copy [lang="ja"] {
+  font-family: var(--font-ja);
+}
+
 /* 広い画面：表紙の隣に名前、写真は2枚を同じ高さで横に、エリアと流れ・注意事項とフォームも横に。 */
 @media (min-width: 768px) {
-  .tk-lang {
-    margin-bottom: 1.5rem;
+  .tk-bar {
+    margin-bottom: 1rem;
+  }
+  .tk-foot__row {
+    justify-content: space-between;
   }
   .tk-top {
     display: grid;

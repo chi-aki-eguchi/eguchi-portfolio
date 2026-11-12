@@ -2,11 +2,14 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { api, jsonOrThrow } from "../lib/api";
+import { BackToTop } from "../components/BackToTop";
 import { Picture } from "../components/Picture";
 import type { GalleryPhoto } from "../components/PhotoGallery";
 import { usePageEntrance } from "../hooks/usePageEntrance";
 import { usePageLanguage } from "../hooks/usePageLanguage";
+import { siteDesignFrom } from "../lib/book";
 import { orientedAspectRatio, orientedDimensions } from "../lib/picture";
+import { safeHref } from "../lib/utils";
 import { sendAnalyticsEvent } from "../lib/analytics";
 import { CLIENT_SITE_FALLBACKS } from "../lib/site-fallbacks";
 import { photoAltText } from "../../shared/photo-alt";
@@ -65,6 +68,10 @@ function track(name: "contact_submit_start" | "contact_submit_success", language
  * 東京の旅行者向け撮影プラン（2026-11-12）。写真と余白が主役で、文字は名前・料金・流れだけ。
  * 料金・エリア・文・作例の写真は `shared/tokyo-shoot.ts` の1か所で決める。
  * 送信は Contact と同じ送信先（設定 `formspreeUrl`）へ。決済はここでは扱わない。
+ *
+ * サイトのメニューと帯・フッターは出さない（2026-11-12、オーナー「ある程度独立させた方が良くない？」）。
+ * 旅行者が読むのはこの1枚で、日本語の Info（別の料金）へ迷い込まないようにする。
+ * 上は名前と言語の切り替えだけ、下にポートフォリオへの出口を1本だけ置く。
  */
 export default function TokyoPage({ language }: { language: TokyoLang }) {
   const copy = TOKYO_COPY[language];
@@ -186,7 +193,13 @@ export default function TokyoPage({ language }: { language: TokyoLang }) {
   const peopleOptions = Array.from({ length: TOKYO_SHOOT.maxPeople }, (_, i) => i + 1);
 
   return (
-    <div className="tk site-page site-page-top" lang={language} data-tokyo-lang={language} ref={entranceRef}>
+    <div className="tk site-page" lang={language} data-tokyo-lang={language} ref={entranceRef}>
+      <header className="tk-bar">
+        {nameEn && (
+          <p className="tk-bar__name font-en" lang="en">
+            {nameEn}
+          </p>
+        )}
       <nav className="tk-lang" aria-label="Language">
         {TOKYO_LANGS.map((lang) => (
           <Link
@@ -201,7 +214,9 @@ export default function TokyoPage({ language }: { language: TokyoLang }) {
           </Link>
         ))}
       </nav>
+      </header>
 
+      <main id="main-content">
       <div className="tk-top">
         {/* 写真が届くまで同じ大きさの場所を取っておく（届いたときに文が下へ動かないように）。 */}
         <div className="tk-top__cover">{cover ? <Photo photo={cover} copy={copy} name={photographerName} cover /> : <div className="tk-cover-hold" />}</div>
@@ -457,6 +472,29 @@ export default function TokyoPage({ language }: { language: TokyoLang }) {
           )}
         </section>
       </div>
+      </main>
+
+      <footer className="tk-foot">
+        <Link to={siteDesignFrom(settings?.siteDesign) === "develop" ? "/portrait" : "/gallery"} className="tk-foot__more">
+          {copy.morePhotos}
+          <span aria-hidden="true" className="font-en">
+            →
+          </span>
+        </Link>
+        <div className="tk-foot__row">
+          {settings?.profileInstagram && (
+            <a href={safeHref(settings.profileInstagram)} target="_blank" rel="noopener noreferrer" className="tk-foot__link font-en">
+              Instagram
+            </a>
+          )}
+          {photographerName && (
+            <p className="tk-foot__copy font-en">
+              © {new Date().getFullYear()} {language === "en" ? nameEn || nameJa : <span lang="ja">{nameJa || nameEn}</span>}
+            </p>
+          )}
+        </div>
+      </footer>
+      <BackToTop language={language === "ja" ? "ja" : "en"} />
     </div>
   );
 }

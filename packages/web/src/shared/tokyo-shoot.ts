@@ -86,6 +86,8 @@ export type TokyoCopy = {
   lead: string[];
   /** 写真の下に添える「フィルム」の語。 */
   film: string;
+  /** ページの下に1本だけ置く、ポートフォリオへの出口。 */
+  morePhotos: string;
   plansLabel: string;
   plan: Record<TokyoPlanId, { name: string; detail: (plan: TokyoPlan) => string }>;
   duration: (minutes: number) => string;
@@ -145,6 +147,7 @@ export const TOKYO_COPY: Record<TokyoLang, TokyoCopy> = {
       "用數位和底片（Pentax 67、Hasselblad）拍人。",
     ],
     film: "底片",
+    morePhotos: "看更多照片",
     plansLabel: "方案",
     plan: {
       digital: {
@@ -210,6 +213,7 @@ export const TOKYO_COPY: Record<TokyoLang, TokyoCopy> = {
       "I photograph people on digital and on film — Pentax 67, Hasselblad.",
     ],
     film: "Film",
+    morePhotos: "More photographs",
     plansLabel: "Plans",
     plan: {
       digital: {
@@ -283,6 +287,7 @@ export const TOKYO_COPY: Record<TokyoLang, TokyoCopy> = {
       "デジタルとフィルム（PENTAX 67、ハッセルブラッド）で人を撮っています。",
     ],
     film: "フィルム",
+    morePhotos: "ほかの写真を見る",
     plansLabel: "プラン",
     plan: {
       digital: {

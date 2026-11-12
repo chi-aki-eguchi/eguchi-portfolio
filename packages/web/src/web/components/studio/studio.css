@@ -1124,3 +1124,13 @@
   .st-step .st-link,
   .st-inspector__head .st-link { min-width: 44px; justify-content: center; }
 }
+
+/* 2026-11-13: 3つの作業をまとめたあと、スマホ 390px で道具の行（大きさ・まとめて選ぶ・写真を加える）が
+   2行に折れていた（実測。大きさの切り替えに枠と間が付いて 360px になり、使える幅 342px を超えた）。
+   押せる高さ 44px は保ち、横の余白だけ詰めて1行に収める。 */
+@media (max-width: 767px) {
+  .st-toolbar__tools { flex-wrap: nowrap; gap: 6px; }
+  .st-toolbar__tools .st-seg.st-seg--small { gap: 3px; padding: 0; }
+  .st-toolbar__tools .st-seg.st-seg--small .st-seg__item { min-width: 38px; padding-inline: 0; }
+  .st-toolbar__tools .st-button { padding-inline: 10px; white-space: nowrap; }
+}

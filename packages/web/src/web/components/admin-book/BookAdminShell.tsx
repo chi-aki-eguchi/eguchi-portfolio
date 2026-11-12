@@ -21,11 +21,16 @@ export function normalizeBookView(v: string | null | undefined): BookAdminView {
  * いつもこの形。以前は骨格を切り替えると管理画面ごと別物（左の縦メニューの黒い画面）
  * に入れ替わり、オーナーが「何がどこにあるのか分からない」と困った。
  *
- * 上に3つの入口だけを置く。
+ * 入口は 写真／シリーズ／サイト／言葉（言葉は別の画面）。
  *   写真     — すべての写真（ふだんの仕事はここで終わる）
  *   シリーズ — 写真をまとめて見せる入れ物（1枚を何本にも入れられる）
  *   サイト   — 公開サイトのページ順に並べた設定（トップ・写真・About・見た目…）
  * 設定や移動先は ⌘K の「探す」からも開ける。
+ *
+ * スマホ（2026-11-12 作り直し）: 上の帯は出さず、入口は画面の下に 写真／シリーズ／サイト／言葉／メニュー
+ * の5つ。664px の画面のうち上の帯が 52px を取っていたので、そのぶんを中身へ返す。
+ * 「ページ」の入口は「サイト」の各ページの中へ移したので、入口には出さない。
+ * PC では「ページの写真」を「その他」の中に置く（入口から外したあとも辿れるように）。
  */
 export function BookAdminShell({
   pdfEnabled,
@@ -77,7 +82,7 @@ export function BookAdminShell({
         { id: "site", label: "サイト", hint: "公開サイトを見ながら直す" },
       ];
   const current = view === "library" ? "photos" : view;
-  // スマホは右上の「メニュー」に道具をしまい、上の帯を2行（名前・入口）に収める。
+  // 道具は「メニュー」にしまう（PC は右上の「その他」、スマホは下の入口の5つ目）。
   // 道具を並べたままだと 320px 幅で5行になり、写真の編集欄が 77px まで潰れた（2026-09-29）。
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -87,6 +92,9 @@ export function BookAdminShell({
     if (!menuOpen) return;
     const onDown = (e: PointerEvent) => {
       const root = menuRef.current;
+      // 開くボタン（PC は帯の「その他」、スマホは下の入口の「メニュー」）を押したときは、
+      // ここで閉じない。閉じてしまうと、続くクリックでもう一度開いてしまう。
+      if ((e.target as Element | null)?.closest?.("[data-book-menu-button]")) return;
       if (root && !root.contains(e.target as Node)) setMenuOpen(false);
     };
     const onKey = (e: KeyboardEvent) => {
@@ -122,19 +130,23 @@ export function BookAdminShell({
               {t.label}
             </button>
           ))}
-          {/* 表紙・Portrait・Life・展示の写真を選ぶ画面。「その他」の中に隠れていて見つけにくかった
-              （2026-11-10、オーナー「どこに何があるか」）。入口の並びに出す。 */}
-          {pdfEnabled && !locked && (
-            <a className="admin-book__tab admin-book__tab--link" href="/admin/pages" data-book-tab="pages">
-              {en ? "Pages" : "ページ"}
-            </a>
-          )}
           {/* 写真に題・説明・分類を1枚ずつ付けていく画面。 */}
           {pdfEnabled && !locked && (
             <a className="admin-book__tab admin-book__tab--link" href="/admin/words" data-book-tab="words">
               {en ? "Words" : "言葉"}
             </a>
           )}
+          {/* スマホだけ：道具の入れ物を下の入口の5つ目にする。PC では出さない。 */}
+          <button
+            type="button"
+            className="bk-ax-btn admin-book__barmenu"
+            data-book-menu-button
+            aria-expanded={menuOpen}
+            aria-controls={toolsId}
+            onClick={() => setMenuOpen((open) => !open)}
+          >
+            {en ? "Menu" : "メニュー"}
+          </button>
         </nav>
         {/* よく使う2つ（探す・サイトを見る）だけを帯に出し、ほかは「その他」にしまう
             （2026-09-30。道具が6つ並んで、入口より目立っていた）。スマホは全部「メニュー」の中。 */}
@@ -150,12 +162,12 @@ export function BookAdminShell({
         <button
           type="button"
           className="bk-ax-btn admin-book__menu"
+          data-book-menu-button
           aria-expanded={menuOpen}
           aria-controls={toolsId}
           onClick={() => setMenuOpen((open) => !open)}
         >
-          <span className="admin-book__menu-wide">{en ? "More" : "その他"}</span>
-          <span className="admin-book__menu-narrow">{en ? "Menu" : "メニュー"}</span>
+          {en ? "More" : "その他"}
         </button>
         <div
           id={toolsId}
@@ -169,6 +181,9 @@ export function BookAdminShell({
           <a className="admin-book__tool admin-book__tool--narrow" href={siteHref} target="_blank" rel="noopener" onClick={closeMenu}>
             {en ? "View site" : "サイトを見る"} ↗
           </a>
+          {/* 表紙・Portrait・Life・展示の写真を選ぶ画面。入口から外したので PC はここから開く
+              （スマホは「サイト」の各ページの中から行く）。 */}
+          {pdfEnabled && !locked && <a className="admin-book__tool admin-book__tool--wide" href="/admin/pages" onClick={closeMenu}>{en ? "Page photos" : "ページの写真"}</a>}
           {pdfEnabled && !locked && <a className="admin-book__tool" href="/admin/pdf" target="_blank" rel="noopener" onClick={closeMenu}>{en ? "PDF portfolio" : "PDF作品集"}</a>}
           <button type="button" className="bk-ax-btn admin-book__tool" onClick={() => { closeMenu(); onToggleTheme(); }} aria-pressed={theme === "dark"}>
             {theme === "dark" ? (en ? "Light display" : "明るい表示") : (en ? "Dark display" : "暗い表示")}

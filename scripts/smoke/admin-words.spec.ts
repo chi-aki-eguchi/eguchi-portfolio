@@ -45,4 +45,31 @@ test("admin — 言葉を付ける › 題を書いて「保存して次へ」�
   expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBeLessThanOrEqual(0);
   const dock = (await page.locator(".aw-dock").boundingBox())!;
   expect(dock.y + dock.height).toBeLessThanOrEqual(page.viewportSize()!.height + 1);
+
+  // スマホ：下の入口は 写真・シリーズ・サイト・言葉・メニュー の5つで、言葉が今の場所。
+  // 「保存して次へ」の帯は入口の真上に積み、重ならない（2026-11-12）。
+  if (page.viewportSize()!.width < 768) {
+    const bar = page.locator(".admin-book__tabs");
+    await expect(bar.locator("a, button")).toHaveText(["写真", "シリーズ", "サイト", "言葉", "メニュー"]);
+    await expect(bar.locator("[aria-current=page]")).toHaveText("言葉");
+    const barBox = (await bar.boundingBox())!;
+    expect(Math.abs(barBox.y + barBox.height - page.viewportSize()!.height)).toBeLessThanOrEqual(1);
+    expect(dock.y + dock.height).toBeLessThanOrEqual(barBox.y + 1);
+    // 中身の最後まで送ると、2つの帯の上に出る。
+    await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
+    const last = (await page.locator(".aw-fields").boundingBox())!;
+    expect(last.y + last.height).toBeLessThanOrEqual(dock.y + 1);
+  } else {
+    await expect(page.locator(".admin-book__tabs")).toBeHidden();
+  }
+});
+
+test("admin — 言葉を付ける › 戻る先は ?from= で決まり、外のアドレスは無視する", async ({ page }) => {
+  await loginAsAdmin(page);
+  await page.goto("/admin/words?from=/admin%23photos", { waitUntil: "networkidle" });
+  await expect(page.locator(".aw-back")).toHaveAttribute("href", "/admin#photos");
+  await page.goto("/admin/words?from=https://example.com/admin", { waitUntil: "networkidle" });
+  await expect(page.locator(".aw-back")).toHaveAttribute("href", "/admin");
+  await page.goto("/admin/words?from=//example.com", { waitUntil: "networkidle" });
+  await expect(page.locator(".aw-back")).toHaveAttribute("href", "/admin");
 });

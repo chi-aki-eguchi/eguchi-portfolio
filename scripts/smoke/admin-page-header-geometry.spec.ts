@@ -111,9 +111,9 @@ async function openAdminTab(page: Page, tab: (typeof ADMIN_TABS)[number]) {
   await page.waitForTimeout(350);
 }
 
-// スマホ幅では、言葉の切り替えは右上の「メニュー」の中にある。閉じていれば開く。
+// スマホ幅では、言葉の切り替えは「メニュー」（下の入口の5つ目）の中にある。閉じていれば開く。
 async function openShellMenu(page: Page) {
-  const menu = page.locator(".admin-book__menu");
+  const menu = page.locator(".admin-book__menu:visible, .admin-book__barmenu:visible");
   if ((await menu.isVisible()) && (await menu.getAttribute("aria-expanded")) !== "true") {
     await menu.click();
   }

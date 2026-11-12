@@ -24,6 +24,7 @@ import {
   type ExhibitionRecord,
 } from "../../shared/exhibitions";
 import { isServiceOwnerSite } from "../../shared/service-visibility";
+import { AdminBottomBar, safeAdminFrom } from "../components/admin-book/AdminBottomBar";
 import { DoorNames } from "../components/page-photos/DoorNames";
 import { ExhibitionCaptions, ExhibitionCopy, ExhibitionVisits } from "../components/page-photos/ExhibitionPanel";
 import { PagePhotoEditor } from "../components/page-photos/PagePhotoEditor";
@@ -122,10 +123,26 @@ export default function AdminPagesPage() {
   });
 
   // 展示をトップに出している間は、展示のタブから開く。押して選んだタブが優先。
+  // 「サイト」の各ページの中から来たときは ?tab= で開くタブが決まる（知らない値は無視）。
+  // ?from= は戻る先（/admin から始まる同じサイトの道だけ。無ければ「サイト」へ）。
+  const [requestedTab] = useState<Tab | null>(() => {
+    const raw = new URLSearchParams(window.location.search).get("tab");
+    return TABS.find((kind) => kind === raw) ?? null;
+  });
+  const [backHref] = useState(() => safeAdminFrom(new URLSearchParams(window.location.search).get("from"), "/admin#site"));
   const [chosenTab, setTab] = useState<Tab | null>(null);
   // 展示のタブで、いま編集している展示（slug）。選んでいなければ、一覧の先頭。
   const [chosenShow, setShow] = useState<string | null>(null);
-  const tab: Tab = chosenTab ?? (settings?.exhibitionOnTop === "on" ? "exhibition" : "portrait");
+  // 呼ばれたタブがこのサイトに出ない物（配布先の展示・東京プラン）なら、いつもの開き方にする。
+  const requestedShown =
+    requestedTab !== null &&
+    (requestedTab === "tokyo"
+      ? isServiceOwnerSite(settings?.siteUrl as string | undefined, window.location.hostname)
+      : requestedTab !== "exhibition" ||
+        settings?.exhibitionOnTop === "on" ||
+        isServiceOwnerSite(settings?.siteUrl as string | undefined, window.location.hostname));
+  const tab: Tab =
+    chosenTab ?? (requestedShown ? requestedTab : settings?.exhibitionOnTop === "on" ? "exhibition" : "portrait");
   // 表紙の並び（保存しようとしている物）。保存して読み直すまでの間、画面はこちらを見る。
   const [localCover, setLocalCover] = useState<number[] | null>(null);
   // 保存した（保存しようとしている）値。設定を読み直すまでの間、画面はこちらを見る。
@@ -289,6 +306,8 @@ export default function AdminPagesPage() {
   const frame = (body: React.ReactNode) => (
     <div className="pp-root">
       <div className="pp-page">{body}</div>
+      {/* スマホの下の入口。この画面は「サイト」の中の一部なので、サイトを現在地にする。 */}
+      <AdminBottomBar current="site" />
     </div>
   );
   if (auth === "checking" || settingsQ.isLoading || photosQ.isLoading || (auth === "ok" && heroQ.isLoading))
@@ -342,7 +361,7 @@ export default function AdminPagesPage() {
     <>
       {/* スマホでは「戻る・題・サイトで見る」を1行にまとめる（題に1行使うと、写真の始まりが 40px 下がる）。 */}
       <header className="pp-head">
-        <a className="pp-back" href="/admin" aria-label="管理画面へ戻る">
+        <a className="pp-back" href={backHref} aria-label="管理画面へ戻る">
           <span aria-hidden="true">←</span>
           <span>
             <span className="pp-back__long">管理画面へ</span>戻る

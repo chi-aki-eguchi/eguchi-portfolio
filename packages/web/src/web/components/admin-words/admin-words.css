@@ -57,3 +57,10 @@
 @media (prefers-reduced-motion: reduce) {
   .aw-bar span { transition: none; }
 }
+
+/* スマホ：下の入口（AdminBottomBar、高さ 56px＋下の安全域）の上に「保存して次へ」の帯を積む。
+   帯の高さは 10＋52＋10＋罫 1 ＝ 73px。中身の最後は両方の上まで送れるようにする（2026-11-12）。 */
+@media (max-width: 767px) {
+  .aw-page { padding-bottom: calc(73px + 56px + env(safe-area-inset-bottom, 0px) + 24px); }
+  .aw-dock { bottom: calc(56px + env(safe-area-inset-bottom, 0px)); padding-bottom: 10px; }
+}

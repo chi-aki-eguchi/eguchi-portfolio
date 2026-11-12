@@ -849,7 +849,6 @@
 }
 .admin-book__menu:hover,
 .admin-book__menu[aria-expanded="true"] { background: var(--bench-soft); }
-.admin-book__menu-narrow { display: none; }
 .admin-book__tools { display: none; }
 .admin-book__tools[data-open] {
   position: absolute;
@@ -886,6 +885,8 @@
   padding: 0 12px;
 }
 .admin-book__tool--narrow { display: none !important; }
+/* 下の入口の「メニュー」はスマホだけ。 */
+.admin-book__barmenu { display: none; }
 
 @media (max-width: 767px) {
   .admin-book__bar {
@@ -905,34 +906,38 @@
     gap: 1.25rem;
   }
   .admin-book__menu { min-height: 44px; font-size: 14px; }
-  .admin-book__menu-wide { display: none; }
-  .admin-book__menu-narrow { display: inline; }
   .admin-book__menu-wrap { position: static; }
   .admin-book__tools[data-open] { top: 50px; right: 8px; }
   .admin-book__tools[data-open] .admin-book__tool { min-height: 44px; }
   .admin-book__tools[data-open] .admin-book__tool--narrow { display: flex !important; }
 }
 
-/* 「ページ」（/admin/pages）は別の画面へ行く入口。ほかの入口と同じ見た目で並べる。 */
+/* 「言葉」（/admin/words）は別の画面へ行く入口。ほかの入口と同じ見た目で並べる。 */
 .admin-book__tab--link { display: inline-flex; align-items: center; height: 100%; text-decoration: none; }
+/* 「ページの写真」はPCの「その他」の中だけ（スマホは「サイト」の各ページの中から行く）。 */
 @media (max-width: 767px) {
-  /* 入口が4つになったので、間を詰めて1行に収める。押せる高さは帯いっぱい（52px）。 */
-  .admin-book__tabs { gap: 0.9rem; }
-  .admin-book__tab { padding: 0 3px; }
+  .admin-book__tool--wide { display: none !important; }
 }
 
-/* ── スマホ：入口は画面の下（2026-11-10、オーナー「人間が使うことをもっと想定して」）──
-   片手で持つと、上の帯の入口には親指が届かない。入口（写真・シリーズ・サイト・ページ・言葉）を
-   下の端に並べ、上の帯にはサイトの名前と「メニュー」だけを残す。写真を選んだときの下からの欄・
-   確かめる窓は、入口より手前に出る（書いている間は入口を隠す）。通知は入口の上に出す。 */
+/* ── スマホ：入口は画面の下、上の帯は無し（2026-11-12 作り直し）──────────
+   片手で持つと上の入口には親指が届かない（2026-11-10）。さらに上の帯（名前と「メニュー」）が
+   664px の画面の 52px を取っていたので、帯ごとやめて中身へ返す。
+   入口は 写真／シリーズ／サイト／言葉／メニュー の5つ。「メニュー」は探す・サイトを見る・PDF作品集・
+   明暗・言葉・ログアウトの入れ物で、入口の上に下から出る。
+   下に固定してよい物は、この入口・保存の帯・選択の帯の3つだけ（積む順は入口が一番下）。
+   通知は入口の上に出す。ノッチの下に潜らないよう、上は env(safe-area-inset-top) を空ける。 */
 @media (max-width: 767px) {
   .admin-book {
     --admin-tabbar: calc(56px + env(safe-area-inset-bottom, 0px));
     box-sizing: border-box;
+    padding-top: env(safe-area-inset-top, 0px);
     padding-bottom: var(--admin-tabbar);
   }
-  .admin-book__bar { justify-content: space-between; padding: 0 6px 0 16px; }
-  .admin-book__name { display: block; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 15px; }
+  /* 帯の枠は無くす。中の入口と道具の入れ物は、それぞれ画面の下に固定する。 */
+  .admin-book__bar { display: contents; }
+  .admin-book__name,
+  .admin-book__quick,
+  .admin-book__menu { display: none; }
   .admin-book__tabs {
     position: fixed;
     left: 0;
@@ -953,17 +958,96 @@
     border-top: 1px solid var(--admin-line);
   }
   .admin-book__tab,
-  .admin-book__tab--link {
+  .admin-book__tab--link,
+  .admin-book__barmenu {
+    position: relative;
     display: flex;
     align-items: center;
     justify-content: center;
+    min-width: 44px;
     height: 56px;
     padding: 0;
     font-size: 13px;
+    color: var(--bench-quiet);
+    background: none;
+    border: 0;
+    border-radius: 0;
     white-space: nowrap;
   }
-  .admin-book__tab[aria-current="page"] { font-weight: 600; }
-  .admin-book__tab[aria-current="page"]::after { top: 0; bottom: auto; left: 22%; right: 22%; height: 2px; }
+  /* いまの場所：濃い字・太字・上に 2px の印。開いている「メニュー」も同じ印。 */
+  .admin-book__tab[aria-current="page"],
+  .admin-book__barmenu[aria-expanded="true"] { color: var(--bench-ink); font-weight: 600; }
+  .admin-book__tab[aria-current="page"]::after,
+  .admin-book__barmenu[aria-expanded="true"]::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    bottom: auto;
+    left: 22%;
+    right: 22%;
+    height: 2px;
+    background: var(--bench-ink);
+  }
   .admin-book .st-toast,
   .admin-book .bench-notice { bottom: calc(16px + var(--admin-tabbar)); }
+
+  /* 道具の入れ物：入口の右上に下から出る。画面から出ないよう高さを切る。 */
+  .admin-book__menu-wrap { position: static; margin: 0; }
+  .admin-book__tools[data-open] {
+    position: fixed;
+    top: auto;
+    left: auto;
+    right: 8px;
+    bottom: calc(var(--admin-tabbar) + 8px);
+    z-index: 80;
+    min-width: 13rem;
+    max-width: calc(100vw - 16px);
+    max-height: calc(100dvh - var(--admin-tabbar) - env(safe-area-inset-top, 0px) - 24px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    animation: admin-book-sheet-in 0.2s ease-out;
+  }
+  .admin-book__tools[data-open] .admin-book__tool,
+  .admin-book__tools[data-open] .admin-book__tool--narrow,
+  .admin-book__tools[data-open] .admin-book__lang { min-height: 48px; font-size: 15px; }
+  /* JP / EN は 10px・32px 角だった（styles.css が !important で縛るので、こちらも !important）。
+     文字は 14px、押す所は 44px 角に（2026-11-12）。 */
+  .admin-atelier.admin-atelier.admin-atelier .admin-book__tools .admin-language-toggle { font-size: 14px !important; gap: 4px; }
+  .admin-atelier.admin-atelier.admin-atelier .admin-book__tools .admin-language-toggle button:not(.absolute) {
+    min-width: 44px !important;
+    min-height: 44px !important;
+    font-size: 14px !important;
+  }
 }
+/* 写真を選んだときの下からの欄（Studio の .st-inspector、まとめて選ぶ間の1行もこれ）は、
+   入口の上に積む。今までは bottom:0 で入口に重なっていた。高さも、入口と画面の上を引いた残りに収める。 */
+@media (max-width: 767px) {
+  .admin-book .st-inspector {
+    bottom: var(--admin-tabbar);
+    max-height: min(72dvh, calc(100dvh - var(--admin-tabbar) - env(safe-area-inset-top, 0px) - 16px));
+  }
+  .admin-book .st-inspector[data-collapsed] { padding-bottom: 14px; }
+}
+@keyframes admin-book-sheet-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .admin-book__tools[data-open] { animation: none; }
+}
+
+/* /admin/pages・/admin/words の下の入口（AdminBottomBar）。シェルの入口と同じ見た目で、
+   スマホだけ出す。この2画面は --bench-* を持たないので、ここで紙と墨から決める。 */
+.abar { display: none; }
+@media (max-width: 767px) {
+  .abar {
+    --admin-tabbar: calc(56px + env(safe-area-inset-bottom, 0px));
+    --bench-ink: var(--admin-ink);
+    --bench-quiet: color-mix(in srgb, var(--admin-ink) 66%, var(--admin-paper));
+    --bench-soft: color-mix(in srgb, var(--admin-paper) 97.5%, var(--admin-ink));
+    display: block;
+  }
+  .abar .admin-book__tools[data-open] { z-index: 80; }
+}
+.abar a { text-decoration: none; }
+.abar button { font: inherit; cursor: pointer; }

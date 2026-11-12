@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { adminApi, api, jsonOrThrow } from "../lib/api";
 import { assertOk } from "./admin-shared";
+import { AdminBottomBar, safeAdminFrom } from "../components/admin-book/AdminBottomBar";
 import "../components/page-photos/page-photos.css";
 import "../components/admin-words/admin-words.css";
 
@@ -41,6 +42,8 @@ const needsWords = (draft: Draft) => draft.title.trim() === "";
  */
 export default function AdminWordsPage() {
   const queryClient = useQueryClient();
+  // 戻る先。?from= は /admin から始まる同じサイトの道だけ受け取る。
+  const [backHref] = useState(() => safeAdminFrom(new URLSearchParams(window.location.search).get("from"), "/admin"));
   const [auth, setAuth] = useState<"checking" | "ok" | "no">("checking");
   useEffect(() => {
     let alive = true;
@@ -141,6 +144,7 @@ export default function AdminWordsPage() {
       <div className="aw-page" ref={topRef}>
         {body}
       </div>
+      <AdminBottomBar current="words" />
     </div>
   );
   if (auth === "checking" || (auth === "ok" && (photosQ.isLoading || queue === null) && !photosQ.isError && !(photosQ.data && photos.length === 0)))
@@ -160,7 +164,7 @@ export default function AdminWordsPage() {
 
   const head = (
     <header className="aw-head">
-      <a className="aw-back" href="/admin" aria-label="管理画面へ戻る">
+      <a className="aw-back" href={backHref} aria-label="管理画面へ戻る">
         ← 戻る
       </a>
       <h1>言葉を付ける</h1>

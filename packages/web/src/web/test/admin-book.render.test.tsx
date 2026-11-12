@@ -126,7 +126,7 @@ describe("写真集の管理画面", () => {
       try {
         expect(m.host.querySelector("aside.admin-sidebar")).toBeNull();
         const tabs = Array.from(m.host.querySelectorAll(".admin-book__tab"));
-        expect(tabs.map((b) => b.textContent)).toEqual(["写真", "シリーズ", "サイト", "ページ", "言葉"]);
+        expect(tabs.map((b) => b.textContent)).toEqual(["写真", "シリーズ", "サイト", "言葉"]);
         (tabs[2] as HTMLButtonElement).click();
         // 右の一覧は設定の画面（読み込みを待つ）の中に出る。
         for (let i = 0; i < 40 && !m.host.querySelector("[data-site-part]"); i += 1) await flush(20);
@@ -165,7 +165,7 @@ describe("写真集の管理画面", () => {
     try {
       expect(m.host.querySelector("aside.admin-sidebar")).toBeNull();
       const tabs = Array.from(m.host.querySelectorAll(".admin-book__tab")).map((b) => b.textContent);
-      expect(tabs).toEqual(["写真", "シリーズ", "サイト", "ページ", "言葉"]);
+      expect(tabs).toEqual(["写真", "シリーズ", "サイト", "言葉"]);
       const loose = Array.from(m.host.querySelectorAll(".st-side__item")).find((b) =>
         b.textContent?.includes("シリーズに入っていない"),
       ) as HTMLButtonElement;

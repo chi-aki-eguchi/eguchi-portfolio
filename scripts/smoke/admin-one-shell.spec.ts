@@ -66,7 +66,7 @@ test.describe("admin — 骨格を切り替えても管理画面は同じ", () =
     expect(await frameLabels(page)).toEqual(classicFrame);
     const bookTop = await listed(page);
 
-    expect(tabs).toEqual(["写真", "シリーズ", "サイト", "ページ", "言葉"]);
+    expect(tabs).toEqual(["写真", "シリーズ", "サイト", "言葉"]);
     expect(classicFrame.pages).toEqual(["トップ", "Gallery", "Series", "About", "Contact"]);
     // トップの一覧はトップだけの部分。メニュー・フッターは「全体の見た目」に1回だけ（2026-09-30）。
     expect(classicTop).toEqual(["name", "top-photos", "statement", "works", "series-strip", "cta"]);

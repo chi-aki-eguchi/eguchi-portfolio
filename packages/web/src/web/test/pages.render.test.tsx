@@ -1060,7 +1060,7 @@ describe("shared components", () => {
       expect(host.textContent).not.toContain("Aki Eguchi");
       expect(
         Array.from(host.querySelectorAll(".admin-book__tab")).map((b) => b.textContent),
-      ).toEqual(["写真", "シリーズ", "サイト", "ページ", "言葉"]);
+      ).toEqual(["写真", "シリーズ", "サイト", "言葉"]);
       expect(host.textContent).toContain("写真一覧");
       expect(host.textContent).toContain("写真を加える");
       // Import type is chosen with the files, not mixed into Library filters.
@@ -1584,7 +1584,7 @@ describe("shared components", () => {
       // 上の入口は骨格に関係なく同じ3つ。
       expect(
         Array.from(host.querySelectorAll(".admin-book__tab")).map((b) => b.textContent),
-      ).toEqual(["写真", "シリーズ", "サイト", "ページ", "言葉"]);
+      ).toEqual(["写真", "シリーズ", "サイト", "言葉"]);
 
       await openSitePart(host, "hero-photos");
       await waitForText(host, "トップページの写真");

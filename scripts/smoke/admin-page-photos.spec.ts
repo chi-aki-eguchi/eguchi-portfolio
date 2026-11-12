@@ -564,6 +564,31 @@ test.describe("admin — ページの写真（選んで並べる）", () => {
     await expect.poll(() => mocks.saved.at(-1)).toEqual({ siteDesign: "classic" });
   });
 
+  test("?tab= で開くタブと ?from= で戻る先が決まり、スマホでは下の入口の上に帯が積まれる", async ({ page }) => {
+    await installMocks(page);
+    // 戻る先：指定が無ければ「サイト」。/admin から始まる同じサイトの道だけ受け取る。
+    await page.goto("/admin/pages?tab=life&from=/admin%23photos", { waitUntil: "networkidle" });
+    await expect(page.locator('[data-pp-tab="life"]')).toHaveAttribute("aria-selected", "true");
+    await expect(page.locator(".pp-back").first()).toHaveAttribute("href", "/admin#photos");
+    await page.goto("/admin/pages?tab=nothing&from=https://example.com/admin", { waitUntil: "networkidle" });
+    await expect(page.locator('[data-pp-tab="portrait"]')).toHaveAttribute("aria-selected", "true");
+    await expect(page.locator(".pp-back").first()).toHaveAttribute("href", "/admin#site");
+
+    if (page.viewportSize()!.width < 768) {
+      // 下の入口は5つで、サイトが今の場所。選んだ帯は入口の真上（重ならない）。
+      const bar = page.locator(".admin-book__tabs");
+      await expect(bar.locator("a, button")).toHaveText(["写真", "シリーズ", "サイト", "言葉", "メニュー"]);
+      await expect(bar.locator("[aria-current=page]")).toHaveText("サイト");
+      await page.locator(".pp-grid .pp-tile").nth(0).click();
+      await expect(page.locator(".pp-selbar[data-show]")).toBeVisible();
+      const barBox = (await bar.boundingBox())!;
+      const sel = (await page.locator(".pp-selbar__in").boundingBox())!;
+      expect(sel.y + sel.height).toBeLessThanOrEqual(barBox.y + 1);
+    } else {
+      await expect(page.locator(".admin-book__tabs")).toBeHidden();
+    }
+  });
+
   test("ログインしていなければ、ログインを案内する", async ({ page }) => {
     await installMocks(page, { authenticated: false });
     await page.goto("/admin/pages", { waitUntil: "networkidle" });

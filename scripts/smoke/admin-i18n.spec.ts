@@ -76,8 +76,8 @@ test.describe("admin — JP/EN shared shell", () => {
     ).toHaveAttribute("data-language", "en");
     await loginAsAdmin(page);
 
-    // スマホ幅では、言葉の切り替えは右上の「メニュー」の中にある。
-    const menu = page.locator(".admin-book__menu");
+    // スマホ幅では、言葉の切り替えは「メニュー」（下の入口の5つ目）の中にある。
+    const menu = page.locator(".admin-book__menu:visible, .admin-book__barmenu:visible");
     if (await menu.isVisible()) await menu.click();
     const shellToggle = page.locator(
       "[data-admin-language-toggle]:visible",

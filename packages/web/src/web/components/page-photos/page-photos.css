@@ -580,7 +580,7 @@ body.pp-dragging * {
   all: unset;
   box-sizing: border-box;
   cursor: pointer;
-  min-width: 42px;
+  min-width: 44px;
   min-height: 44px;
   padding: 0 10px;
   text-align: center;
@@ -970,8 +970,13 @@ body.pp-dragging * {
 }
 @media (max-width: 767px) {
   /* スマホ：写真が早く始まるように、上の説明を畳む。写真は画面の端から端まで、間は 3px まで。 */
+  /* 下の入口（AdminBottomBar、高さ --pp-bar）が画面の一番下に固定される。選んだときの帯・
+     「保存しました」はその上に積み、中身の最後も帯の上まで送れるようにする（2026-11-12）。 */
+  .pp-root {
+    --pp-bar: calc(56px + env(safe-area-inset-bottom, 0px));
+  }
   .pp-page {
-    padding: 4px 16px 150px;
+    padding: max(4px, env(safe-area-inset-top, 0px)) 16px calc(150px + var(--pp-bar));
   }
   /* 「← 戻る｜ページの写真｜サイトで見る ↗」を1行に。題は画面の真ん中（左右の列を同じ幅にする）。 */
   .pp-head {
@@ -1063,7 +1068,7 @@ body.pp-dragging * {
     height: 24px;
   }
   .pp-selbar {
-    bottom: calc(14px + env(safe-area-inset-bottom, 0px));
+    bottom: calc(12px + var(--pp-bar));
   }
   .pp-selbar__in {
     padding: 0 2px 0 12px;
@@ -1081,14 +1086,14 @@ body.pp-dragging * {
     right: 10px;
     max-width: none;
     justify-content: space-between;
-    bottom: calc(14px + env(safe-area-inset-bottom, 0px));
+    bottom: calc(12px + var(--pp-bar));
     transform: translate(0, 10px);
   }
   .pp-toast[data-show] {
     transform: none;
   }
   .pp-root:has(.pp-selbar[data-show]) .pp-toast {
-    bottom: calc(72px + env(safe-area-inset-bottom, 0px));
+    bottom: calc(72px + var(--pp-bar));
   }
   .pp-sheet__head {
     padding: 14px 16px;

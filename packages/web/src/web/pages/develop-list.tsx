@@ -17,6 +17,8 @@ import { useSeriesLinks } from "../hooks/useSeriesLinks";
 import { developDoorCopy, developListPhotos, type DevelopListKind } from "../../shared/develop-structure";
 import { photoAltText } from "../../shared/photo-alt";
 import { entranceCover, isRintaroEntrance } from "../lib/rintaro-entrance";
+import { akiPortraitOptions } from "../lib/aki-portrait-rows";
+import { useAkiEdition } from "../components/develop/aki-edition";
 import "../components/develop/develop.css";
 
 /*
@@ -48,6 +50,11 @@ function coverBoxStyle(ratio: number | undefined): CSSProperties | undefined {
 /** その写真が、この作品に入っているか（写真は複数の作品に入れられる）。 */
 function photoInWork(photo: GalleryPhoto, workId: number): boolean {
   return photo.seriesIds ? photo.seriesIds.includes(workId) : photo.seriesId === workId;
+}
+
+/** 個人サイトの Portrait の段。画面の幅は、並べる幅を測り直すたびに読む（幅が変われば段も組み直される）。 */
+function akiPortraitRows(width: number, viewportHeight: number, gapScale?: number) {
+  return akiPortraitOptions(width, viewportHeight, gapScale, document.documentElement.clientWidth);
 }
 
 /** 写真の並びの名前（読み上げ用）。ページの見出しは扉の名前（設定 developDoors）から。 */
@@ -85,6 +92,8 @@ export default function DevelopListPage({ kind }: { kind: DevelopListKind }) {
     staleTime: 60_000,
   });
   const seriesLinkById = useSeriesLinks();
+  // 江口秋の個人サイトの中だけ（ほかのサイトでは null）。
+  const akiEdition = useAkiEdition();
   const photos = useMemo(
     () =>
       developListPhotos(
@@ -201,6 +210,7 @@ export default function DevelopListPage({ kind }: { kind: DevelopListKind }) {
           label={label}
           presentation="showcase"
           gapScale={clampSetting("galleryGapScale", num(settings?.galleryGapScale, 1))}
+          showcaseOptions={akiEdition && kind === "portrait" ? akiPortraitRows : undefined}
           after={foot}
         />
       )}

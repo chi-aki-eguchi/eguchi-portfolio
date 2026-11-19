@@ -4,7 +4,7 @@ import { Picture } from "../Picture";
 import type { GalleryPhoto } from "../PhotoGallery";
 import { orientedDimensions } from "../../../shared/image-url";
 import { photoAltText } from "../../../shared/photo-alt";
-import { planRows, rowOptionsFor, showcaseOptionsFor, aspectOf } from "../../lib/photo-rows";
+import { planRows, rowOptionsFor, showcaseOptionsFor, aspectOf, type RowPlanOptions } from "../../lib/photo-rows";
 import type { SeriesLink } from "../../lib/series-links";
 import { PhotoViewer, usePhotoViewer } from "./viewer";
 
@@ -30,7 +30,13 @@ export function PhotoStream({
   maxRows,
   presentation = "rows",
   gapScale,
+  showcaseOptions = showcaseOptionsFor,
 }: {
+  /**
+   * showcase の段の決め方を差し替える（江口秋の個人サイトの Portrait だけ。`lib/aki-portrait-rows.ts`）。
+   * 渡さなければ、今までどおり `showcaseOptionsFor`。描画のたびに同じ関数を渡すこと。
+   */
+  showcaseOptions?: (width: number, viewportHeight: number, gapScale?: number) => RowPlanOptions;
   /** showcase のときの写真の間（「写真の間隔」の設定の倍率）。渡さなければ 0.6。 */
   gapScale?: number;
   /** showcase: 選んだ写真を大きく、幅いっぱいの段で見せる（新しい構成の Portrait／Life）。 */
@@ -92,7 +98,7 @@ export function PhotoStream({
     if (presentation === "selection") {
       return planSelection(maxRows === 1 ? ratios.slice(0, 1) : ratios, width, viewportHeight, leadReserve ?? 220);
     }
-    if (presentation === "showcase") return planRows(ratios, showcaseOptionsFor(width, viewportHeight, gapScale));
+    if (presentation === "showcase") return planRows(ratios, showcaseOptions(width, viewportHeight, gapScale));
     const opts = rowOptionsFor(width, viewportHeight);
     if (leadReserve === undefined) return planRows(ratios, opts);
     const full = planRows(ratios, {
@@ -106,7 +112,7 @@ export function PhotoStream({
     const rows = full.rows.slice(0, maxRows);
     const last = rows[rows.length - 1]!;
     return { rows, height: last.top + last.height };
-  }, [ratios, width, viewportHeight, leadReserve, maxRows, presentation, gapScale]);
+  }, [ratios, width, viewportHeight, leadReserve, maxRows, presentation, gapScale, showcaseOptions]);
   // 段の数を絞ったときは、並んだ写真だけをビューアで送る。
   const shownPhotos = useMemo(() => {
     if (!plan || !maxRows) return photos;

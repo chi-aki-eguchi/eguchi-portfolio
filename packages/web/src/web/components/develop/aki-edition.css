@@ -417,3 +417,38 @@ dialog[data-aki-viewer] .lb-roll[data-dir]::before {
 .aki-project [data-photo-tile] {
   scroll-margin-top: calc(var(--aki-band) + .75rem);
 }
+
+/* ── Portrait とプロフィール：左右を、帯の名前と同じ線にそろえる（2026-11-19） ──
+   ほかの頁（トップ・Gallery・作品・展示）は、写真も題も --aki-inset（幅390で20px、幅1440で64px）に立つ。
+   この2頁だけ、共通の頁の余白（スマホ16px・PC24px）と「スマホは写真を端から端まで」が残っていた。
+   .aki-edition の中だけに効く。ほかの持ち主のサイトと、ほかの頁には触れない。 */
+.aki-edition .dv-list[data-kind="portrait"] {
+  --page-inset: var(--aki-inset);
+}
+@media (max-width: 767px) {
+  /* 写真も紙の余白の中に置く（表紙の入口の一枚も同じ）。 */
+  .aki-edition .dv-list[data-kind="portrait"] :is(.ps-stream, .dv-session-cover__photo) {
+    margin-inline: 0;
+  }
+}
+/* プロフィール：読む列の幅（中身720px）と写真の大きさは今までのまま。列を真ん中に寄せず、左の線から始める。
+   各節は自分の余白（--page-inset）を持っているので、外側に差の分だけ足して、中身の縁を --aki-inset に合わせる。 */
+.aki-edition .dv-info {
+  padding-inline: calc(var(--aki-inset) - var(--page-inset));
+}
+.aki-edition .dv-info > section {
+  margin-inline: 0 auto;
+}
+/* 料金：列が左から始まるので、小さな見出しと札も同じ線から（真ん中寄せのままだと、左の列の中で浮く）。 */
+.aki-edition .dv-info [data-contact-pricing] > h2 {
+  text-align: left;
+}
+.aki-edition .dv-info [data-contact-pricing] > .grid {
+  margin-inline: 0;
+}
+@media (max-width: 767px) {
+  /* スマホでは料金の見出しが、すぐ上の Instagram の行（5px上）に付いて見える。自分の札の側に寄せる。 */
+  .aki-edition .dv-info [data-contact-pricing] {
+    padding-top: 2rem;
+  }
+}

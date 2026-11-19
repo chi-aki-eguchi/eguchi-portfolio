@@ -50,7 +50,7 @@ test("江口秋のトップの一枚から日藝祭の壁へ入る", async ({ pa
     exhibitionPhotoIds: "",
   });
   await page.goto("/");
-  const cover = page.getByRole("link", { name: /つづきを見る/ });
+  const cover = page.getByRole("link", { name: /無題.*展示を見る/ });
   await expect(cover.locator("img")).toHaveAttribute("alt", /芝生/);
   await expect(cover).toHaveAttribute("href", "/exhibition/2026-nichigei");
   await cover.click();

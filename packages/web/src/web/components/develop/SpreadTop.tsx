@@ -248,7 +248,7 @@ export function SpreadTop({ settings, covers }: { settings: Settings; covers: De
                 <span>{name}</span>
                 <h1 id="sp-exhibit-title">{exhibition.title || "展示"}</h1>
                 <span>{exhibition.dates}</span>
-                <span className="sp-exhibit__more">つづきを見る →</span>
+                <span className="sp-exhibit__more">展示を見る →</span>
               </div>
             </Link>
           </section>

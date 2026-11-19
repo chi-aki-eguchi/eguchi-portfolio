@@ -141,6 +141,12 @@ export const VIEWER_PALETTES: Record<string, ViewerPalette> = {
 export function viewerPalette(style: string | undefined): ViewerPalette {
   return VIEWER_PALETTES[style ?? ""] ?? VIEWER_PALETTES.wall;
 }
+// 江口秋の Gallery（「作品から」「一枚ずつ」）から開いたときの地（2026-11-19）。
+// Gallery は紙（#faf9f6）の上に写真が並ぶ。一枚に触れるたびに暗室へ切り替わると、部屋が
+// 紙→黒→紙と替わり、暗い写真は縁が黒に消えた（サムネイルの四辺で数えて 295 枚中 103 枚。
+// 紙に消えるのは 5 枚）。同じ紙の上で、近くから見る。作品・展示の頁から開くときは暗室のまま。
+// 設定で選ぶ壁ではないので、VIEWER_PALETTES には入れない。
+const AKI_GALLERY_PALETTE: ViewerPalette = { wall: "#faf9f6", ink: "42,42,40", veil: "250,249,246" };
 
 const preloaded = new Set<string>();
 /**
@@ -247,13 +253,17 @@ export function Lightbox({
     queryFn: async () => jsonOrThrow(await api.settings.$get()),
   });
   const edition = useAkiEdition();
-  const palette = viewerPalette(edition ? "cinema" : viewerSettings?.viewerStyle);
+  const [location] = useLocation();
+  /** 江口秋の Gallery から開いている。地は紙、作品名は写真のすぐ下に付く。 */
+  const akiGallery = !!edition && location === "/gallery";
+  const palette = akiGallery
+    ? AKI_GALLERY_PALETTE
+    : viewerPalette(edition ? "cinema" : viewerSettings?.viewerStyle);
   const mat = viewerMat(viewerSettings?.viewerMat);
   const ink = (alpha: number) => `rgba(${palette.ink},${alpha})`;
   // 新しい構成（develop）では、送った先の写真も表紙や一覧と同じく、現像されるように
   // 現れる（下の developPhase）。開いている途中で切り替わると、見えている写真が急に
   // 像へ戻るので、開いた時点で決める。
-  const [location] = useLocation();
   const [developDesign] = useState(() =>
     !edition && usesDevelopStructure(siteDesignFrom(viewerSettings?.siteDesign), location),
   );
@@ -565,6 +575,10 @@ export function Lightbox({
   const developOn = developPhase !== "off";
   // 頁の画像が手元に無い写真で、下敷き（一覧用の大きさの画像）が読めたか。
   const [underReady, setUnderReady] = useState(false);
+  // Gallery で作品名を写真の左下に置くための、いま見えている写真の比（横 ÷ 縦）。
+  // 下敷きの画像（頁でもう描いた画像か、小さい画像）が届いた時点で分かる。
+  const [arAt, setArAt] = useState<{ index: number; ar: number } | null>(null);
+  const photoAr = arAt?.index === index ? arAt.ar : null;
   const developFromRef = useRef({
     index,
     at: performance.now(),
@@ -847,10 +861,14 @@ export function Lightbox({
     let gestureMoved = false;
     let hadPinch = false;
     let lastTap = { t: 0, x: 0, y: 0 };
+    const scrollingCaption = (target: EventTarget | null) => {
+      const paragraph = (target as Element | null)?.closest?.<HTMLElement>('.lb-caption[data-under-photo="text"] > p');
+      return !!paragraph && paragraph.scrollHeight > paragraph.clientHeight;
+    };
 
     const onPointerDown = (e: PointerEvent) => {
       // Chrome buttons (close / zoom / arrows) keep their plain click behaviour.
-      if ((e.target as HTMLElement).closest?.("[data-lb-chrome]")) return;
+      if ((e.target as HTMLElement).closest?.("[data-lb-chrome]") || scrollingCaption(e.target)) return;
       // A stale suppression (e.g. after pointercancel) must not eat this tap's click.
       if (pointers.size === 0) suppressClickRef.current = false;
       pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
@@ -930,6 +948,7 @@ export function Lightbox({
 
     // Mouse wheel / trackpad scroll zooms toward the cursor (PC).
     const onWheel = (e: WheelEvent) => {
+      if (scrollingCaption(e.target)) return;
       e.preventDefault();
       setScaleAt(
         scaleRef.current * Math.exp(-e.deltaY * 0.0018),
@@ -962,6 +981,10 @@ export function Lightbox({
     };
 
     const onTouchStart = (e: TouchEvent) => {
+      if (scrollingCaption(e.target)) {
+        touchRef.current = null;
+        return;
+      }
       const t = e.touches[0];
       touchRef.current = { x: t.clientX, y: t.clientY, t: Date.now() };
     };
@@ -1245,7 +1268,8 @@ export function Lightbox({
       idleTimerRef.current = window.setTimeout(() => {
         idleTimerRef.current = null;
         setExifOpen((exif) => {
-          if (!exif && !zoomedRef.current) setChrome(false);
+          const readingCaption = dlg.querySelector('.lb-caption[data-under-photo="text"]:is(:hover, :focus-within)');
+          if (!exif && !zoomedRef.current && !readingCaption) setChrome(false);
           return exif;
         });
       }, IDLE_MS);
@@ -1292,6 +1316,50 @@ export function Lightbox({
     return img.currentSrc || img.src || null;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [photo.id, photo.url, index]);
+  // Gallery の作品名の位置に使う、写真の比を読む。描く前に読めれば、最初のコマから左下に付く。
+  // 読む先は一つに頼らない：小さい画像が遅い・届かないときも、大きい写真が出れば作品名も出る。
+  //   1. 一覧のその写真（届いていれば画像の比、まだなら枠の比）— 開いた瞬間に分かる
+  //   2. ビューアの中の画像（下敷き・大きい写真）— 届いたものから。ぼかし用のごく小さい画像は使わない
+  useLayoutEffect(() => {
+    if (!akiGallery) return;
+    const dlg = dialogRef.current;
+    if (!dlg) return;
+    const set = (ar: number) =>
+      setArAt((prev) =>
+        // わずかな差（一覧の枠は端数を丸めている）では置き直さない。作品名が 1px 動いて見える。
+        prev?.index === index && Math.abs(prev.ar - ar) / ar < 0.004 ? prev : { index, ar },
+      );
+    const natural = (img: HTMLImageElement | null | undefined) =>
+      img && img.complete && img.naturalWidth >= 64 && img.naturalHeight > 0
+        ? img.naturalWidth / img.naturalHeight
+        : null;
+    const fromViewer = () => natural(fitImgRef.current) ?? natural(placeImgRef.current);
+    const fromPage = () => {
+      const id = photos[index]?.id;
+      if (id == null) return null;
+      let frame: number | null = null;
+      for (const tile of document.querySelectorAll<HTMLElement>(`[data-photo-tile="${id}"]`)) {
+        if (tile.closest("dialog")) continue;
+        const ar = natural(tile.querySelector("img"));
+        if (ar) return ar;
+        const box = tile.getBoundingClientRect();
+        if (box.width > 0 && box.height > 0) frame ??= box.width / box.height;
+      }
+      return frame;
+    };
+    const known = fromViewer() ?? fromPage();
+    if (known) set(known);
+    // load は親へ上がらないので、捕まえる側（capture）で聞く。大きい写真は後から DOM に入る。
+    const onLoad = (event: Event) => {
+      const img = event.target;
+      if (!(img instanceof HTMLImageElement) || !img.closest(".lb-content")) return;
+      const ar = fromViewer() ?? natural(img);
+      if (ar) set(ar);
+    };
+    dlg.addEventListener("load", onLoad, true);
+    return () => dlg.removeEventListener("load", onLoad, true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [akiGallery, index, pageSrc]);
   // 現像の像を薄め始める。**下の写真が描ける状態になってから**——頁の画像が手元に
   // あれば最初から描けている。無ければ、下敷きか大きい写真のどちらかが読めて描ける
   // ようになるまで像のまま待つ（先に薄めると、像の下に何も無く、壁の色が透ける）。
@@ -1358,12 +1426,42 @@ export function Lightbox({
     transition: "opacity var(--dur-base) var(--ease-out)",
   };
   const chromeTab = chromeOn ? 0 : -1;
+  // 札のために写真の下へ空ける高さ。
+  // Gallery（akiGallery）では、作品名が写真のすぐ下・左端に付く。高さいっぱいの写真でも、
+  // 作品名の押せる範囲（高さ 45px。写真の側へは 8px だけ、残りは下へ。aki-edition.css）が、下のボタン
+  //（撮影情報は下から 57px、矢印は 52px）に掛からないところまで空ける。幅で決まる写真（スマホの横・4:5）は
+  // 大きさが変わらない。
+  const captionRoom = !captionH
+    ? "0px"
+    : akiGallery
+      ? `max(${captionH + 28}px, calc(${captionH + 83}px - (100dvh - ${mat.h} + ${mat.lift}) / 2))`
+      : `${captionH + 28}px`;
   const placeStyle: React.CSSProperties = {
     display: "block",
     width: mat.w,
-    height: captionH ? `calc(${mat.h} - ${captionH + 28}px)` : mat.h,
+    height: captionH ? `calc(${mat.h} - ${captionRoom})` : mat.h,
     objectFit: "contain",
   };
+  // Gallery：作品名を、実際に見えている写真の左下へ置く（位置の式は aki-edition.css）。
+  // 写真の比がまだ分からない間は出さない（真ん中から左下へ跳ぶのを見せない）。
+  const captionUnderPhoto = akiGallery && photoAr != null;
+  const captionStyle: React.CSSProperties = !akiGallery
+    ? chromeVis
+    : {
+        ...chromeVis,
+        // 写真が入れ替わるときは、写真と一緒に消えて、一緒に現れる。
+        opacity: chromeOn && captionUnderPhoto && swapPhase !== "out" ? 1 : 0,
+        pointerEvents: chromeOn && captionUnderPhoto ? "auto" : "none",
+        transition: swapPhase === "out" ? "none" : chromeVis.transition,
+        ...(captionUnderPhoto
+          ? {
+              ["--lb-ar" as string]: photoAr,
+              ["--lb-box-w" as string]: mat.w,
+              ["--lb-box-h" as string]: `calc(${mat.h} - ${captionRoom})`,
+              ["--lb-mid" as string]: `calc((100dvh - ${captionRoom} - ${mat.lift}) / 2)`,
+            }
+          : null),
+      };
 
   return createPortal(
     <dialog
@@ -1381,6 +1479,7 @@ export function Lightbox({
       aria-label="写真ビューア"
       tabIndex={-1}
       data-aki-viewer={edition ? "" : undefined}
+      data-aki-ground={akiGallery ? "paper" : undefined}
       data-viewer-style={edition ? "cinema" : viewerSettings?.viewerStyle ?? "wall"}
       // Staged Escape (standard viewer behaviour): first Esc steps back out of
       // the zoom, the next one closes — closing instantly from a zoomed detail
@@ -1628,7 +1727,7 @@ export function Lightbox({
             // これまでどおり画面いっぱいに出る。
             // マットの `lift` も同じ下 padding に乗せる（写真は縮まず、
             // 位置だけ上がる — VIEWER_MATS の註を参照）。
-            paddingBottom: `calc(${captionH ? captionH + 28 : 0}px + ${mat.lift})`,
+            paddingBottom: `calc(${captionRoom} + ${mat.lift})`,
             boxSizing: "border-box",
             opacity: swapPhase === "out" ? 0 : 1,
             transition:
@@ -1721,7 +1820,9 @@ export function Lightbox({
                   送るたびに、写真のまわりへぼけた枠が出て消えていた（動きを減らす設定
                   では消えるのが一瞬で、画面全体の明るさが 1 コマだけ 199 → 190 → 199 と
                   沈む。Chromium 1440×900 で実測）。 */}
-                {!developOn && !pageSrc && photo.lqipSrc && (
+                {/* 紙の地（Gallery）では出さない：ぼかしは写真の外へ 20px ほどにじみ、黒では見えないが、
+                    紙の上ではプリントのまわりの色のしみになる（2026-11-19、送った直後のコマで確認）。 */}
+                {!developOn && !pageSrc && !akiGallery && photo.lqipSrc && (
                   <img
                     src={photo.lqipSrc}
                     alt=""
@@ -1987,7 +2088,16 @@ export function Lightbox({
           <div
             ref={captionRef}
             className="lb-caption"
-            style={edition ? chromeVis : {
+            // 名前ひとつ（name）は写真の左下の角に付く。題・一文・二つ以上の名前（text）は、幅を写真から
+            // 切り離す（幅を写真に合わせると、折り返すほど写真が縮み、縮むほど折り返す。横向きで写真が消えた）。
+            data-under-photo={
+              !captionUnderPhoto
+                ? undefined
+                : photo.title || photo.description || memberships.length > 1
+                  ? "text"
+                  : "name"
+            }
+            style={edition ? captionStyle : {
               ...chromeVis,
               position: "absolute",
               bottom: "calc(18px + var(--sai-bottom))",
@@ -2018,6 +2128,7 @@ export function Lightbox({
                 題名は名札、こちらは本文だから。 */}
             {photo.description && (
               <p
+                tabIndex={akiGallery ? chromeTab : undefined}
                 style={{
                   marginTop: photo.title ? 6 : 0,
                   marginInline: "auto",
@@ -2047,7 +2158,7 @@ export function Lightbox({
                   marginTop: photo.title || photo.description ? 8 : 0,
                   fontFamily: "var(--font-en)",
                   fontSize: "var(--text-meta)",
-                  color: edition ? "#d2cfc9" : ink(0.42),
+                  color: akiGallery ? "#2a2a28" : edition ? "#d2cfc9" : ink(0.42),
                   letterSpacing: "0.06em",
                   textDecoration: "none",
                 }}
@@ -2194,7 +2305,8 @@ export function Lightbox({
                     <tr key={label}>
                       <td
                         style={{
-                          color: ink(0.38),
+                          // 紙の地では、薄い墨（0.38）だと読みにくい。サイトの控えめな文字の色にする。
+                          color: akiGallery ? "#6f6c66" : ink(0.38),
                           paddingRight: 14,
                           paddingTop: 3,
                           paddingBottom: 3,
@@ -2206,7 +2318,7 @@ export function Lightbox({
                       </td>
                       <td
                         style={{
-                          color: ink(0.7),
+                          color: akiGallery ? "#2a2a28" : ink(0.7),
                           paddingTop: 3,
                           paddingBottom: 3,
                           overflowWrap: "anywhere",

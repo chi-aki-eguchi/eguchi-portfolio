@@ -1280,3 +1280,50 @@ test("江口秋のGalleryで単独写真と作品を切り替え、作品に寄�
   await expect(grid).toHaveCount(60);
   await expect.poll(() => page.evaluate(() => window.scrollY)).toBeCloseTo(before, 0);
 });
+
+test("江口秋のGalleryでサムネイルが届かなくても、大きい写真から作品へ入れる", async ({ page, api }) => {
+  const settings = await (await api.get("/api/settings")).json();
+  const series = { id: 71, slug: "gallery-print", title: "写真のある作品", kind: "series", photoCount: 1 };
+  const secondSeries = { ...series, id: 72, slug: "gallery-summer", title: "夏の写真" };
+  const photo = {
+    id: 7042, title: "夏の光の中で", description: "海からの風が窓を抜けた。午前に撮った写真を、夕方の光の中でもう一度見る。",
+    seriesId: series.id, seriesIds: [series.id, secondSeries.id], width: null, height: null,
+    url: "/gallery-fixture/original.jpg", thumbUrl: "/gallery-fixture/small.jpg",
+    mediumUrl: "/gallery-fixture/print.svg",
+  };
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.route("**/api/settings", route => route.fulfill({ json: {
+    ...settings, siteUrl: "https://akieguchi.com", siteDesign: "develop", developTopStyle: "spread",
+  } }));
+  await page.route("**/api/photos", route => route.fulfill({ json: { photos: [photo] } }));
+  await page.route(url => url.pathname === "/api/series", route => route.fulfill({
+    json: { series: new URL(route.request().url()).searchParams.has("kind") ? [] : [series, secondSeries] },
+  }));
+  await page.route("**/api/series/gallery-print", route => route.fulfill({ json: { series, photos: [photo] } }));
+  let releasePrint!: () => void;
+  const printReady = new Promise<void>(resolve => { releasePrint = resolve; });
+  await page.route("**/gallery-fixture/**", async route => {
+    if (!route.request().url().endsWith("/print.svg")) return route.fulfill({ status: 404, body: "" });
+    await printReady;
+    await route.fulfill({
+      contentType: "image/svg+xml",
+      body: '<svg xmlns="http://www.w3.org/2000/svg" width="450" height="600"><path fill="#718085" d="M0 0h450v600H0z"/></svg>',
+    });
+  });
+  const viewer = page.getByRole("dialog", { name: "写真ビューア" });
+  try {
+    await page.goto("/gallery", { waitUntil: "domcontentloaded" });
+    await page.locator(".aki-gallery [data-photo-tile]").click();
+    await expect(viewer).toBeVisible();
+  } finally {
+    releasePrint();
+  }
+  const print = viewer.locator('img[alt]:not([alt=""])').first();
+  await print.evaluate(el => (el as HTMLImageElement).decode());
+  await page.setViewportSize({ width: 844, height: 390 });
+  // A caption that wraps must leave enough space for the print when the phone turns.
+  await expect.poll(() => print.evaluate(el => el.getBoundingClientRect().height)).toBeGreaterThan(60);
+  await viewer.getByRole("link", { name: /写真のある作品/ }).click();
+  await expect(page).toHaveURL(/\/series\/gallery-print#photo-7042$/);
+  await expect(page.locator("#photo-7042")).toBeInViewport();
+});

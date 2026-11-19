@@ -391,6 +391,67 @@ dialog[data-aki-viewer] .lb-caption {
   max-width: 90vw;
   text-align: center;
 }
+/* Gallery から開いたとき（2026-11-19）：地は Gallery と同じ紙（色は Lightbox.tsx の AKI_GALLERY_PALETTE）。
+   矢印と作品名は墨、番号は控えめな文字の色。枠・影・文字は足さない。 */
+dialog[data-aki-viewer][data-aki-ground="paper"] .lb-btn {
+  color: var(--aki-ink);
+}
+dialog[data-aki-viewer][data-aki-ground="paper"] .lb-counter {
+  color: var(--aki-mute);
+}
+/* 作品名は、実際に見えている写真の左下に付く（プリントと題。トップや作品の頁と同じ組み）。
+   写真は「幅 --lb-box-w・高さ --lb-box-h の箱」に、比 --lb-ar のまま収まり、箱の真ん中は上から --lb-mid
+   （どれも Lightbox.tsx が渡す。動きの途中でも測らずに決まる）。写真の比が分かるまでは、この組みにしない。 */
+dialog[data-aki-viewer][data-aki-ground="paper"] .lb-caption[data-under-photo] {
+  --lb-w: min(var(--lb-box-w), calc(var(--lb-box-h) * var(--lb-ar)));   /* 見えている写真の幅 */
+  --lb-left: calc(50% - var(--lb-w) / 2);                                /* 写真の左端 */
+  --lb-edge: calc((100% - var(--lb-box-w)) / 2);                         /* 画面の左右に残す余白（写真の箱と同じ） */
+  top: calc(var(--lb-mid) + var(--lb-w) / var(--lb-ar) / 2 + 9px);
+  bottom: auto;
+  left: var(--lb-left);
+  transform: none;
+  width: max-content;
+  text-align: left;
+  /* 二つの作品に入っている写真：名前は横に並び、入りきらなければ折り返す。
+     間（横 20px・縦 24px）は、となり合う「押せる範囲」が重ならない幅。 */
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px 1.25rem;
+}
+/* 名前ひとつ：写真の左下の角から。画面の右の余白までは一行で伸びる。 */
+dialog[data-aki-viewer][data-aki-ground="paper"] .lb-caption[data-under-photo="name"] {
+  max-width: calc(100% - var(--lb-left) - var(--lb-edge));
+}
+/* 題・一文・二つ以上の名前：幅は写真の幅に合わせない（上の Lightbox.tsx の註）。読みやすい幅（34rem）までで、
+   画面の左右の余白の内側に収める。左端は写真の左端。右へ出るときだけ、出ないところまで左へ寄せる。 */
+dialog[data-aki-viewer][data-aki-ground="paper"] .lb-caption[data-under-photo="text"] {
+  --lb-text: min(34rem, var(--lb-box-w));
+  left: min(var(--lb-left), calc(100% - var(--lb-text) - var(--lb-edge)));
+  max-width: var(--lb-text);
+}
+dialog[data-aki-viewer][data-aki-ground="paper"] .lb-caption[data-under-photo] a {
+  position: relative;
+  margin: 0;
+}
+/* 題や一文：一行ずつ幅いっぱいに、左から。作品名との間は今までどおり 8px（名前の側の余白）。
+   長い文は高さを止めて、その中で送って読む（止めないと、文のぶんだけ写真が縮む）。 */
+dialog[data-aki-viewer][data-aki-ground="paper"] .lb-caption[data-under-photo] > p {
+  flex: 0 0 100%;
+  max-width: 100% !important;
+  margin-inline: 0 !important;
+  margin-bottom: -24px;
+  max-height: min(30dvh, 11rem);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  touch-action: pan-y;
+}
+/* 押せる範囲は、名前ごとに高さ 45px。写真の側へは 8px だけ（写真との間は 9px）、残りは下へ広げる。
+   見た目と、写真の大きさを決める札の高さは変えない。 */
+dialog[data-aki-viewer][data-aki-ground="paper"] .lb-caption[data-under-photo] a::after {
+  content: "";
+  position: absolute;
+  inset: -8px -10px calc(100% + 8px - 45px) -10px;
+}
 .aki-edition {
   --header-h: var(--aki-band);
 }

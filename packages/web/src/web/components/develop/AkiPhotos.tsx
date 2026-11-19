@@ -30,15 +30,28 @@ function Plates({
   const restored = useRef(false);
   const links = useSeriesLinks();
   const individual = mode === "work" && photos.length <= 12;
+  const hasWidth = width > 0;
   useLayoutEffect(() => {
     const el = node.current;
     if (!el) return;
-    const measure = () => setWidth(el.clientWidth);
-    measure();
-    const observer = new ResizeObserver(measure);
+    let measuredWidth = el.clientWidth;
+    setWidth(measuredWidth);
+    // Observe after the first rows exist. Their initial height change used to trigger a WebKit resize loop.
+    if (!hasWidth && measuredWidth) return;
+    let frame = 0;
+    const observer = new ResizeObserver(() => {
+      const nextWidth = el.clientWidth;
+      if (nextWidth === measuredWidth) return;
+      measuredWidth = nextWidth;
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => setWidth(nextWidth));
+    });
     observer.observe(el);
-    return () => observer.disconnect();
-  }, []);
+    return () => {
+      observer.disconnect();
+      cancelAnimationFrame(frame);
+    };
+  }, [hasWidth]);
   const gap = width < 650 ? 6 : 10;
   const rows = useMemo(() => {
     if (!width || individual) return [];

@@ -200,6 +200,72 @@ body[data-reveal="none"] .dv-stage__img {
   color: var(--foreground);
   text-decoration: none;
 }
+/* 表紙1枚を入口にする撮影（2026-11-19、akieguchi.com の Rintaro）。
+   表紙と名前で1つのリンク。Works の棚と同じく、写真は元の縦横比のまま切り抜かない。
+   名前の一覧（上の .dv-sessions a）より目に入るように、写真を大きく、名前も一段大きく置く。
+   触れても写真は動かさず、濃さも変えない。応えるのは名前の下線と矢印だけ。 */
+.dv-sessions a.dv-session-cover {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: clamp(1.25rem, 4vw, 4rem);
+  align-items: end;
+  padding: 0;
+  border-bottom: 0;
+  font-size: inherit;
+}
+.dv-session-cover__photo {
+  display: block;
+  /* 縦長の表紙でも、1画面に収まる高さまで（幅を縮めて比は保つ）。 */
+  width: min(100%, calc(82svh * var(--dv-cover-ar, 1)));
+  background: rgba(var(--foreground-rgb), 0.06);
+}
+.dv-session-cover__photo picture {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.dv-session-cover__img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.dv-session-cover__name {
+  display: flex;
+  align-items: baseline;
+  gap: 1rem;
+  min-width: 0;
+  padding-bottom: 0.25rem;
+  font-size: clamp(1.75rem, 3.6vw, 3.25rem);
+  line-height: 1.15;
+  letter-spacing: 0.02em;
+}
+.dv-session-cover__title {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.dv-session-cover__arrow {
+  flex-shrink: 0;
+  font-size: 0.6em;
+  color: rgba(var(--foreground-rgb), 0.6);
+  transition: transform 0.4s ease, color 0.4s ease;
+}
+.dv-session-cover:hover .dv-session-cover__arrow,
+.dv-session-cover:focus-visible .dv-session-cover__arrow {
+  color: var(--foreground);
+  transform: translateX(0.3rem);
+}
+@media (hover: hover) {
+  .dv-session-cover:hover .dv-session-cover__title {
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 0.2em;
+  }
+}
+/* 表紙の入口の下に、名前だけの撮影が続くとき。 */
+.dv-session-cover + ul {
+  margin-top: 1.5rem;
+}
 
 @media (max-width: 767px) {
   /* 写真は画面の端から端まで。 */
@@ -207,6 +273,19 @@ body[data-reveal="none"] .dv-stage__img {
   .dv-list .ps-stream {
     width: auto;
     margin-inline: calc(-1 * var(--page-inset));
+  }
+  /* 表紙の入口も、写真は端から端まで。名前はそのすぐ下、矢印は右端。 */
+  .dv-sessions a.dv-session-cover {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.75rem;
+  }
+  .dv-session-cover__photo {
+    width: auto;
+    margin-inline: calc(-1 * var(--page-inset));
+  }
+  .dv-session-cover__name {
+    justify-content: space-between;
+    padding-bottom: 0;
   }
   /* 扉は「写真＋その名前」で1組。名前は自分の写真のすぐ下（8px）、次の扉の写真までは
      その3倍以上あける。以前は名前の上下が 14px・26px とほぼ同じで、名前がどちらの写真の物か
@@ -301,7 +380,8 @@ body[data-reveal="none"] .dv-stage__img {
   .dv-stage__photo,
   .dv-door,
   .dv-door__title,
-  .dv-archive__arrow {
+  .dv-archive__arrow,
+  .dv-session-cover__arrow {
     transition: none;
   }
   .dv-door__photo.fade-in-item .dv-door__img,

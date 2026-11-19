@@ -13,6 +13,7 @@ import { PhotoGallery } from "../components/PhotoGallery";
 import { useSeriesDetail } from "../hooks/useSeriesDetail";
 import { InquiryCta } from "../components/InquiryCta";
 import { sortPhotosBySetting } from "../lib/photo-sort";
+import { isRintaroEntrance } from "../lib/rintaro-entrance";
 import { SeriesCover } from "../components/SeriesCover";
 import { isServiceOwnerSite } from "../../shared/service-visibility";
 import { SeriesColophon } from "../components/SeriesColophon";
@@ -214,6 +215,7 @@ export default function SeriesDetailPage() {
   // 縦写真を横長に切った断片から始まっていた（/series/sicf、2026-09-15）。
   const coverUrl = coverSource?.coverUrl;
   const hasCover =
+    !(shelf === "work" && isRintaroEntrance(slug, settings?.siteUrl)) &&
     coverSource?.coverPhotoId != null &&
     Boolean(coverUrl) &&
     coverUrl !== photos[0]?.url;

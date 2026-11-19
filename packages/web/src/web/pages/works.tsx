@@ -7,6 +7,7 @@ import { JaPhrases } from "../components/JaPhrases";
 import type { GalleryPhoto } from "../components/PhotoGallery";
 import type { DevelopPhoto } from "../components/develop/DevelopHome";
 import { api, jsonOrThrow } from "../lib/api";
+import { entranceCover, isRintaroEntrance } from "../lib/rintaro-entrance";
 import { sortPhotosBySetting } from "../lib/photo-sort";
 import { useScrollFadeIn } from "../hooks/useScrollFadeIn";
 import { exhibitionNeedsLibrary } from "../../shared/exhibition";
@@ -72,14 +73,17 @@ export default function WorksPage() {
   const rows = useMemo<Row[]>(() => {
     const shelves = [
       ...(seriesQ.data?.series ?? []).map((s) => ({ ...s, href: `/series/${s.slug}` })),
-      ...(worksQ.data?.series ?? []).map((s) => ({ ...s, href: `/work/${s.slug}` })),
+      ...(worksQ.data?.series ?? []).map((s) => ({
+        ...entranceCover(s, photosQ.data?.photos ?? [], settings?.siteUrl),
+        href: `/work/${s.slug}`,
+      })),
     ];
     const list: Row[] = shelves.map((s) => ({
       key: s.href,
       href: s.href,
       title: s.title,
       shelf: true,
-      note: s.photoCount > 0 ? `${s.photoCount}` : "",
+      note: s.photoCount > 0 && !isRintaroEntrance(s.slug, settings?.siteUrl) ? `${s.photoCount}` : "",
       photo: s.coverUrl
         ? {
             url: s.coverUrl,

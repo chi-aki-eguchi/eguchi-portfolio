@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type CSSProperties } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from "react";
 import { Link } from "wouter";
 import { Picture } from "../Picture";
 import { orientedDimensions } from "../../lib/picture";
@@ -9,7 +9,9 @@ import "./aki-landing.css";
 /*
  * 江口秋のトップ（2026-11-19、作者が選んだ案を scratch/site-walk から移した）。
  *
- * ・1画面に1作品。紙の余白に、元の縦横比の一枚と、題を一度だけ。切り抜かない。角も丸めない。
+ * ・最初の一作（いまは展示）だけ、1画面に一枚。紙の余白に、元の縦横比の一枚と、題を一度だけ。切り抜かない。角も丸めない。
+ * ・続く作品は、歩きながら見る並び（2026-11-19）：小さめの表紙を左・右と交互に置く。縦でも横でも同じ面積。
+ *   どれも同じ1画面だと、入口と続きが同じ強さに見え、開いても写真が大きくならなかった。
  * ・初めて来たときだけ、入る前の一拍：名前が一字ずつ現れて、消え、紙が引いて最初の写真が現れる（約2.4秒）。
  *   触れば 0.25 秒で引く。その一回のタップでは下の作品を開かない。
  * ・写真は、届いて画面に入ったときに一度だけ濃淡で現れる。作品から戻ってきたときは待たせない。
@@ -64,11 +66,14 @@ function Arrow() {
 function Work({
   entry,
   first,
+  step,
   instant,
   photographerName,
 }: {
   entry: AkiLandingEntry;
   first: boolean;
+  /** 続く作品の並びの中で何番目か（1から）。最初の一作には渡さない。 */
+  step?: number;
   /** 戻ってきたとき：届いている写真は、濃淡を掛けずにそのまま出す。 */
   instant: boolean;
   photographerName: string;
@@ -78,6 +83,20 @@ function Work({
   const [inView, setInView] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const [plain, setPlain] = useState(false);
+
+  // この履歴で選んだ表紙が DOM に戻った時、同じ高さから次を読めるようにする。
+  useLayoutEffect(() => {
+    const link = linkRef.current;
+    const state = window.history.state;
+    const spot = state?.akiCover;
+    if (!link || spot?.href !== entry.href || !Number.isFinite(spot.topRatio)) return;
+    const offset = link.getBoundingClientRect().top - spot.topRatio * window.innerHeight;
+    window.scrollBy({ top: offset, behavior: "instant" });
+    if (spot.keyboard) link.focus({ preventScroll: true });
+    const remaining = { ...state };
+    delete remaining.akiCover;
+    window.history.replaceState(remaining, "");
+  }, [entry.href]);
 
   useEffect(() => {
     const img = imgRef.current;
@@ -109,18 +128,27 @@ function Work({
   const { photo } = entry;
   const ratio = ratioOf(photo);
   const shown = inView && loaded;
+  // 続く作品：幅に √比 を掛けると、縦でも横でも同じ面積になる（aki-landing.css の .aki-walk）。
+  const linkStyle = ratio ? ({ "--ar": ratio, "--k": Math.sqrt(ratio).toFixed(4) } as CSSProperties) : undefined;
 
   return (
-    <article className="aki-work">
+    <article className="aki-work" style={step ? ({ "--i": step } as CSSProperties) : undefined}>
       <Link
         ref={linkRef}
         href={entry.href}
+        onClick={(event) => {
+          if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+          const topRatio = event.currentTarget.getBoundingClientRect().top / window.innerHeight;
+          window.history.replaceState({
+            ...window.history.state, akiCover: { href: entry.href, topRatio, keyboard: event.detail === 0 },
+          }, "");
+        }}
         aria-label={entry.href.startsWith("/exhibition/") ? entry.title + " 展示を見る" : undefined}
         className="aki-work__link"
         data-shown={shown ? "" : undefined}
         data-plain={plain ? "" : undefined}
         data-free={ratio ? undefined : ""}
-        style={ratio ? ({ "--ar": ratio } as CSSProperties) : undefined}
+        style={linkStyle}
       >
         <span className="aki-work__plate">
           <Picture
@@ -132,7 +160,7 @@ function Work({
             rotationDeg={photo.rotationDeg}
             alt={photoAltText(photo, { photographerName, seriesName: entry.title })}
             preset="hero"
-            sizes="(min-width: 900px) min(66rem, 80vw), calc(100vw - 40px)"
+            sizes={first ? "(min-width: 900px) min(66rem, 80vw), calc(100vw - 40px)" : "(min-width: 900px) 36vw, 75vw"}
             fallbackW={1600}
             fallbackQ={84}
             loading={first ? "eager" : "lazy"}
@@ -165,7 +193,7 @@ export function AkiLanding({
   const [phase, setPhase] = useState<Phase>(() => (firstVisit() && motionAllowed() ? "play" : "none"));
   const [instant] = useState(() => shownBefore);
   const veilRef = useRef<HTMLDivElement>(null);
-  const hasEntries = entries.length > 0;
+  const [lead, ...rest] = entries;
 
   useEffect(() => {
     shownBefore = true;
@@ -223,10 +251,21 @@ export function AkiLanding({
         </div>
       )}
       <h1 className="aki-landing__heading">{name}の作品</h1>
-      {hasEntries &&
-        entries.map((entry, i) => (
-          <Work key={entry.href} entry={entry} first={i === 0} instant={instant} photographerName={name} />
-        ))}
+      {lead && <Work key={lead.href} entry={lead} first instant={instant} photographerName={name} />}
+      {rest.length > 0 && (
+        <div className="aki-walk">
+          {rest.map((entry, i) => (
+            <Work
+              key={entry.href}
+              entry={entry}
+              first={false}
+              step={i + 1}
+              instant={instant}
+              photographerName={name}
+            />
+          ))}
+        </div>
+      )}
     </section>
   );
 }

@@ -1359,7 +1359,11 @@ function HomeImmersive({
 export default function TopPage({ exhibitionSlug }: { exhibitionSlug?: string } = {}) {
   const edition = useAkiEdition();
   if (edition && !exhibitionSlug && !edition.exhibitionOnTop) {
-    const entries = edition.entries.flatMap(row => row.photo ? [{ ...row, photo: row.photo }] : []);
+    // 展示はすぐに開ける。後続の表紙は作品と写真が揃ってから出し、旧表紙の一瞬の表示や並び替わりを防ぐ。
+    const ready = edition.pending || edition.failed
+      ? edition.entries.filter(row => row.href.startsWith("/exhibition/"))
+      : edition.entries;
+    const entries = ready.flatMap(row => row.photo ? [{ ...row, photo: row.photo }] : []);
     return <>
       <AkiLanding entries={entries} name={edition.name} />
       {edition.failed ? <ContentStatus state="error" onRetry={edition.retry} /> :

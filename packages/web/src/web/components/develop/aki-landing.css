@@ -3,7 +3,8 @@
  *
  * 決まり
  * ・写真はそのまま：元の縦横比（--ar）から大きさを決める。切り抜かない。角を丸めない。操作で動かさない・濃さを変えない。
- * ・1画面に1作品：帯を引いた画面の高さの中に、写真と題だけが立つ。
+ * ・最初の一作だけ1画面に一枚：帯を引いた画面の高さの中に、写真と題だけが立つ。
+ * ・続く作品は小さめの表紙を左・右と交互に（.aki-walk）。幅いっぱいの写真は入口の一枚だけで、表紙を開くと写真が大きくなる。
  * ・現れ方は濃淡だけ。移動を伴うのは、乗せた・選んだときに題の横の矢印が少し進む一つだけ。
  * ・色は地と文字の設定（--background / --foreground）をそのまま使う。暗い表示でも同じ組みになる。
  *
@@ -21,7 +22,7 @@
   --aki-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
   --aki-serif: "Cormorant Infant", "Shippori Mincho", "Hiragino Mincho ProN", "Yu Mincho", "Noto Serif JP", serif;
 
-  padding-bottom: 6svh;
+  padding-bottom: 14svh;
   color: var(--foreground);
   font-family: var(--aki-serif);
   font-size: calc(13px * var(--global-font-scale, 1));
@@ -37,7 +38,7 @@
   clip-path: inset(50%); white-space: nowrap;
 }
 
-/* ── 1画面に1作品 ─────────────────────────────────── */
+/* ── 最初の一作：1画面に一枚 ─────────────────────── */
 .aki-work {
   display: grid; place-items: center;
   min-height: var(--aki-room);
@@ -118,11 +119,51 @@
 /* 途中で触ったら、写真は待たせずに出す。 */
 .aki-landing[data-entrance="leaving"] :is(.aki-work__plate img, .aki-work__title) { transition: none; }
 
-/* ── 広い画面：作品を左・右と交互に置く（真ん中に積まない） ── */
+/* ── 続く作品：歩きながら見る並び（2026-11-19） ─────────
+   表紙の幅は「基準の幅 × √比（--k）」。縦でも横でも同じ面積になり、向きで作品の強さが変わらない。
+   寸法の無い写真は --k が無いので、基準の幅のまま、届いた画像の比で立つ。
+   スマホ（幅390）：基準 232px。縦 208×260、横 260×208（入口の一枚は幅 349）。左から交互に、間は 5.5rem。
+   タブレットの縦では表紙が大きくなるぶん、間も少し広げる（幅820で 115px）。 */
+.aki-walk {
+  --aki-walk-base: 66.5%;                      /* 並びの幅に対して */
+  display: grid; row-gap: clamp(5.5rem, min(14vw, 14svh), 8rem);
+  /* 横に倒したスマホでは、並びの幅を画面の高さで抑えて真ん中に置く（左右の端まで離さない）。 */
+  grid-template-columns: minmax(0, min(100%, 78svh)); justify-content: center;
+  padding: 0 var(--aki-inset);
+}
+.aki-walk .aki-work { min-height: 0; padding: 0; place-items: start; }
+.aki-walk .aki-work:nth-child(even) { justify-items: end; }
+.aki-walk .aki-work__link { width: min(100%, calc(var(--aki-walk-base) * var(--k, 1))); }
+/* 長い題は表紙の幅で折り返す（切れ目の無い英字も）。 */
+.aki-work__title > span:first-child { min-width: 0; overflow-wrap: anywhere; }
+
+/* ── 広い画面 ─────────────────────────────────────── */
 @media (min-width: 900px) {
   .aki-landing { --aki-see-h: 68svh; }
-  .aki-work:nth-of-type(odd) .aki-work__link { justify-self: start; margin-left: 7vw; }
-  .aki-work:nth-of-type(even) .aki-work__link { justify-self: end; margin-right: 7vw; }
+  /* 最初の一作は左に寄せる（真ん中に置かない）。
+     縦に長い窓（1024×1366 など）では写真が幅で決まる。寄せた分を幅から引かないと、右へ 7vw はみ出して頁が横に動く。 */
+  .aki-landing > .aki-work .aki-work__link {
+    justify-self: start; margin-left: 7vw;
+    width: min(calc(100% - 7vw), calc(var(--aki-see-h) * var(--ar, 1.5)), 66rem);
+  }
+  .aki-landing > .aki-work .aki-work__link[data-free] { width: min(calc(100% - 7vw), 66rem); }
+
+  /* 続く作品は2本の軸。左の軸は最初の写真の左端と同じ線、右の軸は並びの真ん中から。
+     組（見開き）にはしない：作者が決めていない「対」を作らず、順番は上から一本で読める。
+     一作が2段ぶんを取り、次の作は1段下の、となりの軸から始まる。だから前の作の半ばで次が横に現れ、
+     同じ軸の上下は、題や写真がどれだけ長くても重ならない。作品が奇数でも、最後は軸の上に立つだけ。 */
+  .aki-walk {
+    --aki-walk-base: min(30vw, 50svh);
+    /* 軸の間は、表紙の幅に合わせて止める（とても広い画面でも、右の軸が遠くへ行かない）。 */
+    grid-template-columns: repeat(2, minmax(0, calc(var(--aki-walk-base) * 1.4)));
+    justify-content: start; column-gap: clamp(1.5rem, 3vw, 3rem); row-gap: 0;
+    padding-left: calc(var(--aki-inset) + 7vw);
+    /* 入口の一枚のあとに、ひと息。すぐ下に次が続くと、同じ軸の上で一つの列に見える。 */
+    padding-top: calc(var(--aki-walk-base) * 0.2);
+  }
+  /* 同じ軸の上下の間は、表紙の大きさに合わせる（窓の高さで決めると、縦に長い窓で段違いがほどけて、ばらばらに見える）。 */
+  .aki-walk .aki-work { grid-area: var(--i) / 1 / span 2 / auto; padding-bottom: calc(var(--aki-walk-base) * 0.46); }
+  .aki-walk .aki-work:nth-child(even) { grid-column-start: 2; justify-items: start; }
 }
 
 /* 動きを減らす設定・サイトの「現れ方なし」：最初から全部見える。 */

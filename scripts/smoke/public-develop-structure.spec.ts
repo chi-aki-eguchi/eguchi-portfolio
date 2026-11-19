@@ -1200,6 +1200,48 @@ test("江口秋の作品目次は日藝祭の一枚から壁へ進め、追加�
   await expect(page.locator(".ex-wall")).toBeVisible();
 });
 
+test("江口秋のトップで途中の表紙を開き、戻ると同じ位置から次の作品を選べる", async ({ page, api }) => {
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  const photos = await withCategories(page, api);
+  const settings = await (await api.get("/api/settings")).json();
+  await page.route("**/api/settings", route => route.fulfill({ json: {
+    ...settings, siteUrl: "https://akieguchi.com", siteDesign: "develop", developTopStyle: "spread", exhibitionOnTop: "off",
+  } }));
+  const series = photos.slice(0, 6).map((photo, i) => ({
+    id: 70 + i, slug: `home-return-${i}`, title: `作品 ${i + 1}`, kind: "series", photoCount: 1,
+    coverPhotoId: photo.id, coverUrl: photo.url,
+  }));
+  await page.route(url => url.pathname === "/api/series", route => route.fulfill({
+    json: { series: new URL(route.request().url()).searchParams.has("kind") ? [] : series },
+  }));
+  const chosen = series[3]!;
+  await page.route(`**/api/series/${chosen.slug}`, route => route.fulfill({ json: { series: chosen, photos: [photos[3]] } }));
+  const cover = page.locator(`.aki-work__link[href="/series/${chosen.slug}"]`);
+  let releasePhotos!: () => void;
+  const photosReady = new Promise<void>(resolve => { releasePhotos = resolve; });
+  await page.route(url => url.pathname === "/api/photos", async route => {
+    await photosReady;
+    await route.fallback();
+  });
+  try {
+    await page.goto("/", { waitUntil: "domcontentloaded" });
+    await expect(page.locator(".aki-work__link").first()).toHaveAttribute("href", "/exhibition/2026-nichigei");
+    await expect(page.locator(`#aki-menu a[href="/series/${chosen.slug}"]`)).toHaveCount(1);
+    await expect(cover).toHaveCount(0);
+  } finally {
+    releasePhotos();
+  }
+  await cover.evaluate(el => el.scrollIntoView({ block: "center", behavior: "instant" }));
+  const topOfCover = () => cover.evaluate(el => el.getBoundingClientRect().top);
+  const before = await topOfCover();
+  expect(await page.evaluate(() => scrollY)).toBeGreaterThan(300);
+  await cover.click();
+  await expect(page.locator(".aki-project h1")).toHaveText(chosen.title);
+  await page.goBack();
+  await expect(cover).toBeInViewport();
+  await expect.poll(topOfCover).toBeCloseTo(before, 0);
+});
+
 test("江口秋のGalleryで単独写真と作品を切り替え、作品に寄って同じ位置へ戻れる", async ({ page, api }) => {
   const settings = await (await api.get("/api/settings")).json();
   const { photos } = await (await api.get("/api/photos")).json();

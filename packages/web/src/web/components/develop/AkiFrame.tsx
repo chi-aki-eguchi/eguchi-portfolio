@@ -82,7 +82,7 @@ export function AkiFrame({ children, settings }: { children: ReactNode; settings
     name: settings.profileName || settings.siteName || "江口秋",
     entries,
     pending: sources.some((q) => q.isPending),
-    failed: sources.some((q) => q.isError),
+    failed: sources.some((q) => q.isError && !q.data),
     retry: () => {
       for (const q of sources) if (q.isError) void q.refetch();
     },

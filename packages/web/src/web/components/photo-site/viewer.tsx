@@ -8,7 +8,7 @@ import type { SeriesLink } from "../../lib/series-links";
  * 写真を押したら、いつものビューア（撮影情報・前後送り付き）で開く。
  * 閉じたら、最後に見ていた写真へ焦点を戻す（位置はビューアが合わせる）。
  */
-export function usePhotoViewer(photos: GalleryPhoto[]) {
+export function usePhotoViewer(photos: GalleryPhoto[], keepOpeningTile = false) {
   const [index, setIndex] = useState<number | null>(null);
   const lastIdRef = useRef<number | null>(null);
   const open = useCallback(
@@ -24,10 +24,10 @@ export function usePhotoViewer(photos: GalleryPhoto[]) {
       setIndex((i) => {
         if (i === null || photos.length === 0) return null;
         const ni = (i + delta + photos.length) % photos.length;
-        lastIdRef.current = photos[ni]?.id ?? null;
+        if (!keepOpeningTile) lastIdRef.current = photos[ni]?.id ?? null;
         return ni;
       }),
-    [photos],
+    [photos, keepOpeningTile],
   );
   const prev = useCallback(() => step(-1), [step]);
   const next = useCallback(() => step(1), [step]);

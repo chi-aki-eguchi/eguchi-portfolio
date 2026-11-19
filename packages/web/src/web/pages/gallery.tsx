@@ -1,3 +1,5 @@
+import { AkiGallery } from "../components/develop/AkiPhotos";
+import { useAkiEdition } from "../components/develop/aki-edition";
 import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { MobileGalleryFilters } from "../components/MobileGalleryFilters";
@@ -21,6 +23,11 @@ import { PhotoAllPage } from "../components/photo-site/PhotoAll";
 const MEDIUM_FILM_TYPE = { film: "フィルム", digital: "デジタル" } as const;
 
 export default function GalleryPage() {
+  const edition = useAkiEdition();
+  return edition ? <AkiGallery /> : <ConfiguredGallery />;
+}
+
+function ConfiguredGallery() {
   // B-19 (owner decision 2026-08-05): every filter lives in the URL, with short
   // parameter names, and a default never writes a parameter at all — an
   // unfiltered gallery stays plain `/gallery`. Before this only the medium was

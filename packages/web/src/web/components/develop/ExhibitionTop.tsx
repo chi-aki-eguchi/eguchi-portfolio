@@ -1,3 +1,4 @@
+import { useAkiEdition } from "./aki-edition";
 import { useEffect, useRef, useState } from "react";
 import { Picture } from "../Picture";
 import { JaPhrases } from "../JaPhrases";
@@ -141,6 +142,7 @@ export function ExhibitionWall({
   name?: string;
   photographerName?: string;
 }) {
+  const edition = useAkiEdition();
   const fits = text && exhibitionTextFitsSheet(text);
   return (
     <div className="ex-wall" style={{ "--ex-phone-ar": EXHIBITION_WALL.phone.ratio } as React.CSSProperties}>
@@ -183,19 +185,15 @@ export function ExhibitionWall({
           </span>
         </a>
       )}
-      {EXHIBITION_WALL.cards.map((card, i) => (
-        <a
-          // 札は2枚の決まった並び。
-          // eslint-disable-next-line react/no-array-index-key
-          key={i}
-          className="ex-wall__card"
-          href="#ex-cards"
-          aria-label="名刺へ"
-          style={wallPlace(card, EXHIBITION_WALL.phone.cards[i]!)}
-        >
+      {EXHIBITION_WALL.cards.map((card, i) => {
+        const style = wallPlace(card, EXHIBITION_WALL.phone.cards[i]!);
+        if (edition && i === 0) {
+          return <span key={i} className="ex-wall__card" aria-hidden="true" style={style}><span>{name}</span></span>;
+        }
+        return <a key={i} className="ex-wall__card" href="#ex-cards" aria-label="名刺へ" style={style}>
           {i === 0 && name && <span aria-hidden="true">{name}</span>}
-        </a>
-      ))}
+        </a>;
+      })}
     </div>
   );
 }
@@ -267,13 +265,15 @@ function ExhibitionCards({
   name,
   nameEn,
   links,
+  fromWall,
 }: {
+  fromWall: boolean;
   name: string;
   nameEn: string;
   links: { label: string; href: string }[];
 }) {
   return (
-    <div id="ex-cards" className="ex-cards">
+    <div id="ex-cards" className="ex-cards" data-from-wall={fromWall ? "" : undefined}>
       <div className="ex-card">
         <p className="ex-card__name" lang="ja">
           {name}
@@ -432,6 +432,7 @@ export function ExhibitionWorks({
   replyEndpoint: string;
   photographerName?: string;
 }) {
+  const edition = useAkiEdition();
   const fadeRef = useScrollFadeIn([photos.length]);
   usePoemFont(text);
   const cardVisitor = useExhibitionCardVisitor();
@@ -493,7 +494,7 @@ export function ExhibitionWorks({
           </p>
         ))}
       {cardVisitor && thanks.trim() && <ExhibitionThanks text={thanks} replyEndpoint={replyEndpoint} name={name} />}
-      {cards && <ExhibitionCards name={name} nameEn={nameEn} links={links} />}
+      {cards && <ExhibitionCards fromWall={!!edition && !cardVisitor} name={name} nameEn={nameEn} links={links} />}
     </section>
   );
 }

@@ -2,6 +2,12 @@
 
 作業方針は [AGENTS.md](AGENTS.md)、資料は [docs/README.md](docs/README.md)。ここには現在地と次の一手だけを置き、終わった作業の詳しい記録は `git log`・`docs/specs/`・`docs/archive/` に任せる。
 
+## 2026-11-19 — 江口秋のサイトのローカル版
+
+- `aki/photograph-first` に、Claudeと選んだ見せ方を公開用のReact画面へ移した。トップの一枚は日藝祭《無題》の壁へ、Rintaroの50番は101枚の作品へつながる。表紙・順序は公開データから読む。
+- Galleryの「作品から」と「一枚ずつ」は、写真を入れ替えても同じ組み方で並ぶ。拡大画面の作品名から、その作品の同じ写真へ進める。「← Gallery」で元の位置に戻る。
+- Mac miniでは `TRY_DESIGN=develop TRY_IGNORE_LOCAL_SETTINGS=1 bun run try` で公開写真を使ったローカル確認ができる。公開前。
+
 ## Current State — 2026-11-12
 
 - 本番は `main` の製品 `a2666b6` と同じ（2026-11-12 21:17 JST、`/api/health` の build `a2666b69`・status ok）。

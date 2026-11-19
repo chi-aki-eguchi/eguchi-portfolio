@@ -1,3 +1,4 @@
+import { useAkiEdition } from "./develop/aki-edition";
 import {
   useState,
   useEffect,
@@ -110,6 +111,7 @@ export type LightboxPhoto = {
   description?: string | null;
   category?: string | null;
   seriesId?: number | null;
+  seriesIds?: number[];
 };
 
 // ── 写真ビューアの色 ──
@@ -244,7 +246,8 @@ export function Lightbox({
     queryKey: ["settings"],
     queryFn: async () => jsonOrThrow(await api.settings.$get()),
   });
-  const palette = viewerPalette(viewerSettings?.viewerStyle);
+  const edition = useAkiEdition();
+  const palette = viewerPalette(edition ? "cinema" : viewerSettings?.viewerStyle);
   const mat = viewerMat(viewerSettings?.viewerMat);
   const ink = (alpha: number) => `rgba(${palette.ink},${alpha})`;
   // 新しい構成（develop）では、送った先の写真も表紙や一覧と同じく、現像されるように
@@ -252,7 +255,7 @@ export function Lightbox({
   // 像へ戻るので、開いた時点で決める。
   const [location] = useLocation();
   const [developDesign] = useState(() =>
-    usesDevelopStructure(siteDesignFrom(viewerSettings?.siteDesign), location),
+    !edition && usesDevelopStructure(siteDesignFrom(viewerSettings?.siteDesign), location),
   );
   // 動きを減らす設定の人と、「写真の現れ方」を「なし」にしたサイトでは現像しない。
   const developAllowed = () =>
@@ -750,7 +753,8 @@ export function Lightbox({
     () => null,
   );
   bringSourceIntoViewRef.current = () => {
-    const src = sourceImageFor(photos[index]?.id);
+    const openingTile = edition && location === "/gallery" ? window.history.state?.akiSpot?.id : null;
+    const src = sourceImageFor(openingTile ?? photos[index]?.id);
     if (!src) return null;
     // 着く先の頁の写真が、まだ「現れる動き」を始めていないことがある（開いている間に
     // 先へ送り、画面の外にあった写真へ戻るとき）。そのままだと、運んだ影が着いて
@@ -1150,6 +1154,7 @@ export function Lightbox({
   });
   useEffect(() => {
     returnScrollRef.current = window.scrollY;
+    const sourcePath = window.location.pathname + window.location.search;
     const onPop = () => onCloseRef.current();
     if (historyCleanupTimerRef.current !== null) {
       window.clearTimeout(historyCleanupTimerRef.current);
@@ -1164,7 +1169,7 @@ export function Lightbox({
       // 戻り先の位置は下の後片付けと各一覧が自分で決める。
       const restoration = window.history.scrollRestoration;
       window.history.scrollRestoration = "manual";
-      window.history.pushState({ lightbox: true }, "");
+      window.history.pushState({ ...window.history.state, lightbox: true }, "");
       window.history.scrollRestoration = restoration;
       historyPushedRef.current = true;
     }
@@ -1189,9 +1194,9 @@ export function Lightbox({
         historyPushedRef.current = false;
         // After the body scroll lock above is released (cleanup order isn't
         // guaranteed, hence the rAF), put the viewer back where they were.
-        requestAnimationFrame(() =>
-          window.scrollTo(0, returnScrollRef.current),
-        );
+        requestAnimationFrame(() => {
+          if (window.location.pathname + window.location.search === sourcePath) window.scrollTo(0, returnScrollRef.current);
+        });
       }, 0);
     };
   }, []);
@@ -1375,7 +1380,8 @@ export function Lightbox({
       aria-modal="true"
       aria-label="写真ビューア"
       tabIndex={-1}
-      data-viewer-style={viewerSettings?.viewerStyle ?? "wall"}
+      data-aki-viewer={edition ? "" : undefined}
+      data-viewer-style={edition ? "cinema" : viewerSettings?.viewerStyle ?? "wall"}
       // Staged Escape (standard viewer behaviour): first Esc steps back out of
       // the zoom, the next one closes — closing instantly from a zoomed detail
       // view loses the spot the viewer was studying.
@@ -1415,7 +1421,7 @@ export function Lightbox({
         aria-live="polite"
         aria-atomic="true"
         className="lb-counter"
-        style={{
+        style={edition ? chromeVis : {
           ...chromeVis,
           position: "absolute",
           // 写真の上の余白の高さ。横長の画面で写真が高さいっぱいになると、
@@ -1446,9 +1452,9 @@ export function Lightbox({
         }}
         aria-label={isZoomed ? "ズームを解除" : "拡大して細部を見る"}
         tabIndex={chromeTab}
-        className="lb-btn"
+        className="lb-btn lb-zoom"
         style={
-          {
+          edition ? chromeVis : {
             ...chromeVis,
             position: "absolute",
             top: "calc(9px + var(--sai-top))",
@@ -1501,9 +1507,9 @@ export function Lightbox({
         onClick={doClose}
         aria-label="閉じる"
         tabIndex={chromeTab}
-        className="lb-btn"
+        className="lb-btn lb-back"
         style={
-          {
+          edition ? chromeVis : {
             ...chromeVis,
             position: "absolute",
             top: "calc(10px + var(--sai-top))",
@@ -1527,7 +1533,7 @@ export function Lightbox({
           } as React.CSSProperties
         }
       >
-        ✕
+        {edition ? "←" : "✕"}
       </button>
       {/* Prev / Next */}
       {photos.length > 1 && (
@@ -1540,9 +1546,9 @@ export function Lightbox({
             }}
             aria-label="前の写真"
             tabIndex={chromeTab}
-            className="lb-btn"
+            className="lb-btn lb-prev"
             style={
-              {
+              edition ? chromeVis : {
                 ...chromeVis,
                 position: "absolute",
                 left: "calc(6px + var(--sai-left))",
@@ -1560,7 +1566,7 @@ export function Lightbox({
               } as React.CSSProperties
             }
           >
-            ‹
+            {edition ? "←" : "‹"}
           </button>
           <button
             data-lb-chrome
@@ -1570,9 +1576,9 @@ export function Lightbox({
             }}
             aria-label="次の写真"
             tabIndex={chromeTab}
-            className="lb-btn"
+            className="lb-btn lb-next"
             style={
-              {
+              edition ? chromeVis : {
                 ...chromeVis,
                 position: "absolute",
                 right: "calc(6px + var(--sai-right))",
@@ -1590,7 +1596,7 @@ export function Lightbox({
               } as React.CSSProperties
             }
           >
-            ›
+            {edition ? "→" : "›"}
           </button>
         </>
       )}
@@ -1974,15 +1980,14 @@ export function Lightbox({
 
       {/* Caption — overlaid at the bottom so it never shrinks the photo; part of chrome. */}
       {(() => {
-        const captionSeries =
-          photo.seriesId != null
-            ? (seriesLinkById?.[photo.seriesId] ?? null)
-            : null;
-        if (!photo.title && !photo.description && !captionSeries) return null;
+        const ids = edition && location === "/gallery" ? [photo.seriesId, ...(photo.seriesIds ?? [])] : [photo.seriesId];
+        const memberships = [...new Set(ids)].flatMap(id => id != null && seriesLinkById?.[id] ? [seriesLinkById[id]] : []);
+        if (!photo.title && !photo.description && !memberships.length) return null;
         return (
           <div
             ref={captionRef}
-            style={{
+            className="lb-caption"
+            style={edition ? chromeVis : {
               ...chromeVis,
               position: "absolute",
               bottom: "calc(18px + var(--sai-bottom))",
@@ -2028,9 +2033,12 @@ export function Lightbox({
                 <JaPhrases>{photo.description}</JaPhrases>
               </p>
             )}
-            {captionSeries && (
+            {memberships.map(captionSeries => (
               <Link
-                to={captionSeries.href}
+                key={captionSeries.href}
+                to={edition && location === "/gallery" && photo.id != null ? `${captionSeries.href}#photo-${photo.id}` : captionSeries.href}
+                replace={!!edition && location === "/gallery"}
+                state={edition && location === "/gallery" ? { akiGallery: true } : undefined}
                 data-lb-chrome
                 tabIndex={chromeTab}
                 onClick={(e) => e.stopPropagation()}
@@ -2039,14 +2047,14 @@ export function Lightbox({
                   marginTop: photo.title || photo.description ? 8 : 0,
                   fontFamily: "var(--font-en)",
                   fontSize: "var(--text-meta)",
-                  color: ink(0.42),
+                  color: edition ? "#d2cfc9" : ink(0.42),
                   letterSpacing: "0.06em",
                   textDecoration: "none",
                 }}
               >
                 {captionSeries.name} →
               </Link>
-            )}
+            ))}
           </div>
         );
       })()}

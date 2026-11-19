@@ -11,6 +11,7 @@ export type DevelopPhoto = {
   id?: number;
   url: string;
   title?: string | null;
+  alt?: string | null;
   thumbUrl?: string | null;
   mediumUrl?: string | null;
   width?: number | null;

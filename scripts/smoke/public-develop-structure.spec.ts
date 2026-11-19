@@ -1199,3 +1199,42 @@ test("江口秋の作品目次は日藝祭の一枚から壁へ進め、追加�
   await feature.click();
   await expect(page.locator(".ex-wall")).toBeVisible();
 });
+
+test("江口秋のGalleryで単独写真と作品を切り替え、作品に寄って同じ位置へ戻れる", async ({ page, api }) => {
+  const settings = await (await api.get("/api/settings")).json();
+  const { photos } = await (await api.get("/api/photos")).json();
+  const series = { id: 71, slug: "gallery-return", title: "行き先の作品", kind: "series", photoCount: 60 };
+  const grouped = Array.from({ length: 60 }, (_, i) => ({
+    ...photos[i % photos.length], id: 7000 + i, seriesId: null, seriesIds: [series.id],
+  }));
+  const single = { ...photos[0], id: 8000, seriesId: null, seriesIds: [] };
+  await page.route("**/api/settings", route => route.fulfill({ json: {
+    ...settings, siteUrl: "https://akieguchi.com", siteDesign: "develop", developTopStyle: "spread", exhibitionOnTop: "off",
+  } }));
+  await page.route("**/api/photos", route => route.fulfill({ json: { photos: [...grouped, single] } }));
+  await page.route(url => url.pathname === "/api/series", route => route.fulfill({
+    json: { series: new URL(route.request().url()).searchParams.has("kind") ? [] : [series] },
+  }));
+  await page.route("**/api/series/gallery-return", route => route.fulfill({ json: { series, photos: grouped } }));
+
+  await page.goto("/gallery?shelf=singles");
+  const grid = page.locator(".aki-gallery [data-photo-tile]");
+  await expect(grid).toHaveCount(1);
+  await expect(grid).toHaveAttribute("data-photo-tile", "8000");
+  await page.getByRole("link", { name: "作品から", exact: true }).click();
+  await expect(grid).toHaveCount(60);
+  const tile = grid.nth(35);
+  await tile.scrollIntoViewIfNeeded();
+  const id = await tile.getAttribute("data-photo-tile");
+  await tile.click();
+  const viewer = page.getByRole("dialog", { name: "写真ビューア" });
+  await expect(viewer.locator(".lb-counter")).toContainText("36 / 60");
+  const before = await page.evaluate(() => window.scrollY);
+  const source = viewer.getByRole("link", { name: /行き先の作品/ });
+  await expect(source).toHaveAttribute("href", `/series/gallery-return#photo-${id}`);
+  await source.click();
+  await expect(page.locator(`.aki-project [data-photo-tile="${id}"]`)).toBeInViewport();
+  await page.getByRole("button", { name: "Galleryの元の位置に戻る" }).click();
+  await expect(grid).toHaveCount(60);
+  await expect.poll(() => page.evaluate(() => window.scrollY)).toBeCloseTo(before, 0);
+});

@@ -1,3 +1,7 @@
+import { Link } from "wouter";
+import { AkiLanding } from "../components/develop/AkiLanding";
+import { AkiOnward } from "../components/develop/AkiPhotos";
+import { useAkiEdition } from "../components/develop/aki-edition";
 import {
   lazy,
   Suspense,
@@ -51,7 +55,7 @@ import {
   exhibitionShowsWall,
   readExhibitionCaptions,
 } from "../../shared/exhibition";
-import { exhibitionEntries, exhibitionEntryPhotos, publicExhibitions } from "../../shared/exhibitions";
+import { exhibitionEntries, exhibitionEntryPhotos, exhibitionPath, publicExhibitions } from "../../shared/exhibitions";
 import { DevelopIntro } from "../components/develop/DevelopIntro";
 import { usableContactEndpoint } from "../../shared/contact-settings";
 import { INTRO_SEEN_KEY, shouldPlayIntro } from "../lib/develop-intro";
@@ -1353,6 +1357,20 @@ function HomeImmersive({
  * （2026-11-10、shared/exhibitions.ts。在るかどうかは呼ぶ側の app.tsx が確かめる）。
  */
 export default function TopPage({ exhibitionSlug }: { exhibitionSlug?: string } = {}) {
+  const edition = useAkiEdition();
+  if (edition && !exhibitionSlug && !edition.exhibitionOnTop) {
+    const entries = edition.entries.flatMap(row => row.photo ? [{ ...row, photo: row.photo }] : []);
+    return <>
+      <AkiLanding entries={entries} name={edition.name} />
+      {edition.failed ? <ContentStatus state="error" onRetry={edition.retry} /> :
+        !entries.length && (edition.pending ? <ContentStatus state="loading" /> : <Link to="/info">プロフィール</Link>)}
+    </>;
+  }
+  return <ConfiguredTop exhibitionSlug={exhibitionSlug} />;
+}
+
+function ConfiguredTop({ exhibitionSlug }: { exhibitionSlug?: string }) {
+  const edition = useAkiEdition();
   const { data: settings, isLoading: settingsLoading } = useQuery({
     queryKey: ["settings"],
     queryFn: async () => jsonOrThrow(await api.settings.$get()),
@@ -1375,6 +1393,7 @@ export default function TopPage({ exhibitionSlug }: { exhibitionSlug?: string } 
   // 流す回は、このページを開いている間ずっと、表紙の「現れる動き」を省いたままにする
   //（途中で戻すと、終わっていた動きが長さを取り戻して、もう一度動くことがある）。
   const [introPlanned] = useState(() => {
+    if (edition && exhibitionSlug) return false;
     if (typeof window === "undefined") return false;
     let seen = false;
     try {
@@ -1833,6 +1852,10 @@ export default function TopPage({ exhibitionSlug }: { exhibitionSlug?: string } 
       <div className="top-page" data-hero-mode="single" data-develop-top data-exhibition>
         {experiencePanel}
         <div className="dv-intro-host" data-dv-intro={introPlanned ? "" : undefined}>
+          {edition && exhibitionSlug && <header className="aki-exhibition-title">
+            <h1 className="aki-section-title">{exhibitionTitle || exhibitionEntry.dates}</h1>
+            {exhibitionTitle && <p>{exhibitionEntry.dates}</p>}
+          </header>}
           <section
             key={heroMotionKey(settings)}
             className="ex-cover"
@@ -1869,7 +1892,7 @@ export default function TopPage({ exhibitionSlug }: { exhibitionSlug?: string } 
                 </>
               )}
             </div>
-            <ExhibitionLabel
+            {!(edition && exhibitionSlug) && <ExhibitionLabel
               name={
                 showWall ? (
                   <h1>{settings?.siteName ?? CLIENT_SITE_FALLBACKS.siteName}</h1>
@@ -1887,7 +1910,7 @@ export default function TopPage({ exhibitionSlug }: { exhibitionSlug?: string } 
               }
               title={exhibitionSlug && !showWall ? "" : exhibitionTitle}
               dates={exhibitionSlug && !showWall && !exhibitionTitle ? "" : exhibitionEntry.dates}
-            />
+            />}
           </section>
           {introPlaying && (
             <DevelopIntro
@@ -1915,7 +1938,9 @@ export default function TopPage({ exhibitionSlug }: { exhibitionSlug?: string } 
           x={{ label: "X", href: settings?.profileTwitter }}
           photographerName={photographerName}
         />
-        <DevelopTop settings={settings} exhibition />
+        {edition && exhibitionSlug
+          ? <nav className="aki-end aki-exhibition-end" aria-label="作品の続き"><AkiOnward path={exhibitionPath(exhibitionSlug)} /></nav>
+          : <DevelopTop settings={settings} exhibition />}
         <PhotoViewer
           photos={exhibitionPhotos as GalleryPhoto[]}
           viewer={exhibitionViewer}

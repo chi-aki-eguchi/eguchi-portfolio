@@ -1,0 +1,419 @@
+@font-face {
+  font-family: "Aki Latin";
+  src: url("/fonts/aki/cormorant-infant-medium.woff2") format("woff2");
+  font-weight: 500;
+  font-display: swap;
+  size-adjust: 108%;
+  unicode-range: U+0020-007E, U+00A0-00FF, U+2010-2015, U+2018-201D, U+2026;
+}
+@font-face {
+  font-family: "Aki Mincho";
+  src: url("/fonts/pdf/ShipporiMincho-Medium.ttf") format("truetype");
+  font-weight: 500;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Aki Mincho";
+  src: url("/fonts/aki/shippori-mincho-medium.woff2") format("woff2");
+  font-weight: 500;
+  font-display: swap;
+}
+html:has(.aki-edition),
+html:has(.aki-edition) body {
+  background-color: #faf9f6;
+  color-scheme: light;
+}
+.aki-edition,
+dialog[data-aki-viewer] {
+  --aki-paper: #faf9f6;
+  --aki-ink: #2a2a28;
+  --aki-mute: #6f6c66;
+  --aki-inset: clamp(20px, 5.2vw, 64px);
+  --aki-band: 3.25rem;
+  --font-ja: "Aki Latin", "Aki Mincho", "Hiragino Mincho ProN", "Yu Mincho", serif;
+  --font-en: var(--font-ja);
+  font-family: var(--font-ja);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  line-height: 1.8;
+  letter-spacing: 0.06em;
+  font-synthesis: none;
+}
+.aki-edition {
+  min-height: 100svh;
+  color: var(--aki-ink);
+  background: var(--aki-paper);
+  --foreground: var(--aki-ink);
+  --background: var(--aki-paper);
+  --foreground-rgb: 42, 42, 40;
+  --background-rgb: 250, 249, 246;
+  --text-quiet: var(--aki-mute);
+}
+.aki-edition :is(.font-en, .font-ja) {
+  font-family: var(--font-ja);
+}
+.aki-edition a:focus-visible,
+.aki-edition button:focus-visible {
+  outline: 1px solid currentColor;
+  outline-offset: 3px;
+}
+.aki-skip:not(:focus) {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
+.aki-skip:focus {
+  position: fixed;
+  inset: 0 auto auto 0;
+  padding: 0.75rem 1rem;
+  background: var(--aki-paper);
+  z-index: 100;
+}
+.aki-head {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: calc(var(--aki-band) + env(safe-area-inset-top, 0px));
+  padding: env(safe-area-inset-top, 0px) var(--aki-inset) 0;
+  background: var(--aki-paper);
+}
+.aki-name,
+.aki-return {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  color: inherit;
+}
+.aki-name {
+  font-size: 0.9375rem;
+  letter-spacing: 0.42em;
+}
+.aki-menu-button {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.7rem;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0;
+  color: inherit;
+  cursor: pointer;
+}
+.aki-menu-button i {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: currentColor;
+}
+.aki-menu-button:active i {
+  transform: scale(0.8);
+}
+.aki-menu-hint {
+  color: var(--aki-mute);
+  opacity: 0;
+  font-size: 0.75rem;
+}
+.aki-menu-button:focus-visible .aki-menu-hint {
+  opacity: 1;
+}
+@media (hover: hover) {
+  .aki-menu-button:hover .aki-menu-hint {
+    opacity: 1;
+  }
+}
+.aki-menu {
+  position: fixed;
+  inset: 0 0 0 auto;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  max-width: 100%;
+  max-height: 100%;
+  width: min(100%, 30rem);
+  height: 100dvh;
+  background: var(--aki-paper);
+  color: var(--aki-ink);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  font: inherit;
+  letter-spacing: inherit;
+}
+.aki-menu::backdrop {
+  background: rgb(250 249 246 / 82%);
+}
+.aki-menu-paper {
+  min-height: 100%;
+  padding: env(safe-area-inset-top, 0px) var(--aki-inset) 2.5rem;
+}
+.aki-menu-paper > button {
+  margin-left: auto;
+  height: var(--aki-band);
+}
+.aki-menu-paper i {
+  background: none;
+  box-shadow: inset 0 0 0 1.5px currentColor;
+}
+.aki-menu nav {
+  margin-top: clamp(1.25rem, 8svh, 5rem);
+}
+.aki-menu ul {
+  padding: 0;
+  list-style: none;
+}
+.aki-menu li {
+  margin: 0;
+}
+.aki-menu a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  overflow-wrap: anywhere;
+}
+.aki-menu-works a {
+  padding: 0.35em 0;
+  font-size: clamp(1.3125rem, 0.95rem + 1.7vw, 2.125rem);
+  line-height: 1.35;
+  letter-spacing: 0.04em;
+}
+.aki-menu-pages {
+  margin-top: clamp(1.5rem, 6svh, 3.5rem);
+}
+.aki-menu [aria-current],
+.aki-switch [aria-current] {
+  text-decoration-line: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.5em;
+}
+.aki-policies {
+  display: flex;
+  gap: 1.5rem;
+  padding: 3rem var(--aki-inset);
+  color: var(--aki-mute);
+}
+.aki-gallery {
+  padding: clamp(0.25rem, 2svh, 1.5rem) var(--aki-inset) 3rem;
+}
+.aki-switch {
+  display: flex;
+  align-items: center;
+  gap: 1.75rem;
+  padding-bottom: 0.6rem;
+}
+.aki-switch a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  color: var(--aki-mute);
+}
+.aki-switch [aria-current] {
+  color: var(--aki-ink);
+}
+.aki-photos {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.aki-photos-row {
+  display: flex;
+  gap: inherit;
+}
+.aki-photos button,
+.aki-work-photo {
+  display: block;
+  padding: 0;
+  flex: none;
+  max-width: 100%;
+  cursor: pointer;
+}
+.aki-photos picture,
+.aki-work-photo picture {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.aki-photos img,
+.aki-work-photo img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.aki-section-title,
+.aki-onward {
+  font-size: clamp(1.3125rem, 0.95rem + 1.7vw, 2.125rem);
+  font-weight: 500;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+.aki-project {
+  padding: clamp(1rem, 4svh, 3rem) var(--aki-inset) clamp(4rem, 12svh, 9rem);
+}
+.aki-project > header {
+  margin-bottom: clamp(2rem, 7svh, 5rem);
+}
+.aki-project .aki-date {
+  margin-top: 0.55rem;
+  color: var(--aki-mute);
+}
+.aki-project .aki-statement {
+  max-width: 44em;
+  white-space: pre-line;
+  margin-block: 2rem;
+}
+.aki-project .aki-plates {
+  display: grid;
+  justify-items: center;
+  gap: clamp(5rem, 16svh, 10rem);
+}
+.aki-project .aki-work-photo {
+  width: min(100%, calc(72svh * var(--ar)));
+  aspect-ratio: var(--ar);
+}
+.aki-end {
+  padding: clamp(4rem, 12svh, 10rem) 0 0;
+  display: grid;
+  justify-items: start;
+  gap: 1.2rem;
+}
+.aki-onward {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.7em;
+  min-height: 44px;
+}
+.aki-edition .ex-cards[data-from-wall]:not(:target) {
+  display: none;
+}
+@media (min-width: 760px) {
+  .aki-edition {
+    --aki-band: 4rem;
+  }
+  .aki-photos {
+    gap: 10px;
+  }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .aki-menu-button i {
+    transition: transform 0.22s ease-out;
+  }
+}
+.aki-edition .aki-landing {
+  --aki-serif: var(--font-ja);
+  --header-h: var(--aki-band);
+}
+.aki-exhibition-title {
+  padding: clamp(1rem, 4svh, 3rem) var(--aki-inset) clamp(1rem, 4svh, 3rem);
+}
+.aki-exhibition-title p {
+  margin-top: 0.55rem;
+  color: var(--aki-mute);
+}
+.aki-edition [data-exhibition] {
+  --page-inset: var(--aki-inset);
+}
+.aki-edition .aki-exhibition-end {
+  padding: clamp(4rem, 12svh, 10rem) var(--aki-inset);
+}
+@media (pointer: fine) {
+  html:has(.aki-edition) {
+    scrollbar-gutter: stable;
+  }
+}
+.aki-gallery {
+  overflow-anchor: none;
+}
+.aki-menu-paper:focus {
+  outline: none;
+}
+.aki-edition .aki-menu-button:focus-visible {
+  outline: none;
+}
+.aki-menu-button:focus-visible i {
+  outline: 1px solid currentColor;
+  outline-offset: 4px;
+}
+
+/* Keep the viewer's zoom, keyboard controls and swipe gestures. Give the image its own clear space. */
+dialog[data-aki-viewer] .lb-btn {
+  color: #dcdad5;
+}
+dialog[data-aki-viewer] :is(.lb-back, .lb-zoom, .lb-prev, .lb-next) {
+  position: absolute;
+  z-index: 10;
+  display: grid;
+  place-items: center;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  width: 44px;
+  height: 44px;
+  background: transparent;
+  font: 500 21px/1 var(--font-ja);
+}
+dialog[data-aki-viewer] .lb-back {
+  top: env(safe-area-inset-top, 0px);
+  left: calc(var(--aki-inset) - 12px);
+}
+dialog[data-aki-viewer] .lb-zoom {
+  top: env(safe-area-inset-top, 0px);
+  right: calc(var(--aki-inset) - 12px);
+}
+dialog[data-aki-viewer] :is(.lb-prev, .lb-next) {
+  bottom: calc(8px + env(safe-area-inset-bottom, 0px));
+}
+dialog[data-aki-viewer] .lb-prev {
+  left: calc(50% - 90px);
+}
+dialog[data-aki-viewer] .lb-next {
+  right: calc(50% - 90px);
+}
+dialog[data-aki-viewer] :is(.lb-counter, .lb-caption) {
+  position: absolute;
+  z-index: 10;
+  left: 50%;
+  transform: translateX(-50%);
+}
+dialog[data-aki-viewer] .lb-counter {
+  top: auto;
+  bottom: calc(23px + env(safe-area-inset-bottom, 0px));
+  color: #d2cfc9;
+  font-size: 14px;
+  line-height: 1;
+  letter-spacing: 0.05em;
+}
+dialog[data-aki-viewer] .lb-caption {
+  bottom: calc(58px + env(safe-area-inset-bottom, 0px));
+  max-width: 90vw;
+  text-align: center;
+}
+.aki-edition {
+  --header-h: var(--aki-band);
+}
+.aki-edition .dv-info__request {
+  scroll-margin-top: calc(var(--aki-band) + env(safe-area-inset-top, 0px));
+}
+dialog[data-aki-viewer] .lb-caption a + a {
+  margin-inline-start: 1.25rem;
+}
+.aki-edition .ex-wall span.ex-wall__card {
+  pointer-events: none;
+}
+.aki-edition .ex-wall a.ex-wall__card::before {
+  min-width: 44px;
+  min-height: 44px;
+}
+dialog[data-aki-viewer] .lb-roll[data-dir] > .lb-roll__in {
+  animation: none;
+}
+dialog[data-aki-viewer] .lb-roll[data-dir]::before {
+  content: none;
+}
+
+.aki-project [data-photo-tile] {
+  scroll-margin-top: calc(var(--aki-band) + .75rem);
+}

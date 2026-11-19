@@ -1,3 +1,5 @@
+import { AkiProject } from "../components/develop/AkiPhotos";
+import { useAkiEdition } from "../components/develop/aki-edition";
 import { parseSeriesContent } from "../../shared/series-content";
 import { SeriesContent } from "../components/SeriesContent";
 import { useQuery } from "@tanstack/react-query";
@@ -25,6 +27,7 @@ import { siteDesignFrom } from "../lib/book";
 import { JaPhrases } from "../components/JaPhrases";
 
 export default function SeriesDetailPage() {
+  const edition = useAkiEdition();
   const params = useParams();
   // 出ていく間（前のページとして消えていく間）は、見ていた作品のままにする。
   // URL は先に行き先へ変わるので、そのまま読むと作品名が空や次の作品になり、
@@ -188,6 +191,8 @@ export default function SeriesDetailPage() {
       </nav>
     </article>
   );
+
+  if (edition) return <AkiProject key={series.slug} series={series} photos={photos} />;
 
   // 写真中心のサイト（siteDesign = "book"）。並び・棚・次のシリーズは上と同じ値を渡す。
   if (siteDesignFrom(settings?.siteDesign) === "book") {

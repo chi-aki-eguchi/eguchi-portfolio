@@ -1,3 +1,4 @@
+import { useAkiEdition } from "./develop/aki-edition";
 import {
   createContext,
   useCallback,
@@ -51,6 +52,7 @@ export default function PageTransition({
 }: {
   children: React.ReactNode;
 }) {
+  const immediate = !!useAkiEdition() || prefersReducedMotion();
   const [location] = useLocation();
   const search = useSearch();
   // 覚える鍵は「?以降」まで含める（routeKeyOf の説明を参照）。ただし
@@ -118,7 +120,8 @@ export default function PageTransition({
   // Lazy content means the page may still be short, so re-apply over a few
   // frames and stop as soon as it sticks.
   const restoreScroll = useCallback((target: string) => {
-    const wanted = scrollMemory.get(target);
+    const spot = window.history.state?.akiSpot;
+    const wanted = spot?.path === target && Number.isFinite(spot.y) ? spot.y : scrollMemory.get(target);
     if (wanted <= 0) {
       window.scrollTo(0, 0);
       return;
@@ -207,7 +210,7 @@ export default function PageTransition({
       else window.scrollTo(0, 0);
     };
 
-    if (prefersReducedMotion()) {
+    if (immediate) {
       setDisplay(latestChildren.current);
       setShownPath(location);
       setOpacity(1);
@@ -232,7 +235,7 @@ export default function PageTransition({
     }, PAGE_EXIT_MS);
 
     return () => clearTimeout(t);
-  }, [location, routeKey, swapAndFadeIn, restoreScroll]);
+  }, [location, routeKey, immediate, swapAndFadeIn, restoreScroll]);
 
   useEffect(() => {
     if (!transitioning.current) setDisplay(children);
@@ -243,7 +246,7 @@ export default function PageTransition({
       ref={containerRef}
       style={{
         opacity,
-        transition: prefersReducedMotion()
+        transition: immediate
           ? "none"
           : `opacity ${PAGE_EXIT_MS}ms var(--ease-reveal)`,
       }}

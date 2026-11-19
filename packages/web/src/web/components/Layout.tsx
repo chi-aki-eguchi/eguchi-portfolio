@@ -1,3 +1,5 @@
+import { AkiFrame } from "./develop/AkiFrame";
+import { usesAkiEdition } from "./develop/aki-edition";
 import { useState, useEffect, useRef } from "react";
 import "./public-mobile-navigation.css";
 // 写真集の骨格の器（左の余白）と頁。どのページから開いても効くよう、共通の枠で読む。
@@ -582,6 +584,10 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
   // 写真中心のサイト（siteDesign = "book"、2026-09-26 作り直し）は専用の器で描く。
   // いつもの構成（配布版）の器には触らない。
+  if (data && usesAkiEdition(data, location, typeof window === "undefined" ? undefined : window.location.hostname)) {
+    return <AkiFrame settings={data}>{children}</AkiFrame>;
+  }
+
   if (bookChrome) {
     // 制作の入口は、オーナーのサイトではフッターへ（PhotoServiceNote）。配布先で
     // 「メニューに出す」を選んだときだけ、今までどおりメニューに置く。

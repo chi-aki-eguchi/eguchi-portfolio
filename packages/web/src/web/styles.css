@@ -3558,17 +3558,18 @@ body {
   color: var(--foreground);
 }
 
-::-webkit-scrollbar {
+/* 写真の版では端末のスクロールバーを使う。スマホの WebKit で縦横に黒い帯を予約しない。 */
+:where(html:not(:has(.aki-edition)), html:not(:has(.aki-edition)) *)::-webkit-scrollbar {
   width: 4px;
 }
-::-webkit-scrollbar-track {
+:where(html:not(:has(.aki-edition)), html:not(:has(.aki-edition)) *)::-webkit-scrollbar-track {
   background: transparent;
 }
-::-webkit-scrollbar-thumb {
+:where(html:not(:has(.aki-edition)), html:not(:has(.aki-edition)) *)::-webkit-scrollbar-thumb {
   background: var(--scrollbar-thumb);
   border-radius: 2px;
 }
-::-webkit-scrollbar-thumb:hover {
+:where(html:not(:has(.aki-edition)), html:not(:has(.aki-edition)) *)::-webkit-scrollbar-thumb:hover {
   background: var(--scrollbar-thumb-hover);
 }
 

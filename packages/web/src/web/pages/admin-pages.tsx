@@ -597,6 +597,8 @@ export default function AdminPagesPage() {
           <p className="pp-note">
             {exhibitionShown
               ? "いまはトップに展示を出しているので、ここで選んだ表紙は出ません。「展示」のタブで「いつもの」に戻すと出ます。"
+              : spreadTop && ownerSite
+                ? "いまのトップは日藝祭の展示から始まります。表紙の写真は「展示」タブの先頭の1枚です。"
               : spreadTop
                 ? coverIds.length >= 2
                   ? "トップは見開きです。1枚目が左の頁（Portrait）、2枚目が右の頁（Works）に出ます。"

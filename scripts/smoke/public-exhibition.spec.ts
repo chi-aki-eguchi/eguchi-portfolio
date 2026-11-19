@@ -42,6 +42,25 @@ test.beforeEach(async ({ page }) => {
   });
 });
 
+test("江口秋のトップの一枚から日藝祭の壁へ入る", async ({ page, api }) => {
+  await withSettings(page, api, {
+    siteUrl: "https://akieguchi.com",
+    exhibitionOnTop: "off",
+    developTopStyle: "spread",
+    exhibitionPhotoIds: "",
+  });
+  await page.goto("/");
+  const cover = page.getByRole("link", { name: /つづきを見る/ });
+  await expect(cover.locator("img")).toHaveAttribute("alt", /芝生/);
+  await expect(cover).toHaveAttribute("href", "/exhibition/2026-nichigei");
+  await cover.click();
+  const wall = page.locator(".ex-wall");
+  await expect(wall).toBeInViewport();
+  await expect(wall.locator("button")).toHaveCount(5);
+  await wall.getByRole("link", { name: "詩へ" }).click();
+  await expect(page.locator("#ex-sheet")).toBeInViewport();
+});
+
 test("展示のトップ › 会場の壁の配置から始まり、同じ順に写真が続いて、最後が詩", async ({ page, api }) => {
   await withSettings(page, api, {});
   await page.goto("/", { waitUntil: "networkidle" });

@@ -16,7 +16,8 @@ import {
   SPREAD_WORKS_LABEL,
   WORKS_PATH,
 } from "../../../shared/develop-structure";
-import { EXHIBITION_LIST_PATH, EXHIBITION_NAV_LABEL, publicExhibitions } from "../../../shared/exhibitions";
+import { EXHIBITION_LIST_PATH, EXHIBITION_NAV_LABEL, EXHIBITION_NICHIGEI_SLUG, exhibitionEntryPhotos, exhibitionPath, publicExhibitions } from "../../../shared/exhibitions";
+import { isServiceOwnerSite } from "../../../shared/service-visibility";
 import { photoAltText } from "../../../shared/photo-alt";
 import type { DevelopPhoto } from "./DevelopHome";
 import "./spread.css";
@@ -112,13 +113,19 @@ export function SpreadTop({ settings, covers }: { settings: Settings; covers: De
     [shelves],
   );
 
+  const site = typeof window !== "undefined" ? window.location.hostname : undefined;
+  const owner = isServiceOwnerSite(settings?.siteUrl ?? undefined, site);
+  const shows = publicExhibitions(settings, site);
+  const exhibition = owner ? shows.find((show) => show.slug === EXHIBITION_NICHIGEI_SLUG) : undefined;
+  const exhibitCover: DevelopPhoto | undefined = exhibition && exhibitionEntryPhotos(exhibition, photosQ.data?.photos ?? [])[0];
   const left = covers.length >= 2 ? covers[0]! : (portraits[0] ?? covers[0] ?? null);
   const right = covers.length >= 2 ? covers[1]! : (covers[0] && portraits[0] ? covers[0] : (shelfCovers[0]?.photo ?? life[0] ?? null));
-  const worksHref = WORKS_PATH;
+  const firstLeftUrl = exhibitCover ? undefined : left?.url;
+  const firstRightUrl = exhibitCover?.url ?? right?.url;
 
   // 続きの見開き：左は Portrait の写真、右はシリーズの表紙と日常の写真を交互に。入口と同じ写真は出さない。
   const pairs = useMemo(() => {
-    const used = new Set([left?.url, right?.url]);
+    const used = new Set([firstLeftUrl, firstRightUrl]);
     const l: Leaf[] = portraits
       .filter((p) => !used.has(p.url))
       .map((photo) => ({ photo, href: "/portrait", label: copy.portrait.label }));
@@ -131,10 +138,9 @@ export function SpreadTop({ settings, covers }: { settings: Settings; covers: De
     const rr = r.filter((leaf) => !used.has(leaf.photo.url));
     const count = Math.min(4, l.length, rr.length);
     return Array.from({ length: count }, (_, i) => [l[i]!, rr[i]!] as const);
-  }, [portraits, life, shelfCovers, left?.url, right?.url, copy.portrait.label, copy.life.label]);
+  }, [portraits, life, shelfCovers, firstLeftUrl, firstRightUrl, copy.portrait.label, copy.life.label]);
 
-  const site = typeof window !== "undefined" ? window.location.hostname : undefined;
-  const hasExhibition = publicExhibitions(settings, site).length > 0;
+  const hasExhibition = shows.length > 0;
   const showGallery = galleryHasPhotos(photoCounts, galleryExcludesSeries(settings));
   const ctaOn = settings?.homeCtaEnabled === "on";
   const ctaText = (settings?.homeCtaText || "").trim();
@@ -217,15 +223,54 @@ export function SpreadTop({ settings, covers }: { settings: Settings; covers: De
 
   return (
     <div className="sp" ref={fadeRef}>
-      <section className="sp-spread" aria-label="入口">
-        {page("left", left, "/portrait", copy.portrait.label, copy.portrait.note, ctaOn ? ctaText : "")}
-        <div className="sp-spine">
-          <h1 className="sp-spine__name" data-vertical={vertical ? "" : undefined}>
-            {name}
-          </h1>
-        </div>
-        {page("right", right, worksHref, SPREAD_WORKS_LABEL, copy.series.note, "")}
-      </section>
+      {exhibition && exhibitCover ? (
+        <>
+          <section className="sp-exhibit" aria-labelledby="sp-exhibit-title">
+            <Link className="sp-exhibit__link" to={exhibitionPath(exhibition.slug)}>
+              <Picture
+                url={exhibitCover.url}
+                width={exhibitCover.width}
+                height={exhibitCover.height}
+                rotationDeg={exhibitCover.rotationDeg}
+                alt={photoAltText(exhibitCover, { photographerName: name })}
+                thumbUrl={exhibitCover.thumbUrl}
+                mediumUrl={exhibitCover.mediumUrl}
+                preset="hero"
+                sizes="(max-width: 767px) 100vw, 760px"
+                fallbackW={1600}
+                fallbackQ={84}
+                className="sp-exhibit__photo"
+                loading="eager"
+                fetchPriority="high"
+                draggable={false}
+              />
+              <div className="sp-exhibit__caption">
+                <span>{name}</span>
+                <h1 id="sp-exhibit-title">{exhibition.title || "展示"}</h1>
+                <span>{exhibition.dates}</span>
+                <span className="sp-exhibit__more">つづきを見る →</span>
+              </div>
+            </Link>
+          </section>
+          <nav className="sp-exhibit__after" aria-label="ポートフォリオ">
+            <Link to="/info">台湾出身、東京で写真を学んでいます。</Link>
+            <div>
+              <Link to="/portrait">{copy.portrait.label}</Link>
+              <Link to={WORKS_PATH}>{SPREAD_WORKS_LABEL}</Link>
+            </div>
+          </nav>
+        </>
+      ) : (
+        <section className="sp-spread" aria-label="入口">
+          {page("left", left, "/portrait", copy.portrait.label, copy.portrait.note, ctaOn ? ctaText : "")}
+          <div className="sp-spine">
+            <h1 className="sp-spine__name" data-vertical={vertical ? "" : undefined}>
+              {name}
+            </h1>
+          </div>
+          {page("right", right, WORKS_PATH, SPREAD_WORKS_LABEL, copy.series.note, "")}
+        </section>
+      )}
 
       {pairs.length > 0 && (
         <section className="sp-gutter" aria-label="写真">
@@ -242,7 +287,7 @@ export function SpreadTop({ settings, covers }: { settings: Settings; covers: De
         {ctaOn && (
           <div className="sp-colophon__l">
             <p className="sp-label font-en">{copy.portrait.label}</p>
-            {ctaText && (
+            {!owner && ctaText && (
               <p className="sp-colophon__text">
                 <JaPhrases>{ctaText}</JaPhrases>
               </p>
@@ -258,7 +303,7 @@ export function SpreadTop({ settings, covers }: { settings: Settings; covers: De
           </div>
         )}
         <div className="sp-colophon__r">
-          <p className="sp-label font-en">{SPREAD_WORKS_LABEL}</p>
+          <p className="sp-label font-en">{exhibition ? <Link to={WORKS_PATH}>Works 一覧 →</Link> : SPREAD_WORKS_LABEL}</p>
           <ul className="sp-index">
             {shelves.map((s) => (
               <li key={s.href}>

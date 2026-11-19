@@ -14,6 +14,7 @@ import { useSeriesDetail } from "../hooks/useSeriesDetail";
 import { InquiryCta } from "../components/InquiryCta";
 import { sortPhotosBySetting } from "../lib/photo-sort";
 import { SeriesCover } from "../components/SeriesCover";
+import { isServiceOwnerSite } from "../../shared/service-visibility";
 import { SeriesColophon } from "../components/SeriesColophon";
 import { seriesColophon } from "../lib/series-colophon";
 import { signalAnalyticsPageReady } from "../lib/analytics";
@@ -97,6 +98,8 @@ export default function SeriesDetailPage() {
     return () => window.clearTimeout(timer);
   }, [data, settings, settingsError]);
 
+  const ownerSeries = shelf === "series" && siteDesignFrom(settings?.siteDesign) === "develop" &&
+    isServiceOwnerSite(settings?.siteUrl, typeof window !== "undefined" ? window.location.hostname : undefined);
   const shelfHref = shelf === "work" ? "/work" : "/series";
   const shelfLabel = shelf === "work" ? (settings?.navLabelWork || "Work") : "Series";
   const shelfNoun = shelf === "work" ? "作品" : "シリーズ";
@@ -309,9 +312,9 @@ export default function SeriesDetailPage() {
         )}
       </div>
 
-      <SeriesColophon photos={photos} />
+      <SeriesColophon photos={photos} foldEquipment={ownerSeries} />
 
-      <InquiryCta />
+      {!ownerSeries && <InquiryCta />}
 
       {/* 見終わったあとの行き先。次の作品群があればそれを、なければ（あっても）
           撮った人のプロフィールを。以前は「← Series」と「Next」だけで、次が

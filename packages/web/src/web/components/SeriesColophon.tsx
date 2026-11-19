@@ -15,7 +15,7 @@ import {
  * `admin-renewal-goal.md` の「AI感の削減」が避けろと言っている汎用UIそのもの
  * になる。事実を、行を変えながら静かに並べるだけにする。
  */
-export function SeriesColophon({ photos }: { photos: ColophonPhoto[] }) {
+export function SeriesColophon({ photos, foldEquipment = false }: { photos: ColophonPhoto[]; foldEquipment?: boolean }) {
   const c = seriesColophon(photos);
   if (!colophonHasSubstance(c) || !c) return null;
 
@@ -43,9 +43,8 @@ export function SeriesColophon({ photos }: { photos: ColophonPhoto[] }) {
     </>
   ) : null;
 
-  return (
-    <aside className="series-colophon page-entrance" aria-label="この作品群について">
-      <p className="series-colophon__head font-en">{head.join(" ／ ")}</p>
+  const equipment = (
+    <>
       {c.cameras.length > 0 && (
         <p className="series-colophon__line font-en">
           {c.cameras.map((cam, i) => (
@@ -59,6 +58,18 @@ export function SeriesColophon({ photos }: { photos: ColophonPhoto[] }) {
       {lensLine && (
         <p className="series-colophon__line font-en">{lensLine}</p>
       )}
+    </>
+  );
+
+  return (
+    <aside className="series-colophon page-entrance" aria-label="この作品群について">
+      <p className="series-colophon__head font-en">{head.join(" ／ ")}</p>
+      {foldEquipment ? (
+        (c.cameras.length > 0 || lensLine) && <details>
+          <summary className="series-colophon__line cursor-pointer py-2">撮影機材</summary>
+          {equipment}
+        </details>
+      ) : equipment}
     </aside>
   );
 }

@@ -274,7 +274,10 @@ export default function ContactPage({
   );
   const [status, setStatus] = useState<Status>("idle");
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const subjectOptions = serviceOwner
+  const photoForm = serviceOwner && embedded && !monthlyRequested;
+  const subjectOptions = photoForm
+    ? configuredSubjectOptions.filter((option) => !isPortfolioKitSubject(option) && option !== monthlyReviewSubject("ja") && option !== monthlyReviewSubject("en"))
+    : serviceOwner
     ? [...new Set([...configuredSubjectOptions, monthlySubject])]
     : configuredSubjectOptions;
   // 失敗したときだけ組み立てる mailto。書いた本文をそのまま持っていける形に

@@ -1180,3 +1180,22 @@ test("新しい構成 › Works は遅い一覧を待ち、最初から同じ順
   const note = await page.locator(".wk__note").first().boundingBox();
   expect(name!.x + name!.width).toBeLessThanOrEqual(note!.x);
 });
+
+test("江口秋の作品目次は日藝祭の一枚から壁へ進め、追加した展示にも行ける", async ({ page, api }) => {
+  const photos = await withCategories(page, api);
+  const settings = await (await api.get("/api/settings")).json();
+  await page.route("**/api/settings", route => route.fulfill({ json: {
+    ...settings,
+    siteDesign: "develop", siteUrl: "https://akieguchi.com",
+    exhibitionTitle: "無題", exhibitionPhotoIds: "",
+    exhibitionArchive: JSON.stringify([{ slug: "next-show", title: "次の展示", dates: "2027年1月", photoIds: String(photos[0]!.id) }]),
+  } }));
+  await page.goto("/works");
+  const feature = page.locator(".wk__link").first();
+  await expect(feature).toHaveAttribute("href", "/exhibition/2026-nichigei");
+  await expect(feature.locator("img")).toHaveAttribute("src", /room\.jpg/);
+  await expect(page.locator('.wk__link[href="/exhibition"]')).toHaveCount(1);
+  await expect(page.locator('.wk__link[href="/life"]')).toHaveCount(1);
+  await feature.click();
+  await expect(page.locator(".ex-wall")).toBeVisible();
+});

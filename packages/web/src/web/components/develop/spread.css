@@ -171,3 +171,47 @@ a:hover > .sp-go::after, a:hover .sp-page__meta .sp-go::after, a.sp-go:hover::af
   .wk__name { min-width: 0; }
   .wk__note { flex-shrink: 0; max-width: 40%; margin-top: 0; }
 }
+
+/* 江口秋の作品目次。先に展示の一枚、その下は原寸比を保った表紙を二枚ずつ。 */
+.wk--index {
+  max-width: 1060px;
+  margin-inline: auto;
+  padding-inline: clamp(22px, 6vw, 64px);
+}
+.wk__index-title {
+  margin: 0 0 clamp(20px, 3vw, 36px);
+  font-size: clamp(22px, 2.2vw, 30px);
+  font-weight: 400;
+}
+.wk--index .wk__list {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+  gap: clamp(34px, 5vw, 68px) clamp(16px, 3vw, 42px);
+}
+.wk--index .wk__link { display: block; }
+.wk--index .wk__photo {
+  width: 100%;
+  height: clamp(106px, 34vw, 275px);
+  margin: 0;
+  background: transparent;
+}
+.wk--index .wk__img { object-fit: contain; object-position: left bottom; }
+.wk--index .wk__text {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px 16px;
+  padding: 0;
+  margin-top: 10px;
+}
+.wk--index .wk__item .wk__text { text-align: left; }
+.wk--index .wk__name { font-size: clamp(16px, 1.7vw, 22px); line-height: 1.35; }
+.wk--index .wk__note { margin: 0; max-width: none; flex-shrink: 1; letter-spacing: 0.04em; }
+.wk__item--featured { grid-column: 1 / -1; margin-bottom: clamp(10px, 2vw, 28px); }
+.wk__item--featured .wk__photo { height: clamp(175px, 59vw, 405px); }
+.wk__item--featured .wk__img { object-position: center; }
+.wk__item--featured .wk__text { flex-wrap: wrap; }
+.wk__item--featured .wk__name { font-size: clamp(22px, 2.2vw, 30px); }
+@media (min-width: 768px) {
+  .wk__item--featured .wk__text { max-width: 32rem; margin-inline: auto; }
+}

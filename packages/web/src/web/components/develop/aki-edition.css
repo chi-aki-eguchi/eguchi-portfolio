@@ -126,6 +126,12 @@ dialog[data-aki-viewer] {
     opacity: 1;
   }
 }
+/* タッチ操作では、点の隣の「目次」を最初から読めるようにする。 */
+@media (hover: none) {
+  .aki-menu-hint {
+    opacity: 1;
+  }
+}
 .aki-menu {
   position: fixed;
   inset: 0 0 0 auto;
@@ -499,6 +505,9 @@ dialog[data-aki-viewer] .lb-roll[data-dir]::before {
 }
 .aki-edition .dv-info > section {
   margin-inline: 0 auto;
+}
+.aki-edition .dv-info .profile-journal__image:empty {
+  display: none;
 }
 /* 料金：列が左から始まるので、小さな見出しと札も同じ線から（真ん中寄せのままだと、左の列の中で浮く）。 */
 .aki-edition .dv-info [data-contact-pricing] > h2 {

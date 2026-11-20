@@ -9,9 +9,12 @@
  * 見せる。読めない・非公開・存在しない識別子は、ただの Contact として扱う。
  */
 
+import { DEVELOP_INQUIRY_ANCHOR } from "./develop-structure";
+
 /** 作品ページに置く相談リンクの行き先。 */
-export function contactHrefForWork(slug: string): string {
-  return `/contact?work=${encodeURIComponent(slug)}`;
+export function contactHrefForWork(slug: string, page: "contact" | "info" = "contact"): string {
+  const query = `work=${encodeURIComponent(slug)}`;
+  return page === "info" ? `/info?${query}#${DEVELOP_INQUIRY_ANCHOR}` : `/contact?${query}`;
 }
 
 /**

@@ -235,7 +235,7 @@ export function AkiProject({
       )}
       <nav className="aki-end" aria-label="作品の続き">
         <AkiOnward path={path} />
-        {series.kind === "work" && <Link to={contactHrefForWork(series.slug)}>撮影を相談</Link>}
+        {series.kind === "work" && <Link to={contactHrefForWork(series.slug, "info")}>撮影を相談</Link>}
       </nav>
     </article>
   );

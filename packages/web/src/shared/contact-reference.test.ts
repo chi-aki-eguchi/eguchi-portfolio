@@ -8,6 +8,8 @@ import {
 
 test("相談リンクは作品の識別子だけを渡す", () => {
   expect(contactHrefForWork("rintaro")).toBe("/contact?work=rintaro");
+  const info = new URL(contactHrefForWork("港-2026", "info"), "https://akieguchi.com");
+  expect([info.pathname, info.hash, workSlugFromSearch(info.search)]).toEqual(["/info", "#request", "港-2026"]);
   expect(contactHrefForWork("港-2026")).toBe(
     `/contact?work=${encodeURIComponent("港-2026")}`,
   );

@@ -72,9 +72,11 @@ test.describe("admin — サイトを見ながら直す", () => {
       await openSite(page, api, design);
       for (const [pageId, expected] of Object.entries(EXPECTED[design])) {
         await page.locator(`[data-site-page="${pageId}"]`).click();
-        await expect
-          .poll(() => foundParts(page), { message: `${design} ${pageId} で見つかる部分`, timeout: 15_000 })
-          .toEqual(expect.arrayContaining(expected));
+        // ページ切替中は iframe の文書自体が入れ替わる。読み取りからやり直す。
+        await expect(async () => {
+          expect(await foundParts(page), `${design} ${pageId} で見つかる部分`)
+            .toEqual(expect.arrayContaining(expected));
+        }).toPass({ timeout: 15_000 });
         // 見つかった部分は、右の一覧にも出ている。メニュー・フッター・見出しはどのページにも
         // 出るので一覧には並べず「全体の見た目」に1回だけ置く（プレビューの中では押せる）。
         const listed = await page.locator(".se-parts [data-site-part]").evaluateAll((els) =>

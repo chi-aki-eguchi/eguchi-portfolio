@@ -1225,7 +1225,7 @@ test("江口秋のトップで途中の表紙を開き、戻ると同じ位置�
   });
   try {
     await page.goto("/", { waitUntil: "domcontentloaded" });
-    await expect(page.locator(".aki-work__link").first()).toHaveAttribute("href", "/exhibition/2026-nichigei");
+    await expect(page.locator(".aki-work__link").first()).toHaveAttribute("href", "/exhibition/2026-stilllife-tokyo");
     await expect(page.locator(`#aki-menu a[href="/series/${chosen.slug}"]`)).toHaveCount(1);
     await expect(cover).toHaveCount(0);
   } finally {

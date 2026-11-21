@@ -42,7 +42,7 @@ test.beforeEach(async ({ page }) => {
   });
 });
 
-test("江口秋のトップの一枚から日藝祭の壁へ入る", async ({ page, api }) => {
+test("江口秋のトップの一枚から Still,life 東京の壁へ入り、日藝祭の壁も続きにある", async ({ page, api }) => {
   await withSettings(page, api, {
     siteUrl: "https://akieguchi.com",
     exhibitionOnTop: "off",
@@ -50,11 +50,21 @@ test("江口秋のトップの一枚から日藝祭の壁へ入る", async ({ pa
     exhibitionPhotoIds: "",
   });
   await page.goto("/");
+  const lead = page.locator(".aki-work__link").first();
+  await expect(lead).toHaveAccessibleName(/愛着障害.*展示を見る/);
+  await expect(lead.locator("img")).toHaveAttribute("alt", /煙/);
+  await expect(lead).toHaveAttribute("href", "/exhibition/2026-stilllife-tokyo");
   const cover = page.getByRole("link", { name: /無題.*展示を見る/ });
-  await expect(cover.locator("img")).toHaveAttribute("alt", /芝生/);
   await expect(cover).toHaveAttribute("href", "/exhibition/2026-nichigei");
-  await cover.click();
+  await lead.click();
   const wall = page.locator(".ex-wall");
+  // 縦に長い壁は、4枚とも最初の1画面に入る。詩の紙と名刺は無い。
+  await expect(wall.locator("button")).toHaveCount(4);
+  await expect(wall.locator("button").last()).toBeInViewport({ ratio: 0.95 });
+  await expect(wall.getByRole("link")).toHaveCount(0);
+  await expect(page.locator(".ex-work__open")).toHaveCount(4);
+  await expect(page.locator("#ex-cards")).toHaveCount(0);
+  await page.goto("/exhibition/2026-nichigei");
   await expect(wall).toBeInViewport();
   await expect(wall.locator("button")).toHaveCount(5);
   await wall.getByRole("link", { name: "詩へ" }).click();
@@ -307,21 +317,22 @@ test("展示の欄 › トップはいつもの表紙。メニューから一覧
   await expect(page.locator(".dv-doors")).toBeVisible();
   expect(await noSideScroll(page)).toBeLessThanOrEqual(0);
 
-  // 一覧：新しい順に、公開できる2件（写真の無い展示は出ない）。
+  // 一覧：新しい順に、公開できる3件（写真の無い展示は出ない）。
   await page.goto("/exhibition", { waitUntil: "networkidle" });
   await expect(page.locator("h1")).toHaveText("Exhibition");
   const items = page.locator(".ex-index__item");
-  await expect(items).toHaveCount(2);
-  await expect(items.nth(0)).toContainText("無題");
-  await expect(items.nth(0)).toContainText("日藝祭 2026年11月1日〜3日");
-  await expect(items.nth(1)).toContainText("港");
+  await expect(items).toHaveCount(3);
+  await expect(items.nth(0)).toContainText("愛着障害");
+  await expect(items.nth(1)).toContainText("無題");
+  await expect(items.nth(1)).toContainText("日藝祭 2026年11月1日〜3日");
+  await expect(items.nth(2)).toContainText("港");
   await expect
     .poll(() => page.locator(".ex-index__img").evaluateAll((imgs) => (imgs as HTMLImageElement[]).filter((img) => img.naturalWidth > 0).length))
-    .toBe(2);
+    .toBe(3);
   expect(await noSideScroll(page)).toBeLessThanOrEqual(0);
 
   // 日藝祭のページは、今までのトップと同じ壁・写真・詩・名刺。
-  await items.nth(0).locator("a").click();
+  await items.nth(1).locator("a").click();
   await expect(page).toHaveURL(/\/exhibition\/2026-nichigei$/);
   await expect(page.locator(".ex-wall__frame")).toHaveCount(5);
   await expect(page.locator(".ex-work__open")).toHaveCount(5);

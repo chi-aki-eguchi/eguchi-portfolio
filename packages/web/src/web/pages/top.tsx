@@ -50,12 +50,10 @@ import {
 } from "../components/develop/ExhibitionTop";
 import { PhotoViewer, usePhotoViewer } from "../components/photo-site/viewer";
 import {
-  EXHIBITION_WALL,
   exhibitionNeedsLibrary,
-  exhibitionShowsWall,
   readExhibitionCaptions,
 } from "../../shared/exhibition";
-import { exhibitionEntries, exhibitionEntryPhotos, exhibitionPath, publicExhibitions } from "../../shared/exhibitions";
+import { exhibitionEntries, exhibitionEntryPhotos, exhibitionPath, exhibitionWallFor, publicExhibitions } from "../../shared/exhibitions";
 import { DevelopIntro } from "../components/develop/DevelopIntro";
 import { usableContactEndpoint } from "../../shared/contact-settings";
 import { INTRO_SEEN_KEY, shouldPlayIntro } from "../lib/develop-intro";
@@ -1495,7 +1493,6 @@ function ConfiguredTop({ exhibitionSlug }: { exhibitionSlug?: string }) {
     [photosData, settings?.gallerySortOrder, randomWorks, isDevelopDesign],
   );
   // 展示の写真。同梱の写真だけの並びなら、写真の一覧を待たずに最初の描画から出せる。
-  const exhibitionIds = exhibitionEntry?.photoIds;
   const exhibitionPhotos = useMemo<ExhibitionItem[]>(() => {
     if (!exhibitionEntry) return [];
     if (exhibitionNeedsLibrary(exhibitionEntry.photoIds) && !photosData) return [];
@@ -1838,7 +1835,8 @@ function ConfiguredTop({ exhibitionSlug }: { exhibitionSlug?: string }) {
   // 形で使う）。名前はどちらも札として写真の外へ置く。
   if (exhibitionEntry) {
     // 壁の配置と名刺・QR の人への部分は、日藝祭の展示だけ。足した展示は、先頭の写真が表紙。
-    const showWall = exhibitionEntry.builtIn && exhibitionShowsWall(exhibitionIds);
+    const wall = exhibitionWallFor(exhibitionEntry);
+    const showWall = wall !== null;
     const exhibitionCover = showWall ? undefined : exhibitionPhotos[0];
     const exhibitionTitle = exhibitionEntry.title;
     const exhibitionText = exhibitionEntry.text;
@@ -1848,7 +1846,7 @@ function ConfiguredTop({ exhibitionSlug }: { exhibitionSlug?: string }) {
       (exhibitionCover as GalleryPhoto | undefined)?.rotationDeg ?? 0,
     );
     const coverRatio = showWall
-      ? String(EXHIBITION_WALL.ratio)
+      ? String(wall.ratio)
       : coverSize.width && coverSize.height
         ? `${coverSize.width} / ${coverSize.height}`
         : undefined;
@@ -1870,6 +1868,7 @@ function ConfiguredTop({ exhibitionSlug }: { exhibitionSlug?: string }) {
             <div ref={heroBoxRef as React.Ref<HTMLDivElement>} className="hero-motion-stage ex-cover__frame">
               {showWall ? (
                 <ExhibitionWall
+                  wall={wall}
                   photos={exhibitionPhotos}
                   viewer={exhibitionViewer}
                   text={exhibitionText}

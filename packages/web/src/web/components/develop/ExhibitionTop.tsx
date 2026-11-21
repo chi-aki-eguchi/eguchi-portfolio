@@ -14,11 +14,11 @@ import {
   EXHIBITION_POEM_FONT,
   EXHIBITION_REPLY_MAX,
   EXHIBITION_THANKS_PHOTO,
-  EXHIBITION_WALL,
   exhibitionCardVisitor,
   exhibitionShape,
   exhibitionTextFitsSheet,
   type ExhibitionPhoto,
+  type ExhibitionWallLayout,
   type WallBox,
 } from "../../../shared/exhibition";
 import { photoAltText } from "../../../shared/photo-alt";
@@ -129,12 +129,15 @@ function WallPrint({ photo }: { photo: ExhibitionItem }) {
  * 写真は左上から順に現像される（`.ex-cover[data-on]` になってから。開いた瞬間の見せ場の裏で終わらないように）。
  */
 export function ExhibitionWall({
+  wall,
   photos,
   viewer,
   text,
   name,
   photographerName,
 }: {
+  /** 会場の壁の配置（展示ごと）。 */
+  wall: ExhibitionWallLayout;
   photos: ExhibitionItem[];
   viewer: PhotoViewerState;
   text: string;
@@ -143,10 +146,14 @@ export function ExhibitionWall({
   photographerName?: string;
 }) {
   const edition = useAkiEdition();
-  const fits = text && exhibitionTextFitsSheet(text);
+  const fits = text && wall.sheet && wall.phone.sheet && exhibitionTextFitsSheet(text);
   return (
-    <div className="ex-wall" style={{ "--ex-phone-ar": EXHIBITION_WALL.phone.ratio } as React.CSSProperties}>
-      {EXHIBITION_WALL.works.map(({ id, frame, print, phone }, order) => {
+    <div
+      className="ex-wall"
+      data-tall={wall.phone.ratio < 0.7 ? "" : undefined}
+      style={{ "--ex-phone-ar": wall.phone.ratio } as React.CSSProperties}
+    >
+      {wall.works.map(({ id, frame, print, phone }, order) => {
         const index = photos.findIndex((photo) => photo.id === id);
         const photo = photos[index];
         if (!photo) return null;
@@ -178,15 +185,18 @@ export function ExhibitionWall({
           className="ex-wall__sheet"
           href="#ex-sheet"
           aria-label="詩へ"
-          style={wallPlace(EXHIBITION_WALL.sheet, EXHIBITION_WALL.phone.sheet)}
+          style={wallPlace(wall.sheet!, wall.phone.sheet!)}
         >
           <span aria-hidden="true">
             <Poem text={text} />
           </span>
         </a>
       )}
-      {EXHIBITION_WALL.cards.map((card, i) => {
-        const style = wallPlace(card, EXHIBITION_WALL.phone.cards[i]!);
+      {wall.plate && wall.phone.plate && (
+        <span className="ex-wall__plate" aria-hidden="true" style={wallPlace(wall.plate, wall.phone.plate)} />
+      )}
+      {wall.cards.map((card, i) => {
+        const style = wallPlace(card, wall.phone.cards[i]!);
         if (edition && i === 0) {
           return <span key={i} className="ex-wall__card" aria-hidden="true" style={style}><span>{name}</span></span>;
         }

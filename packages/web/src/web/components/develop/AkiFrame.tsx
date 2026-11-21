@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link, useLocation } from "wouter";
 import {
-  EXHIBITION_NICHIGEI_SLUG,
+  EXHIBITION_STILLLIFE_SLUG,
   exhibitionDisplayTitle,
   exhibitionEntryPhotos,
   exhibitionPath,
@@ -45,7 +45,7 @@ export function AkiFrame({ children, settings }: { children: ReactNode; settings
       }
     }
     const shows = publicExhibitions(settings, window.location.hostname);
-    const lead = shows.find((show) => show.slug === EXHIBITION_NICHIGEI_SLUG);
+    const lead = shows.find((show) => show.slug === EXHIBITION_STILLLIFE_SLUG);
     const ordered = lead ? [lead, ...shows.filter((show) => show !== lead)] : shows;
     return [
       ...ordered.map((show) => ({

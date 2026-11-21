@@ -1154,7 +1154,8 @@ async function serveNonApi(request: Request, url: URL): Promise<Response> {
     const heroImg = exhibitionCover ?? (await getHeroOgImage());
     // 壁の配置を出す間は大きな表紙が無いので、表紙の写真を先読みさせない（共有の写真には使う）。
     const exhibitionWall =
-      (exhibitionTop || exhibitionPage?.builtIn === true) && exhibitionShowsWall(settings.exhibitionPhotoIds);
+      exhibitionPage?.fixed === true ||
+      ((exhibitionTop || exhibitionPage?.builtIn === true) && exhibitionShowsWall(settings.exhibitionPhotoIds));
     const heroPreload = heroPreloadAllowed(settings.heroRandom) && !exhibitionWall;
     const serviceUnavailable =
       isServiceVisibilityGatedPath(routePathname) &&

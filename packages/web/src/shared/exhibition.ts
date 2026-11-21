@@ -33,9 +33,10 @@ const builtIn = (
   width: number,
   height: number,
   alt: string,
+  folder = "2026-nichigei",
 ): ExhibitionPhoto => ({
   id,
-  url: `/api/images/${EXHIBITION_ASSET_PREFIX}2026-nichigei/${name}.jpg`,
+  url: `/api/images/${EXHIBITION_ASSET_PREFIX}${folder}/${name}.jpg`,
   title: "",
   alt,
   width,
@@ -67,7 +68,30 @@ export const EXHIBITION_THANKS_PHOTO = builtIn(
   "ドアの向こうから腕だけ出して、親指を立てている",
 );
 
+/**
+ * Still,life 東京《愛着障害》の4枚（2026-11-21。原本は `~/Desktop/03_展示・作品/still,life東京/`）。
+ * 並びは会場の壁の上から下。日藝祭と同じ写真（部屋・芝生の腕）も、この展示のプリントとして別に持つ。
+ */
+export const STILLLIFE_PHOTOS: readonly ExhibitionPhoto[] = [
+  builtIn(-7, "smoke", 2800, 1866, "砂の上でくすぶる燃えさしと、立ちのぼる細い煙", "2026-stilllife"),
+  builtIn(-8, "room", 2800, 2240, "薄いカーテンの光の前で、椅子に座りこちらを見ている人", "2026-stilllife"),
+  builtIn(-9, "grass", 2800, 2240, "芝生に投げ出された、縞のシャツの腕と開いた手", "2026-stilllife"),
+  builtIn(-10, "bird", 2800, 1866, "地面に横たわる鳥の、乱れた羽", "2026-stilllife"),
+];
+
 export type WallBox = { x: number; y: number; w: number; h: number };
+
+export type ExhibitionWallLayout = {
+  ratio: number;
+  works: readonly { id: number; frame: WallBox; print: WallBox; phone: WallBox }[];
+  /** 詩の紙。無い壁もある。 */
+  sheet?: WallBox;
+  /** 名刺（表・裏）。 */
+  cards: readonly WallBox[];
+  /** 作品の横の小さな札（押せない、壁の一部）。 */
+  plate?: WallBox;
+  phone: { ratio: number; sheet?: WallBox; cards: readonly WallBox[]; plate?: WallBox };
+};
 
 /**
  * 会場の壁の配置（2026-10-31 オーナーが送ってくれた会場の写真から測った。壁の範囲に対する %）。
@@ -77,13 +101,7 @@ export type WallBox = { x: number; y: number; w: number; h: number };
  * ならないので、3枚2段を2枚3段に。順はそのまま（左から右、上から下）で、右下が詩の紙と名刺なのも会場と同じ。
  * 枠の比は写真の比と同じなので、スマホでは写真が枠いっぱいになる。
  */
-export const EXHIBITION_WALL: {
-  ratio: number;
-  works: readonly { id: number; frame: WallBox; print: WallBox; phone: WallBox }[];
-  sheet: WallBox;
-  cards: readonly WallBox[];
-  phone: { ratio: number; sheet: WallBox; cards: readonly WallBox[] };
-} = {
+export const EXHIBITION_WALL: ExhibitionWallLayout = {
   ratio: 1738 / 1220,
   works: [
     {
@@ -132,6 +150,44 @@ export const EXHIBITION_WALL: {
   },
 };
 
+/**
+ * Still,life 東京の壁（2026-11-21 オーナーが送ってくれた会場の写真から測った。壁の範囲に対する %）。
+ * 同じ大きさの銀の額4枚が、縦一列に左右へずれながら下りていく。3枚目の右に作品の札。
+ * 縦に長い壁なので、スマホでも並びは会場のまま。スマホでは写真を枠いっぱいにする（phone は写真の比）。
+ */
+export const STILLLIFE_WALL: ExhibitionWallLayout = {
+  ratio: 1012 / 1855,
+  works: [
+    {
+      id: -7,
+      frame: { x: 21.9, y: 0, w: 57, h: 24.1 },
+      print: { x: 15.8, y: 20.4, w: 68.4, h: 59.2 },
+      phone: { x: 20, y: 0, w: 64, h: 21.52 },
+    },
+    {
+      id: -8,
+      frame: { x: 43, y: 25.6, w: 57, h: 24.1 },
+      print: { x: 21.5, y: 20.6, w: 57, h: 58.8 },
+      phone: { x: 36, y: 23.29, w: 64, h: 25.83 },
+    },
+    {
+      id: -9,
+      frame: { x: 0, y: 50.8, w: 57, h: 24.1 },
+      print: { x: 21.5, y: 20.6, w: 57, h: 58.8 },
+      phone: { x: 0, y: 50.88, w: 64, h: 25.83 },
+    },
+    {
+      id: -10,
+      frame: { x: 20.7, y: 75.9, w: 57, h: 24.1 },
+      print: { x: 15.8, y: 20.4, w: 68.4, h: 59.2 },
+      phone: { x: 19, y: 78.48, w: 64, h: 21.52 },
+    },
+  ],
+  cards: [],
+  plate: { x: 70.2, y: 60.8, w: 10.1, h: 3.8 },
+  phone: { ratio: 100 / 198.24, cards: [], plate: { x: 72, y: 62.2, w: 10.1, h: 3.5 } },
+};
+
 /** 同梱の5枚が全部並びに入っている間は、トップの最初に壁の配置を出す。外すと先頭の写真が表紙になる。 */
 export function exhibitionShowsWall(ids: string | null | undefined): boolean {
   const list = parsePhotoIdList(ids);
@@ -139,7 +195,7 @@ export function exhibitionShowsWall(ids: string | null | undefined): boolean {
 }
 
 export const EXHIBITION_ASSET_KEYS: ReadonlySet<string> = new Set(
-  [...EXHIBITION_BUILT_IN, EXHIBITION_THANKS_PHOTO].map((photo) => photo.url.replace("/api/images/", "")),
+  [...EXHIBITION_BUILT_IN, EXHIBITION_THANKS_PHOTO, ...STILLLIFE_PHOTOS].map((photo) => photo.url.replace("/api/images/", "")),
 );
 
 /** 会場の壁の詩（原稿 `~/Downloads/poem_A4_tate_vector.pdf`）。一字も変えない。 */

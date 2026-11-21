@@ -77,6 +77,7 @@
 }
 .ex-wall__frame,
 .ex-wall__sheet,
+.ex-wall__plate,
 .ex-wall__card {
   position: absolute;
   left: var(--ex-x);
@@ -122,6 +123,7 @@
   filter: none;
 }
 .ex-wall__sheet,
+.ex-wall__plate,
 .ex-wall__card {
   display: block;
   opacity: 0;
@@ -168,7 +170,15 @@
   inset: 27% 38% 49%;
   background: rgba(26, 26, 26, 0.78);
 }
-.ex-cover[data-on] :is(.ex-wall__sheet, .ex-wall__card) {
+/* 作品の横の札。右に小さな QR の四角。 */
+.ex-wall__plate::after {
+  content: "";
+  position: absolute;
+  inset: 28% 12% 28% auto;
+  aspect-ratio: 1;
+  background: rgba(26, 26, 26, 0.7);
+}
+.ex-cover[data-on] :is(.ex-wall__sheet, .ex-wall__plate, .ex-wall__card) {
   opacity: 1;
 }
 .ex-wall__sheet {
@@ -188,8 +198,14 @@ body[data-reveal="none"] .ex-wall__img {
   .ex-wall {
     aspect-ratio: var(--ex-phone-ar);
   }
+  /* 縦に長い壁は、会場の並びのまま1画面に入る幅まで。 */
+  .ex-wall[data-tall] {
+    max-width: calc((100svh - var(--header-h, 0px) - 9.5rem) * var(--ex-phone-ar));
+    margin-inline: auto;
+  }
   .ex-wall__frame,
   .ex-wall__sheet,
+  .ex-wall__plate,
   .ex-wall__card {
     left: var(--ex-sx);
     top: var(--ex-sy);
@@ -644,6 +660,17 @@ body[data-reveal="none"] .ex-thanks__print.fade-in-item .ex-thanks__img {
     max-height: calc(100svh - 2 * clamp(2rem, 7vh, 4rem));
     max-width: calc((100svh - 2 * clamp(2rem, 7vh, 4rem)) * var(--photo-ar));
   }
+  /* 縦に長い壁は、題の下で全体が1画面に入る高さまで。壁の中央に置く。 */
+  .ex-cover[data-wall] .ex-wall[data-tall] {
+    max-width: calc((100svh - 19rem) * var(--photo-ar));
+    margin-inline: auto;
+  }
+  .ex-cover[data-wall]:has(.ex-wall[data-tall]) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .ex-cover[data-wall]:has(.ex-wall[data-tall]) .ex-cover__frame {
+    padding-right: var(--page-inset);
+  }
   /* 額。細い銀の枠・白いマット・窓の段（二重マット）・壁に落ちる影まで会場に合わせる。線だけだと図面に見える。 */
   .ex-wall__frame {
     background: var(--ex-paper);
@@ -765,6 +792,7 @@ body[data-reveal="none"] .ex-thanks__print.fade-in-item .ex-thanks__img {
   }
   .ex-wall__img,
   .ex-wall__sheet,
+  .ex-wall__plate,
   .ex-wall__card,
   .ex-wall__card:has(span),
   .ex-wall__card:not(:has(span)) {

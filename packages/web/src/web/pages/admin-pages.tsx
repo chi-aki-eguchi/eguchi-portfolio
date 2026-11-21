@@ -279,7 +279,8 @@ export default function AdminPagesPage() {
           exhibitionDates: savedValue("exhibitionDates"),
         },
         window.location.hostname,
-      ),
+        // 写真も題もコードに持つ展示（Still,life 東京）は、ここでは編集できないので並べない。
+      ).filter((entry) => !entry.fixed),
     [settings, archiveValue, savedValue],
   );
   const show = shows.find((entry) => entry.slug === chosenShow) ?? shows[0] ?? null;

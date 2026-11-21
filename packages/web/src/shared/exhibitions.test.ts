@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import {
   EXHIBITION_NICHIGEI_SLUG,
+  EXHIBITION_STILLLIFE_SLUG,
   exhibitionEntries,
   exhibitionEntryPhotos,
   exhibitionSlugFromPath,
@@ -37,6 +38,7 @@ describe("展示の欄", () => {
     };
     expect(exhibitionEntries(settings).map((show) => show.slug)).toEqual([
       "2027-b",
+      EXHIBITION_STILLLIFE_SLUG,
       EXHIBITION_NICHIGEI_SLUG,
       "2024-a",
       "ex-c",
@@ -45,9 +47,10 @@ describe("展示の欄", () => {
 
   test("保存値の無いサイトの住所は、サーバーが渡す住所で補える", () => {
     expect(publicExhibitions({ siteDesign: "develop" }, "https://akieguchi.com").map((show) => show.slug)).toEqual([
+      EXHIBITION_STILLLIFE_SLUG,
       EXHIBITION_NICHIGEI_SLUG,
     ]);
-    expect(publicExhibitions({ siteDesign: "develop" }, "akieguchi.com")).toHaveLength(1);
+    expect(publicExhibitions({ siteDesign: "develop" }, "akieguchi.com")).toHaveLength(2);
   });
 
   test("ほかの人のサイト・今までの構成には、日藝祭の展示を出さない", () => {
@@ -58,8 +61,11 @@ describe("展示の欄", () => {
 
   test("写真を選んでいない展示は、公開に出さない", () => {
     const settings = { ...owner, exhibitionArchive: JSON.stringify([record("2025-a", "2025年3月", "")]) };
-    expect(exhibitionEntries(settings)).toHaveLength(2);
-    expect(publicExhibitions(settings).map((show) => show.slug)).toEqual([EXHIBITION_NICHIGEI_SLUG]);
+    expect(exhibitionEntries(settings)).toHaveLength(3);
+    expect(publicExhibitions(settings).map((show) => show.slug)).toEqual([
+      EXHIBITION_STILLLIFE_SLUG,
+      EXHIBITION_NICHIGEI_SLUG,
+    ]);
   });
 
   test("足した展示の写真は、選んだ順のライブラリの写真だけ（無い写真は飛ばし、同梱の写真で埋めない）", () => {

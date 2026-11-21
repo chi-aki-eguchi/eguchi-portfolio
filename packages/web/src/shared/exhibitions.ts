@@ -18,7 +18,12 @@ import {
   EXHIBITION_DEFAULTS,
   EXHIBITION_TEXT_MAX,
   EXHIBITION_TITLE_MAX,
+  EXHIBITION_WALL,
+  STILLLIFE_PHOTOS,
+  STILLLIFE_WALL,
   exhibitionPhotoList,
+  exhibitionShowsWall,
+  type ExhibitionWallLayout,
   readExhibitionCaptions,
   type ExhibitionPhoto,
 } from "./exhibition";
@@ -27,6 +32,23 @@ import { isServiceOwnerSite } from "./service-visibility";
 export const EXHIBITION_LIST_PATH = "/exhibition";
 /** 日藝祭 2026 のページ。名刺の QR（`/card.html`）は、トップが展示でない間ここへ通す。 */
 export const EXHIBITION_NICHIGEI_SLUG = "2026-nichigei";
+/**
+ * Still,life 東京《愛着障害》のページ（2026-11-21）。題は写真集と同じ。写真・題・壁の配置はコードに持ち、
+ * 管理画面には出さない。江口秋のトップは、この展示を最初の一作にする（AkiFrame.tsx）。
+ */
+export const EXHIBITION_STILLLIFE_SLUG = "2026-stilllife-tokyo";
+const STILLLIFE_ENTRY = {
+  slug: EXHIBITION_STILLLIFE_SLUG,
+  title: "愛着障害",
+  dates: "Still,life 東京 2026年11月",
+  text: "",
+  photoIds: "",
+  captions: "",
+  builtIn: false,
+  fixed: true,
+  thanks: "",
+} as const;
+const RESERVED_SLUGS: readonly string[] = [EXHIBITION_NICHIGEI_SLUG, EXHIBITION_STILLLIFE_SLUG];
 /** メニューと一覧の見出しの言葉。 */
 export const EXHIBITION_NAV_LABEL = "Exhibition";
 /** 足せる展示の数。 */
@@ -59,6 +81,8 @@ export type ExhibitionEntry = ExhibitionRecord & {
   builtIn: boolean;
   /** 名刺の QR から来た人へのひとこと（日藝祭だけ）。 */
   thanks: string;
+  /** 写真も文もコードに持つ展示（Still,life 東京）。設定からは変わらない。 */
+  fixed?: boolean;
 };
 
 type SettingsLike = Record<string, string | null | undefined> | null | undefined;
@@ -77,7 +101,7 @@ function tidyText(value: unknown, max: number): string {
 }
 
 function validSlug(value: unknown): value is string {
-  return typeof value === "string" && /^[a-z0-9][a-z0-9-]{0,39}$/.test(value) && value !== EXHIBITION_NICHIGEI_SLUG;
+  return typeof value === "string" && /^[a-z0-9][a-z0-9-]{0,39}$/.test(value) && !RESERVED_SLUGS.includes(value);
 }
 
 /** 設定の文字列から、足した展示を読む。壊れた値・同じ slug の2件目・形の違う物は無かったことにする。 */
@@ -127,7 +151,7 @@ export function newExhibitionSlug(taken: readonly string[], seed: string, dates 
   const tail = seed.toLowerCase().replace(/[^a-z0-9]/g, "").slice(-6) || "x";
   const base = year ? `${year}-${tail}` : `ex-${tail}`;
   let slug = base;
-  for (let n = 2; taken.includes(slug) || slug === EXHIBITION_NICHIGEI_SLUG; n++) slug = `${base}-${n}`;
+  for (let n = 2; taken.includes(slug) || RESERVED_SLUGS.includes(slug); n++) slug = `${base}-${n}`;
   return slug;
 }
 
@@ -167,6 +191,7 @@ export function exhibitionEntries(settings: SettingsLike, site?: string): Exhibi
     thanks: "",
   }));
   if (hasBuiltInExhibition(settings, site)) {
+    entries.push({ ...STILLLIFE_ENTRY });
     entries.push({
       slug: EXHIBITION_NICHIGEI_SLUG,
       title: settings.exhibitionTitle ?? EXHIBITION_DEFAULTS.title,
@@ -187,7 +212,7 @@ export function exhibitionEntries(settings: SettingsLike, site?: string): Exhibi
 
 /** 公開に出せる展示か。同梱の展示は写真が必ずある。足した展示は、写真を1枚でも選んでから。 */
 export function exhibitionIsPublic(entry: ExhibitionEntry): boolean {
-  return entry.builtIn || parsePhotoIdList(entry.photoIds).length > 0;
+  return entry.builtIn || entry.fixed === true || parsePhotoIdList(entry.photoIds).length > 0;
 }
 
 export function publicExhibitions(settings: SettingsLike, site?: string): ExhibitionEntry[] {
@@ -202,11 +227,19 @@ export function exhibitionEntryPhotos<T extends { id: number }>(
   entry: ExhibitionEntry,
   library: readonly T[],
 ): (T | ExhibitionPhoto)[] {
+  if (entry.fixed) return [...STILLLIFE_PHOTOS];
   if (entry.builtIn) return exhibitionPhotoList(entry.photoIds, library);
   const byId = new Map(library.map((photo) => [photo.id, photo]));
   return parsePhotoIdList(entry.photoIds)
     .map((id) => byId.get(id))
     .filter((photo): photo is T => Boolean(photo));
+}
+
+/** 最初の画面に出す会場の壁の配置。壁を持たない展示（足した展示、5枚から外した日藝祭）は null。 */
+export function exhibitionWallFor(entry: ExhibitionEntry | null | undefined): ExhibitionWallLayout | null {
+  if (!entry) return null;
+  if (entry.fixed) return STILLLIFE_WALL;
+  return entry.builtIn && exhibitionShowsWall(entry.photoIds) ? EXHIBITION_WALL : null;
 }
 
 /** 一覧やページの題。題の無い展示は会期を、どちらも無ければ「展示」。 */

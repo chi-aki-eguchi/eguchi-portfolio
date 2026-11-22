@@ -840,7 +840,8 @@ function withSecurityHeaders(res: Response, request: Request): Response {
   headers.set("X-Frame-Options", "SAMEORIGIN");
   headers.set("Content-Security-Policy", "frame-ancestors 'self'");
   headers.set("Content-Security-Policy-Report-Only", CSP_REPORT_ONLY);
-  headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
+  if (!headers.has("Referrer-Policy"))
+    headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
   headers.set(
     "Permissions-Policy",
     "camera=(), microphone=(), geolocation=(), payment=(), usb=(), bluetooth=(), serial=()",
@@ -856,6 +857,44 @@ function withSecurityHeaders(res: Response, request: Request): Response {
     statusText: res.statusText,
     headers,
   });
+}
+
+const privatePhotobookPaths = new Set<string>();
+const configuredPhotobookPath = process.env.PRIVATE_PHOTOBOOK_PATH ?? "";
+if (
+  /^\/[a-z0-9]+(?:-[a-z0-9]+)*$/.test(configuredPhotobookPath) &&
+  canonicalPortfolioKitPath(configuredPhotobookPath) === configuredPhotobookPath &&
+  htmlStatusForSpaPath(configuredPhotobookPath, {
+    ownerSite: true, developStructure: true, exhibitionFound: true,
+  }) === 404
+) {
+  privatePhotobookPaths.add(configuredPhotobookPath);
+  privatePhotobookPaths.add(configuredPhotobookPath + "/");
+}
+
+function privatePhotobookEntry(method: string): Response {
+  const headers = new Headers({
+    "Cache-Control": "private, no-store",
+    "Referrer-Policy": "no-referrer",
+    "X-Robots-Tag": "noindex, nofollow",
+  });
+  const configured = process.env.PRIVATE_PHOTOBOOK_URL ?? "";
+  const url = URL.canParse(configured) ? new URL(configured) : null;
+  if (
+    !url ||
+    !/^https:\/\//i.test(configured) ||
+    url.protocol !== "https:" ||
+    url.username || url.password || url.port ||
+    !(url.hostname === "chatgpt.site" || url.hostname.endsWith(".chatgpt.site"))
+  ) {
+    return new Response(null, { status: 404, headers });
+  }
+  if (method !== "GET" && method !== "HEAD") {
+    headers.set("Allow", "GET, HEAD");
+    return new Response(null, { status: 405, headers });
+  }
+  headers.set("Location", url.href);
+  return new Response(null, { status: 302, headers });
 }
 
 // ビルド時の manifest。**起動時に一度だけ読む。** 中身はビルドで固定なので
@@ -947,6 +986,9 @@ async function serveNonApi(request: Request, url: URL): Promise<Response> {
       status: 308,
       headers: { Location: "/workroom/index.html" },
     });
+  }
+  if (privatePhotobookPaths.has(url.pathname)) {
+    return privatePhotobookEntry(request.method);
   }
   const routePathname = canonicalPortfolioKitPath(url.pathname);
   if (routePathname !== url.pathname && !url.pathname.includes(".")) {

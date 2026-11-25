@@ -10,13 +10,21 @@ export class UnreadableImageError extends Error {
   }
 }
 
+/**
+ * `input` が文字列なら一時ファイルの道順。ファイルから順に読むと、元の画像を
+ * メモリに置かずに済む（出力は Buffer から読んだときと1バイトも変わらない）。
+ */
 export async function optimiseUploadedImage(
-  input: Buffer | Uint8Array,
+  input: Buffer | Uint8Array | string,
   maxPx: number,
   quality: number,
 ): Promise<Buffer> {
   try {
-    return await sharp(Buffer.from(input))
+    const source =
+      typeof input === "string"
+        ? sharp(input, { sequentialRead: true })
+        : sharp(Buffer.from(input));
+    return await source
       .rotate()
       .resize({
         width: maxPx,

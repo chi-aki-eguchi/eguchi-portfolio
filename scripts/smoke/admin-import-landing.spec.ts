@@ -83,7 +83,10 @@ function mockPhoto(id: number, filename: string): MockPhoto {
 }
 
 async function uploadedFilename(route: Route): Promise<string> {
-  const body = route.request().postDataBuffer()?.toString("utf8") ?? "";
+  // 管理画面は画像を本文そのものとして送り、名前はヘッダーに入れる。
+  const sent = decodeURIComponent(
+    (await route.request().headerValue("x-upload-filename")) ?? "",
+  );
   const filenames = [
     ...addedIdsByFilename.keys(),
     ...additionalImportIdsByFilename.keys(),
@@ -91,9 +94,7 @@ async function uploadedFilename(route: Route): Promise<string> {
     "duplicate.jpg",
     "all-failed.jpg",
   ];
-  const filename = filenames.find((name) =>
-    body.includes(`filename="${name}"`),
-  );
+  const filename = filenames.find((name) => name === sent);
   if (!filename) throw new Error("mock upload filename was not found");
   return filename;
 }

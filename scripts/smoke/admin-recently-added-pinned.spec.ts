@@ -69,10 +69,11 @@ async function uploadedFilename(
   route: Route,
   knownFilenames: Iterable<string>,
 ) {
-  const body = route.request().postDataBuffer()?.toString("utf8") ?? "";
-  const filename = Array.from(knownFilenames).find((name) =>
-    body.includes(`filename="${name}"`),
+  // 管理画面は画像を本文そのものとして送り、名前はヘッダーに入れる。
+  const sent = decodeURIComponent(
+    (await route.request().headerValue("x-upload-filename")) ?? "",
   );
+  const filename = Array.from(knownFilenames).find((name) => name === sent);
   if (!filename) throw new Error("mock upload filename was not found");
   return filename;
 }

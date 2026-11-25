@@ -68,7 +68,7 @@ Unauthorized requests receive `401 { error: "Unauthorized" }`.
 
 | Method | Path | Description |
 | --- | --- | --- |
-| POST | `/api/admin/upload` | Upload image (multipart `file`). Returns `{ url, key, size, width, height, fileHash, shotAt, exifCamera, exifLens }`. Duplicates return `{ duplicate: true, fileHash }`. Max 300MB (`IMAGE_UPLOAD_MAX_BYTES` in `packages/web/src/shared/upload-limits.ts`), image MIME only |
+| POST | `/api/admin/upload` | Upload image: the request body is the image itself, with `Content-Type` and a URL-encoded `X-Upload-Filename` header (multipart `file` is still accepted). The server spools it to a temp file and processes one image at a time, so memory stays flat regardless of file size. Returns `{ url, key, size, width, height, fileHash, shotAt, exifCamera, exifLens }`. Duplicates return `{ duplicate: true, fileHash }`. Max 300MB (`IMAGE_UPLOAD_MAX_BYTES` in `packages/web/src/shared/upload-limits.ts`), image MIME only |
 | POST | `/api/admin/photos` | Create photo record. Body: `{ filename, url, title?, meta?, category?, camera?, lens?, filmType?, width?, height?, fileHash?, shotAt? }` |
 | PATCH | `/api/admin/photos/:id` | Update photo fields |
 | DELETE | `/api/admin/photos/:id` | Soft-delete (move to trash) |

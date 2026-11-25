@@ -23,7 +23,7 @@ describe("photo source metadata wiring", () => {
       '.post("/admin/upload"',
       "// ── Admin: Hero image upload",
     );
-    expect(route.match(/sharp\(inputBuf\)\.metadata\(\)/g)).toHaveLength(1);
+    expect(route.match(/sharp\(file\.path\)\.metadata\(\)/g)).toHaveLength(1);
     expect(route).toContain(
       "sourceMetadataFromSharpMetadata(originalMetadata)",
     );

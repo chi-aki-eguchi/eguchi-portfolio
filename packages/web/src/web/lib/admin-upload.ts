@@ -64,11 +64,15 @@ export async function uploadPhotoFile(
 ): Promise<UploadResult> {
   let storageMissing: string[] | undefined;
   try {
-    const formData = new FormData();
-    formData.append("file", file);
+    // 本文は画像そのもの。サーバーが届いた分から一時ファイルへ書けるので、
+    // メモリの小さいサーバーでも大きい写真で落ちない（api/upload-spool.ts）。
     const res = await fetch("/api/admin/upload", {
       method: "POST",
-      body: formData,
+      body: file,
+      headers: {
+        "Content-Type": file.type || "application/octet-stream",
+        "X-Upload-Filename": encodeURIComponent(file.name),
+      },
       credentials: "include",
     });
     if (!res.ok) {

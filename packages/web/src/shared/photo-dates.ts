@@ -18,9 +18,12 @@ export function normalizePhotoDate(value: unknown): string | null {
 
 export type PhotoDates = { original: string | null; digitized: string | null };
 
-/** Reads the original container, including TIFF IFDs and XMP. No image decoding. */
+/**
+ * Reads the original container, including TIFF IFDs and XMP. No image decoding.
+ * A string is a file path (server only): exifr then reads just the parts it needs.
+ */
 export async function readPhotoDates(
-  input: Blob | Uint8Array,
+  input: Blob | Uint8Array | string,
 ): Promise<PhotoDates> {
   const { parse } = await import("exifr");
   const tags = await parse(input, {

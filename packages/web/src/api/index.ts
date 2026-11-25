@@ -31,6 +31,7 @@ import {
 } from "./focal-rotation";
 import { idListError, isJsonObject, parseIdList } from "./request-input";
 import { uniqueUploadStorageKey } from "./upload-key";
+import { clearSpoolDirectory, spoolUpload } from "./upload-spool";
 import { writeSettingsAtomic } from "./database/settings-write";
 import {
   isSettingsPayload,
@@ -242,9 +243,15 @@ const PHOTO_LIST_COLUMNS = {
 // over and over — the main cause of slow / blank images in production. A byte
 // budget holds them all instead (thumbnails are small). Map insertion order is
 // the LRU order: get() moves an entry to the back, eviction drops the front.
-const RESIZE_CACHE_BYTES = 128 * 1024 * 1024; // resized thumbnails
 // コンテナのメモリ上限（/api/health に出す。読めないときは null）。
 const memoryLimitBytes = containerMemoryLimitBytes();
+// 上限が小さいサーバー（1GB以下）では、取っておく量も上限に合わせて減らす。
+// 512MB なら縮小済み 64MB・元画像 32MB。取り込み中の変換（約150MB）の分を空けるため。
+const cacheBudget = (bytes: number, share: number) =>
+  memoryLimitBytes
+    ? Math.max(16 * 1024 * 1024, Math.min(bytes, Math.floor(memoryLimitBytes / share)))
+    : bytes;
+const RESIZE_CACHE_BYTES = cacheBudget(128 * 1024 * 1024, 8); // resized thumbnails
 const MEMORY_LIMIT_MB = memoryLimitBytes ? toMB(memoryLimitBytes) : null;
 const resizeCache = new Map<string, { buf: Buffer; type: string }>();
 let resizeBytes = 0;
@@ -390,7 +397,7 @@ async function withImageTransformLimit<T>(
 // Short-lived cache of the original storage object. Without it, the ~5 srcset widths
 // for one photo each do their own GetObject (1–2MB) on a cold load — 5× the storage
 // round-trips. Caching the original for a minute collapses that burst into one.
-const ORIG_CACHE_BYTES = 48 * 1024 * 1024;
+const ORIG_CACHE_BYTES = cacheBudget(48 * 1024 * 1024, 16);
 const ORIG_TTL_MS = 60_000;
 const origCache = new Map<string, { buf: Buffer; type: string; ts: number }>();
 let origBytes = 0;
@@ -824,10 +831,14 @@ async function generateAndUploadThumbnails(
 ): Promise<{ thumbKey: string; mediumKey: string }> {
   const tKey = thumbKeyFrom(originalKey);
   const mKey = mediumKeyFrom(originalKey);
-  const [thumbBuf, mediumBuf] = await Promise.all([
-    generateWebP(optimisedBuf, THUMB_WIDTH, THUMB_QUALITY),
-    generateWebP(optimisedBuf, MEDIUM_WIDTH, MEDIUM_QUALITY),
-  ]);
+  // 2枚を同時に作らず、表示用の変換とも重ねない（メモリの小さいサーバーのため）。
+  const [thumbBuf, mediumBuf] = await withImageTransformLimit(
+    UPLOAD_NEVER_ABORTED,
+    async () => [
+      await generateWebP(optimisedBuf, THUMB_WIDTH, THUMB_QUALITY),
+      await generateWebP(optimisedBuf, MEDIUM_WIDTH, MEDIUM_QUALITY),
+    ],
+  );
   await uploadAllOrCleanup(
     [
       uploadToStorage(tKey, thumbBuf, "image/webp").then(() => tKey),
@@ -920,6 +931,26 @@ function clientIp(c: any): string {
 
 function isHttps(c: any): boolean {
   return isHttpsRequest(c.req.header("x-forwarded-proto"), c.req.url);
+}
+
+// 送られた画像を一時ファイルへ置く（upload-spool.ts）。断る理由は呼び出し側が返す。
+void clearSpoolDirectory().catch(() => {});
+const UPLOAD_NEVER_ABORTED = new AbortController().signal;
+async function receiveImageUpload(req: Request) {
+  const result = await spoolUpload(req, {
+    maxBytes: IMAGE_MAX_BYTES,
+    accept: isAllowedUploadImageFile,
+  });
+  if (result.ok) return result;
+  if (result.reason === "type")
+    return {
+      ok: false as const,
+      status: 415 as const,
+      error: "許可されていないファイル形式です。",
+    };
+  if (result.reason === "too-large")
+    return { ok: false as const, status: 413 as const, error: imageTooLargeMessage() };
+  return { ok: false as const, status: 400 as const, error: "No file" };
 }
 
 // Auth middleware
@@ -1951,185 +1982,183 @@ const app = new Hono()
         503,
       );
     }
-    const formData = await c.req.formData();
-    const file = formData.get("file") as File | null;
-    if (!file) return c.json({ error: "No file" }, 400);
-    if (!isAllowedUploadImageFile(file))
-      return c.json({ error: "許可されていないファイル形式です。" }, 415);
-    if (file.size > IMAGE_MAX_BYTES)
-      return c.json({ error: imageTooLargeMessage() }, 413);
-
-    const arrayBuf = await file.arrayBuffer();
-    const inputBuf = Buffer.from(arrayBuf);
-
-    const optimised = await optimiseUploadedImage(
-      inputBuf,
-      UPLOAD_MAX_PX,
-      UPLOAD_QUALITY,
-    );
-
-    // C1: content hash of the optimised bytes (sharp is deterministic for the
-    // same input/params, so the same source image re-uploads to the same hash).
-    const fileHash = createHash("sha256").update(optimised).digest("hex");
-    const [dup] = await withRetry(() =>
-      db
-        .select({ id: schema.photos.id })
-        .from(schema.photos)
-        .where(
-          sql`${eq(schema.photos.fileHash, fileHash)} AND ${isNull(schema.photos.deletedAt)}`,
-        )
-        .limit(1),
-    );
-    if (dup) {
-      // Skip storage upload + DB insert entirely; client counts it as a duplicate.
-      // photoId は、シリーズの画面から取り込んだとき、登録済みの写真をそのシリーズへ
-      // 入れるために返す（2026-10-01。以前は何も起きず「すでに登録」とだけ出ていた）。
-      return c.json({ duplicate: true, fileHash, photoId: dup.id }, 200);
-    }
-
-    // Capture intrinsic dimensions so the client can reserve aspect-ratio (CLS)
-    const { width = null, height = null } = await sharp(optimised).metadata();
-
-    // Read source metadata before the website JPEG loses it. Camera clock
-    // values remain timezone-less. For film, DateTimeOriginal is interpreted
-    // as camera scan time, not as the original film exposure date.
-    let shotAt: string | null = null;
-    let exifDateDigitized: string | null = null;
-    let sourceWidth: number | null = null;
-    let sourceHeight: number | null = null;
-    let sourceFormat: SourceFormat = null;
-    let exifCamera: string | null = null;
-    let exifMake: string | null = null;
-    let exifModel: string | null = null;
-    let exifLens: string | null = null;
-    let exifFocalLength: string | null = null;
-    let exifFNumber: string | null = null;
-    let exifExposureTime: string | null = null;
-    let exifIso: string | null = null;
+    const received = await receiveImageUpload(c.req.raw);
+    if (!received.ok) return c.json({ error: received.error }, received.status);
+    const file = received.upload;
     try {
-      // One metadata read from the original bytes supplies EXIF, the original
-      // file format, and dimensions after applying EXIF orientation.
-      const originalMetadata = await sharp(inputBuf).metadata();
-      ({
-        sourceWidth,
-        sourceHeight,
-        sourceFormat,
-      } = sourceMetadataFromSharpMetadata(originalMetadata));
-      const exif = originalMetadata.exif ?? (originalMetadata.format === "tiff" ? inputBuf : null);
-      if (exif) {
-        const tags = exifReader(exif);
-        const dt = tags?.Photo?.DateTimeOriginal;
-        if (dt instanceof Date && !Number.isNaN(dt.getTime()))
-          shotAt = dt.toISOString().slice(0, 19);
-        const dtDigitized = tags?.Photo?.DateTimeDigitized;
-        if (dtDigitized instanceof Date && !Number.isNaN(dtDigitized.getTime()))
-          exifDateDigitized = dtDigitized.toISOString().slice(0, 19);
-        const make =
-          typeof tags?.Image?.Make === "string"
-            ? tags.Image.Make.trim()
-            : "";
-        const model =
-          typeof tags?.Image?.Model === "string"
-            ? tags.Image.Model.trim()
-            : "";
-        exifMake = make || null;
-        exifModel = model || null;
-        if (model)
-          exifCamera =
-            make && !model.startsWith(make) ? `${make} ${model}` : model;
-        const lensModel =
-          (tags?.Photo?.LensModel as string | undefined)?.trim() ?? "";
-        if (lensModel) exifLens = lensModel;
-        const fl = tags?.Photo?.FocalLength;
-        if (fl != null && Number.isFinite(Number(fl)))
-          exifFocalLength = `${Math.round(Number(fl))}mm`;
-        const fn = tags?.Photo?.FNumber;
-        if (fn != null && Number.isFinite(Number(fn)))
-          exifFNumber = `f/${Number(fn)}`;
-        const et = tags?.Photo?.ExposureTime;
-        if (et != null && Number.isFinite(Number(et))) {
-          const v = Number(et);
-          exifExposureTime = v >= 1 ? `${v}s` : `1/${Math.round(1 / v)}s`;
-        }
-        const iso =
-          tags?.Photo?.ISOSpeedRatings ?? tags?.Photo?.PhotographicSensitivity;
-        if (iso != null) exifIso = `ISO ${Array.isArray(iso) ? iso[0] : iso}`;
+      // 元の画像はファイルから順に読み、1枚ずつ処理する（表示用の変換とも重ねない）。
+      const optimised = await withImageTransformLimit(UPLOAD_NEVER_ABORTED, () =>
+        optimiseUploadedImage(file.path, UPLOAD_MAX_PX, UPLOAD_QUALITY),
+      );
+
+      // C1: content hash of the optimised bytes (sharp is deterministic for the
+      // same input/params, so the same source image re-uploads to the same hash).
+      const fileHash = createHash("sha256").update(optimised).digest("hex");
+      const [dup] = await withRetry(() =>
+        db
+          .select({ id: schema.photos.id })
+          .from(schema.photos)
+          .where(
+            sql`${eq(schema.photos.fileHash, fileHash)} AND ${isNull(schema.photos.deletedAt)}`,
+          )
+          .limit(1),
+      );
+      if (dup) {
+        // Skip storage upload + DB insert entirely; client counts it as a duplicate.
+        // photoId は、シリーズの画面から取り込んだとき、登録済みの写真をそのシリーズへ
+        // 入れるために返す（2026-10-01。以前は何も起きず「すでに登録」とだけ出ていた）。
+        return c.json({ duplicate: true, fileHash, photoId: dup.id }, 200);
       }
-    } catch {
-      /* EXIFなし・壊れたEXIF → null のまま（手入力可） */
+
+      // Capture intrinsic dimensions so the client can reserve aspect-ratio (CLS)
+      const { width = null, height = null } = await sharp(optimised).metadata();
+
+      // Read source metadata before the website JPEG loses it. Camera clock
+      // values remain timezone-less. For film, DateTimeOriginal is interpreted
+      // as camera scan time, not as the original film exposure date.
+      let shotAt: string | null = null;
+      let exifDateDigitized: string | null = null;
+      let sourceWidth: number | null = null;
+      let sourceHeight: number | null = null;
+      let sourceFormat: SourceFormat = null;
+      let exifCamera: string | null = null;
+      let exifMake: string | null = null;
+      let exifModel: string | null = null;
+      let exifLens: string | null = null;
+      let exifFocalLength: string | null = null;
+      let exifFNumber: string | null = null;
+      let exifExposureTime: string | null = null;
+      let exifIso: string | null = null;
+      try {
+        // One metadata read from the original bytes supplies EXIF, the original
+        // file format, and dimensions after applying EXIF orientation.
+        const originalMetadata = await sharp(file.path).metadata();
+        ({
+          sourceWidth,
+          sourceHeight,
+          sourceFormat,
+        } = sourceMetadataFromSharpMetadata(originalMetadata));
+        const exif =
+          originalMetadata.exif ??
+          (originalMetadata.format === "tiff"
+            ? // TIFF は撮影情報がファイルのどこにあるか決まっていないので全体を読む。
+            // 画像の変換と重ならない順番で読む。
+            await withImageTransformLimit(UPLOAD_NEVER_ABORTED, async () =>
+              Buffer.from(await Bun.file(file.path).arrayBuffer()),
+            )
+            : null);
+        if (exif) {
+          const tags = exifReader(exif);
+          const dt = tags?.Photo?.DateTimeOriginal;
+          if (dt instanceof Date && !Number.isNaN(dt.getTime()))
+            shotAt = dt.toISOString().slice(0, 19);
+          const dtDigitized = tags?.Photo?.DateTimeDigitized;
+          if (dtDigitized instanceof Date && !Number.isNaN(dtDigitized.getTime()))
+            exifDateDigitized = dtDigitized.toISOString().slice(0, 19);
+          const make =
+            typeof tags?.Image?.Make === "string"
+              ? tags.Image.Make.trim()
+              : "";
+          const model =
+            typeof tags?.Image?.Model === "string"
+              ? tags.Image.Model.trim()
+              : "";
+          exifMake = make || null;
+          exifModel = model || null;
+          if (model)
+            exifCamera =
+              make && !model.startsWith(make) ? `${make} ${model}` : model;
+          const lensModel =
+            (tags?.Photo?.LensModel as string | undefined)?.trim() ?? "";
+          if (lensModel) exifLens = lensModel;
+          const fl = tags?.Photo?.FocalLength;
+          if (fl != null && Number.isFinite(Number(fl)))
+            exifFocalLength = `${Math.round(Number(fl))}mm`;
+          const fn = tags?.Photo?.FNumber;
+          if (fn != null && Number.isFinite(Number(fn)))
+            exifFNumber = `f/${Number(fn)}`;
+          const et = tags?.Photo?.ExposureTime;
+          if (et != null && Number.isFinite(Number(et))) {
+            const v = Number(et);
+            exifExposureTime = v >= 1 ? `${v}s` : `1/${Math.round(1 / v)}s`;
+          }
+          const iso =
+            tags?.Photo?.ISOSpeedRatings ?? tags?.Photo?.PhotographicSensitivity;
+          if (iso != null) exifIso = `ISO ${Array.isArray(iso) ? iso[0] : iso}`;
+        }
+      } catch {
+        /* EXIFなし・壊れたEXIF → null のまま（手入力可） */
+      }
+
+      // libvips can return no EXIF buffer for TIFF even when its IFDs contain
+      // dates. Parse the source container directly, also supporting XMP dates.
+      try {
+        const dates = await readPhotoDates(file.path);
+        shotAt = dates.original ?? shotAt;
+        exifDateDigitized = dates.digitized ?? exifDateDigitized;
+      } catch { /* Unreadable metadata must not prevent importing the image. */ }
+
+      const key = uniqueUploadStorageKey(
+        "photos",
+        `${sanitizeUploadBaseName(file.name)}.jpg`,
+      );
+      await uploadToStorage(key, optimised, "image/jpeg");
+
+      let thumbKey: string | null = null;
+      let mediumKey: string | null = null;
+      try {
+        const keys = await generateAndUploadThumbnails(optimised, key);
+        thumbKey = keys.thumbKey;
+        mediumKey = keys.mediumKey;
+      } catch (e) {
+        console.error("[upload] thumbnail generation failed:", e);
+      }
+
+      const proxyUrl = keyToProxyUrl(key);
+      return c.json(
+        {
+          url: proxyUrl,
+          key,
+          size: optimised.length,
+          width,
+          height,
+          fileHash,
+          thumbKey,
+          mediumKey,
+          shotAt,
+          exifDateDigitized,
+          sourceWidth,
+          sourceHeight,
+          sourceFormat,
+          exifCamera,
+          exifMake,
+          exifModel,
+          exifLens,
+          exifFocalLength,
+          exifFNumber,
+          exifExposureTime,
+          exifIso,
+        },
+        201,
+      );
+    } finally {
+      await file.cleanup();
     }
-
-    // libvips can return no EXIF buffer for TIFF even when its IFDs contain
-    // dates. Parse the source container directly, also supporting XMP dates.
-    try {
-      const dates = await readPhotoDates(inputBuf);
-      shotAt = dates.original ?? shotAt;
-      exifDateDigitized = dates.digitized ?? exifDateDigitized;
-    } catch { /* Unreadable metadata must not prevent importing the image. */ }
-
-    const key = uniqueUploadStorageKey(
-      "photos",
-      `${sanitizeUploadBaseName(file.name)}.jpg`,
-    );
-    await uploadToStorage(key, optimised, "image/jpeg");
-
-    let thumbKey: string | null = null;
-    let mediumKey: string | null = null;
-    try {
-      const keys = await generateAndUploadThumbnails(optimised, key);
-      thumbKey = keys.thumbKey;
-      mediumKey = keys.mediumKey;
-    } catch (e) {
-      console.error("[upload] thumbnail generation failed:", e);
-    }
-
-    const proxyUrl = keyToProxyUrl(key);
-    return c.json(
-      {
-        url: proxyUrl,
-        key,
-        size: optimised.length,
-        width,
-        height,
-        fileHash,
-        thumbKey,
-        mediumKey,
-        shotAt,
-        exifDateDigitized,
-        sourceWidth,
-        sourceHeight,
-        sourceFormat,
-        exifCamera,
-        exifMake,
-        exifModel,
-        exifLens,
-        exifFocalLength,
-        exifFNumber,
-        exifExposureTime,
-        exifIso,
-      },
-      201,
-    );
   })
 
   // ── Admin: Hero image upload (resize → storage) ─────────
   .post("/admin/hero/upload", requireAdmin, async (c) => {
-    const formData = await c.req.formData();
-    const file = formData.get("file") as File | null;
-    if (!file) return c.json({ error: "No file" }, 400);
-    if (!isAllowedUploadImageFile(file))
-      return c.json({ error: "許可されていないファイル形式です。" }, 415);
-    if (file.size > IMAGE_MAX_BYTES)
-      return c.json({ error: imageTooLargeMessage() }, 413);
-
-    const arrayBuf = await file.arrayBuffer();
-    const inputBuf = Buffer.from(arrayBuf);
-
-    const optimised = await optimiseUploadedImage(
-      inputBuf,
-      UPLOAD_MAX_PX,
-      UPLOAD_QUALITY,
-    );
+    const received = await receiveImageUpload(c.req.raw);
+    if (!received.ok) return c.json({ error: received.error }, received.status);
+    const file = received.upload;
+    let optimised: Buffer;
+    try {
+      optimised = await withImageTransformLimit(UPLOAD_NEVER_ABORTED, () =>
+        optimiseUploadedImage(file.path, UPLOAD_MAX_PX, UPLOAD_QUALITY),
+      );
+    } finally {
+      await file.cleanup();
+    }
 
     const key = uniqueUploadStorageKey(
       "hero",
@@ -2143,22 +2172,17 @@ const app = new Hono()
 
   // ── Admin: Profile photo upload (resize → storage) ───────
   .post("/admin/profile/upload", requireAdmin, async (c) => {
-    const formData = await c.req.formData();
-    const file = formData.get("file") as File | null;
-    if (!file) return c.json({ error: "No file" }, 400);
-    if (!isAllowedUploadImageFile(file))
-      return c.json({ error: "許可されていないファイル形式です。" }, 415);
-    if (file.size > IMAGE_MAX_BYTES)
-      return c.json({ error: imageTooLargeMessage() }, 413);
-
-    const arrayBuf = await file.arrayBuffer();
-    const inputBuf = Buffer.from(arrayBuf);
-
-    const optimised = await optimiseUploadedImage(
-      inputBuf,
-      UPLOAD_MAX_PX,
-      UPLOAD_QUALITY,
-    );
+    const received = await receiveImageUpload(c.req.raw);
+    if (!received.ok) return c.json({ error: received.error }, received.status);
+    const file = received.upload;
+    let optimised: Buffer;
+    try {
+      optimised = await withImageTransformLimit(UPLOAD_NEVER_ABORTED, () =>
+        optimiseUploadedImage(file.path, UPLOAD_MAX_PX, UPLOAD_QUALITY),
+      );
+    } finally {
+      await file.cleanup();
+    }
 
     const key = uniqueUploadStorageKey(
       "profile",

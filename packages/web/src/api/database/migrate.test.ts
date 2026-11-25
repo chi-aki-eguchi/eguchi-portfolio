@@ -15,7 +15,7 @@ function freshDb() {
   return drizzle(createClient({ url: ":memory:" }));
 }
 
-/** `0003` より前の photos。セーフティネットが面倒を見る16列は1つも無い。 */
+/** `0003` より前の photos。セーフティネットが面倒を見る17列は1つも無い。 */
 async function createLegacyPhotos(db: ReturnType<typeof freshDb>) {
   await db.run(sql`
     CREATE TABLE photos (
@@ -38,8 +38,8 @@ async function columnNames(db: ReturnType<typeof freshDb>): Promise<string[]> {
 }
 
 describe("TURSO_SAFETY_NET_COLUMNS", () => {
-  test("16列ある（9列だった時期に0005の7列が漏れていた）", () => {
-    expect(TURSO_SAFETY_NET_COLUMNS).toHaveLength(16);
+  test("17列ある（9列だった時期に0005の7列が漏れていた）", () => {
+    expect(TURSO_SAFETY_NET_COLUMNS).toHaveLength(17);
   });
 
   test("先頭9列の並びと型は従来のまま（既存の列の扱いを変えない）", () => {
@@ -64,6 +64,7 @@ describe("TURSO_SAFETY_NET_COLUMNS", () => {
       "0003_material_apocalypse.sql",
       "0004_flowery_bloodstorm.sql",
       "0005_mysterious_madame_masque.sql",
+      "0011_photo_zoom_size.sql",
     ];
     const fromSql = files.flatMap((f) =>
       [...readFileSync(resolve(dir, f), "utf8").matchAll(
@@ -92,13 +93,13 @@ describe("TURSO_SAFETY_NET_COLUMNS", () => {
 });
 
 describe("ensureColumnsExist — 新規環境", () => {
-  test("16列すべてが足される", async () => {
+  test("17列すべてが足される", async () => {
     const db = freshDb();
     await createLegacyPhotos(db);
 
     const result = await ensureColumnsExist(db);
 
-    expect(result.added).toHaveLength(16);
+    expect(result.added).toHaveLength(17);
     expect(result.present).toHaveLength(0);
     expect(result.failed).toEqual([]);
 
@@ -134,7 +135,7 @@ describe("ensureColumnsExist — 既存環境", () => {
     const second = await ensureColumnsExist(db);
 
     expect(second.added).toEqual([]);
-    expect(second.present).toHaveLength(16);
+    expect(second.present).toHaveLength(17);
     expect(second.failed).toEqual([]);
   });
 
@@ -153,7 +154,7 @@ describe("ensureColumnsExist — 既存環境", () => {
     };
     await ensureColumnsExist(spy);
 
-    expect(issued).toHaveLength(16);
+    expect(issued).toHaveLength(17);
     expect(issued.some((q) => q.includes("ALTER"))).toBe(false);
   });
 
@@ -166,7 +167,7 @@ describe("ensureColumnsExist — 既存環境", () => {
     const result = await ensureColumnsExist(db);
 
     expect(result.present.sort()).toEqual(["photos.focal_length", "photos.iso"]);
-    expect(result.added).toHaveLength(14);
+    expect(result.added).toHaveLength(15);
   });
 });
 
@@ -189,7 +190,7 @@ describe("ensureColumnsExist — 失敗しても起動を止めない", () => {
     const result = await ensureColumnsExist(broken);
 
     expect(result.failed).toEqual(["photos.rotation_deg"]);
-    expect(result.added).toHaveLength(15);
+    expect(result.added).toHaveLength(16);
     // 失敗の後ろにある列（0005 の7列）まで到達している。
     expect(await columnNames(db)).toContain("camera_model");
   });

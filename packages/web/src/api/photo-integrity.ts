@@ -1,7 +1,10 @@
+import { parseZoomSize, zoomBaseKey, zoomTilePaths } from "../shared/photo-zoom";
+
 export type PurgeCandidate = {
   url: string;
   thumbKey: string | null;
   mediumKey: string | null;
+  zoomSize?: string | null;
   deletedAt: Date | null;
 };
 
@@ -16,15 +19,28 @@ export function purgeEligibility(
   return "eligible";
 }
 
+/**
+ * 拡大用の高精細（四角に切ったもの）の鍵。保存する1枚の鍵と大きさから一意に決まる。
+ * 大きさが無い・読めない写真は高精細を持たないので、空。
+ */
+export function zoomStorageKeys(photoKey: string, zoomSize: unknown): string[] {
+  const size = parseZoomSize(zoomSize);
+  const base = zoomBaseKey(photoKey);
+  if (!size || !base) return [];
+  return zoomTilePaths(size).map((rel) => `${base}/${rel}`);
+}
+
 export function unsharedPhotoStorageKeys(
-  photo: Pick<PurgeCandidate, "url" | "thumbKey" | "mediumKey">,
+  photo: Pick<PurgeCandidate, "url" | "thumbKey" | "mediumKey" | "zoomSize">,
   hasSharer: boolean,
 ): string[] {
   if (hasSharer) return [];
+  const photoKey = photo.url.replace("/api/images/", "");
   return [
-    photo.url.replace("/api/images/", ""),
+    photoKey,
     photo.thumbKey,
     photo.mediumKey,
+    ...zoomStorageKeys(photoKey, photo.zoomSize),
   ].filter((key): key is string => !!key);
 }
 
@@ -53,7 +69,8 @@ export function uploadedPhotoStorageKeys(body: Record<string, unknown>): string[
     typeof body.thumbKey === "string" ? body.thumbKey : null,
     typeof body.mediumKey === "string" ? body.mediumKey : null,
   ].filter((key): key is string => !!key && permitted.has(key));
-  return [...new Set(keys)];
+  // 高精細の鍵は本文から受け取らず、保存する1枚の鍵から決まるものだけを数える。
+  return [...new Set([...keys, ...zoomStorageKeys(url, body.zoomSize)])];
 }
 
 export async function withUploadRegistrationCompensation<T>(

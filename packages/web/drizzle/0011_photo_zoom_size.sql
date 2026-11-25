@@ -1,0 +1,1 @@
+ALTER TABLE `photos` ADD `zoom_size` text;

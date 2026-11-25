@@ -1,4 +1,4 @@
-import { mkdir, rm, stat } from "node:fs/promises";
+import { mkdir, open, rm, stat } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -14,8 +14,11 @@ import { join } from "node:path";
  * 受け付ける形は2つ:
  * - 本文がそのまま画像（管理画面）。名前は `X-Upload-Filename`（URLエンコード）、種類は
  *   `Content-Type`。届いた分から順にファイルへ書くので、メモリには溜まらない。
- * - multipart/form-data の `file`（seed スクリプトや古い画面）。Bun が本文をメモリに読むが、
+ * - multipart/form-data の `file`（seed スクリプトや古い画面）。本文はメモリに読まれるが、
  *   ファイルへ書いた後は手放すので、画像処理と重ならない。
+ *
+ * 書き込みは node:fs で行う。本番は Bun だが、開発サーバー（Vite）と smoke は Node で
+ * API を動かすので、`Bun.file` / `Bun.write` を使うとそこでだけ取り込みが落ちる。
  */
 export const UPLOAD_FILENAME_HEADER = "x-upload-filename";
 
@@ -40,6 +43,34 @@ function decodeFilename(value: string | null): string {
   }
 }
 
+/**
+ * 届いた順にファイルへ書く。1かたまりずつ書き終わるのを待つので、メモリに溜まらない。
+ * `maxBytes` を超えたら読むのをやめて "too-large" を返す（ファイルの片付けは呼ぶ側）。
+ */
+async function writeStreamToFile(
+  body: ReadableStream<Uint8Array>,
+  path: string,
+  maxBytes: number,
+): Promise<{ size: number; tooLarge: boolean }> {
+  const handle = await open(path, "w");
+  const reader = body.getReader();
+  let size = 0;
+  try {
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) return { size, tooLarge: false };
+      size += value.byteLength;
+      if (size > maxBytes) {
+        await reader.cancel();
+        return { size, tooLarge: true };
+      }
+      await handle.write(value);
+    }
+  } finally {
+    await handle.close();
+  }
+}
+
 export async function spoolUpload(
   req: Request,
   options: {
@@ -61,7 +92,7 @@ export async function spoolUpload(
       const { name, type } = file;
       if (!options.accept({ name, type })) return { ok: false, reason: "type" };
       if (file.size > options.maxBytes) return { ok: false, reason: "too-large" };
-      await Bun.write(path, file);
+      await writeStreamToFile(file.stream(), path, options.maxBytes);
       return {
         ok: true,
         upload: { path, name, type, size: file.size, cleanup },
@@ -76,27 +107,11 @@ export async function spoolUpload(
     if (Number.isFinite(declared) && declared > options.maxBytes)
       return { ok: false, reason: "too-large" };
 
-    const writer = Bun.file(path).writer();
-    const reader = req.body.getReader();
-    let size = 0;
-    let tooLarge = false;
-    try {
-      for (;;) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        size += value.byteLength;
-        if (size > options.maxBytes) {
-          tooLarge = true;
-          await reader.cancel();
-          break;
-        }
-        writer.write(value);
-        // 書き込みが追いつくのを待つ。待たないと、届いた分がメモリに溜まる。
-        await writer.flush();
-      }
-    } finally {
-      await writer.end();
-    }
+    const { size, tooLarge } = await writeStreamToFile(
+      req.body,
+      path,
+      options.maxBytes,
+    );
     if (tooLarge) {
       await cleanup();
       return { ok: false, reason: "too-large" };

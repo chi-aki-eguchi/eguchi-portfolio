@@ -49,6 +49,7 @@ import {
   tidyLensName,
 } from "../lib/series-colophon";
 import { JaPhrases } from "./JaPhrases";
+import { ZoomTiles, parseZoomRef, type ZoomTilesHandle } from "./ZoomTiles";
 
 // Capped at 1920px — sharp enough for 4K; Retina gets 2× viewport from the
 // srcset without pulling the full 3200px master stored in R2.
@@ -107,6 +108,8 @@ export type LightboxPhoto = {
   shotAt?: string | null;
   lqipSrc?: string;
   mediumUrl?: string | null;
+  /** 拡大用の高精細（「置き場所#大きさ」）。無い写真は今までどおり保存する1枚から拡大する。 */
+  zoom?: string | null;
   rotationDeg?: number | null;
   description?: string | null;
   category?: string | null;
@@ -388,6 +391,20 @@ export function Lightbox({
   const zoomedRef = useRef(false);
   const suppressClickRef = useRef(false); // a pan/pinch just ended — swallow the click
   const MAX_SCALE = 4;
+  // 高精細のある写真は、いちばん細かい段が画面の画素と 1:1 になる所まで寄れる。
+  const zoomTilesRef = useRef<ZoomTilesHandle>(null);
+  const zoomTopWidthRef = useRef(0);
+  // 下に出ている1枚の横の画素数。読めないうちは作り置きの表示用（1920px）とみなす。
+  const fitBaseWidth = useCallback(
+    () => fitImgRef.current?.naturalWidth || 1920,
+    [],
+  );
+  const maxScale = () => {
+    const dims = zoomTopWidthRef.current ? photoBaseDims() : null;
+    if (!dims) return MAX_SCALE;
+    const dpr = Math.min(window.devicePixelRatio || 1, 3);
+    return Math.min(16, Math.max(MAX_SCALE, zoomTopWidthRef.current / (dims.w * dpr)));
+  };
 
   // The photo's on-screen size at scale 1 (object-fit: contain inside the FIT box).
   const photoBaseDims = () => {
@@ -413,6 +430,7 @@ export function Lightbox({
       scaleRef.current === 1
         ? "translate3d(0,0,0) scale(1)"
         : `translate3d(${txRef.current}px, ${tyRef.current}px, 0) scale(${scaleRef.current})`;
+    zoomTilesRef.current?.refresh();
   };
 
   // Keep the photo from being panned off-screen: when the scaled photo exceeds
@@ -435,7 +453,7 @@ export function Lightbox({
     animate = false,
   ) => {
     const s = scaleRef.current;
-    const ns = Math.min(MAX_SCALE, Math.max(1, next));
+    const ns = Math.min(maxScale(), Math.max(1, next));
     const cx = window.innerWidth / 2;
     const cy = window.innerHeight / 2;
     txRef.current = px - cx - ((px - cx - txRef.current) / s) * ns;
@@ -1299,6 +1317,9 @@ export function Lightbox({
   }, []);
 
   const photo = photos[index];
+  const zoomRef = parseZoomRef(photo?.zoom);
+  const photoZoom = zoomRef ? (photo.zoom as string) : null;
+  zoomTopWidthRef.current = zoomRef?.size.w ?? 0;
   // 頁にもう出ている写真なら、その画像をそのまま下敷き（Stage 1）に使う。
   // 押した1枚は必ずこれに当たり、送った先も頁に出ていれば当たる。
   //
@@ -2012,7 +2033,16 @@ export function Lightbox({
                     />
                   </picture>
                 )}
-                {isZoomed && (
+                {photoZoom && (
+                  <ZoomTiles
+                    key={photo.url}
+                    ref={zoomTilesRef}
+                    zoom={photoZoom}
+                    active={loadStage === "full"}
+                    getBaseWidth={fitBaseWidth}
+                  />
+                )}
+                {isZoomed && !photoZoom && (
                   <picture
                     style={{
                       position: "absolute",

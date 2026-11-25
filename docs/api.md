@@ -25,9 +25,10 @@ Error responses use `{ error: string }`.
 ### Public photo shape
 
 `/api/photos`, `/api/photos/:id`, `/api/series/:slug` and `/api/hero-photos` return the
-same public photo object: the photo list columns plus `thumbUrl` / `mediumUrl`, without
-the management fields `fileHash`, `thumbKey`, `mediumKey`, `isPublished`, `deletedAt`
-and `shotAtSource`. The source-file record (`shotAtDigitized`, `sourceWidth`,
+same public photo object: the photo list columns plus `thumbUrl` / `mediumUrl` / `zoom`, without
+the management fields `fileHash`, `thumbKey`, `mediumKey`, `zoomSize`, `isPublished`, `deletedAt`
+and `shotAtSource`. `zoom` is `"<tile base URL>#<width>x<height>"` when the photo has
+zoom tiles (see below), otherwise `null`. The source-file record (`shotAtDigitized`, `sourceWidth`,
 `sourceHeight`, `sourceFormat`, `cameraMake`, `cameraModel`) is not part of any list
 response. `packages/web/src/api/public-photo-response.api.test.ts` checks this on the
 real routes.
@@ -41,8 +42,19 @@ real routes.
 - Format: always negotiated. An explicit `fmt=avif|webp|jpeg` wins; otherwise the
   `Accept` header picks AVIF, then WebP, then JPEG (`Vary: Accept`). No environment
   variable is needed.
-- Allowed key prefixes: `photos/`, `thumbs/`, `medium/`, `hero/`, `profile/`, `fonts/`, `exhibition/` (`exhibition/` is read from the repository: `packages/web/assets/exhibition/`, listed names only)
+- Allowed key prefixes: `photos/`, `thumbs/`, `medium/`, `tiles/`, `hero/`, `profile/`, `fonts/`, `exhibition/` (`exhibition/` is read from the repository: `packages/web/assets/exhibition/`, listed names only)
 - Responses are cached with `Cache-Control: public, max-age=31536000, immutable`
+
+### Zoom tiles
+
+The stored master is 3200px. When the uploaded source is more than 10% larger, the
+upload also stores the detail as 1024px WebP tiles (`packages/web/src/shared/photo-zoom.ts`):
+`tiles/<master name>/<level>/<col>_<row>.webp`. Level 0 is the finest (long edge up to
+7680px, or the source size if smaller); each next level is half, and levels at or below
+2000px are not stored. `photos.zoom_size` holds the level-0 size (`"7680x5760"`); the tile
+keys are derived from the master key, so there is no key column. The viewer overlays only
+the tiles in view, at the coarsest level that still fills the screen's pixels. Rotated
+photos (`rotationDeg != 0`) do not use tiles.
 
 ## Auth
 
@@ -68,8 +80,8 @@ Unauthorized requests receive `401 { error: "Unauthorized" }`.
 
 | Method | Path | Description |
 | --- | --- | --- |
-| POST | `/api/admin/upload` | Upload image: the request body is the image itself, with `Content-Type` and a URL-encoded `X-Upload-Filename` header (multipart `file` is still accepted). The server spools it to a temp file and processes one image at a time, so memory stays flat regardless of file size. Returns `{ url, key, size, width, height, fileHash, shotAt, exifCamera, exifLens }`. Duplicates return `{ duplicate: true, fileHash }`. Max 300MB (`IMAGE_UPLOAD_MAX_BYTES` in `packages/web/src/shared/upload-limits.ts`), image MIME only |
-| POST | `/api/admin/photos` | Create photo record. Body: `{ filename, url, title?, meta?, category?, camera?, lens?, filmType?, width?, height?, fileHash?, shotAt? }` |
+| POST | `/api/admin/upload` | Upload image: the request body is the image itself, with `Content-Type` and a URL-encoded `X-Upload-Filename` header (multipart `file` is still accepted). The server spools it to a temp file and processes one image at a time, so memory stays flat regardless of file size. Returns `{ url, key, size, width, height, fileHash, zoomSize, shotAt, exifCamera, exifLens }` (`zoomSize` is `null` when no zoom tiles were made). Duplicates return `{ duplicate: true, fileHash, photoId, zoomAdded }`; when the already registered photo has no zoom tiles yet, they are made from this upload and `zoomAdded` is `true`. Max 300MB (`IMAGE_UPLOAD_MAX_BYTES` in `packages/web/src/shared/upload-limits.ts`), image MIME only |
+| POST | `/api/admin/photos` | Create photo record. Body: `{ filename, url, title?, meta?, category?, camera?, lens?, filmType?, width?, height?, fileHash?, zoomSize?, shotAt? }` |
 | PATCH | `/api/admin/photos/:id` | Update photo fields |
 | DELETE | `/api/admin/photos/:id` | Soft-delete (move to trash) |
 | POST | `/api/admin/photos/:id/restore` | Restore from trash |

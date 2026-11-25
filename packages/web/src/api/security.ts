@@ -33,6 +33,8 @@ export const IMAGE_PROXY_ALLOWED_PREFIXES = [
   "photos/",
   "thumbs/",
   "medium/",
+  // 拡大用の高精細（shared/photo-zoom.ts）。
+  "tiles/",
   "hero/",
   "profile/",
   "fonts/",

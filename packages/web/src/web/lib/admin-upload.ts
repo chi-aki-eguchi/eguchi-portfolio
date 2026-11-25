@@ -29,6 +29,8 @@ export type UploadResult =
       kind: "duplicate";
       /** 同じ画像として登録済みの写真（サーバーが返したとき）。 */
       existingId?: number;
+      /** 登録済みの写真に、いま届いた元のファイルから拡大用の高精細を足した。 */
+      zoomAdded?: boolean;
     }
   | { kind: "failed"; reason?: string; storageMissing?: string[] };
 
@@ -97,7 +99,11 @@ export async function uploadPhotoFile(
     const data = (await res.json()) as Record<string, unknown>;
     // サーバーが同じ画像を見つけた — 登録しない。
     if (data.duplicate)
-      return { kind: "duplicate", existingId: typeof data.photoId === "number" ? data.photoId : undefined };
+      return {
+        kind: "duplicate",
+        existingId: typeof data.photoId === "number" ? data.photoId : undefined,
+        zoomAdded: data.zoomAdded === true,
+      };
     const {
       url,
       width,
@@ -105,6 +111,7 @@ export async function uploadPhotoFile(
       fileHash,
       thumbKey,
       mediumKey,
+      zoomSize,
       shotAt,
       exifDateDigitized,
       sourceWidth,
@@ -153,6 +160,7 @@ export async function uploadPhotoFile(
         fileHash: fileHash as string,
         thumbKey: (thumbKey as string) ?? "",
         mediumKey: (mediumKey as string) ?? "",
+        zoomSize: typeof zoomSize === "string" ? zoomSize : null,
         shotAt: shotAtVal,
         shotAtSource: shotAtSourceVal,
         shotAtDigitized: isDigital ? ((exifDateDigitized as string) ?? "") : shotAtVal,

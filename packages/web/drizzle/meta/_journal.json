@@ -78,6 +78,13 @@
       "when": 1793512135116,
       "tag": "0010_exhibition_visits",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "6",
+      "when": 1795583730788,
+      "tag": "0011_photo_zoom_size",
+      "breakpoints": true
     }
   ]
 }

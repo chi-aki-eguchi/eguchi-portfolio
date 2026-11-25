@@ -83,6 +83,8 @@ export type GalleryPhoto = {
   focalY?: number | null;
   thumbUrl?: string | null;
   mediumUrl?: string | null;
+  /** 拡大用の高精細（「置き場所#大きさ」）。 */
+  zoom?: string | null;
   description?: string | null;
   category?: string | null;
   seriesId?: number | null;

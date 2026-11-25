@@ -60,6 +60,7 @@ describe("photo list columns", () => {
       "fileHash",
       "thumbKey",
       "mediumKey",
+      "zoomSize",
       "sortOrder",
       "deletedAt",
       "createdAt",
@@ -71,7 +72,7 @@ describe("photo list columns", () => {
       expectedListResponseKeys,
     );
     expect(selectedColumnKeys).toEqual(responseKeys);
-    expect(responseKeys).toHaveLength(30);
+    expect(responseKeys).toHaveLength(31);
     expect(responseKeys).toEqual(
       sqliteColumnKeys.filter(
         (key) => !schemaOnlyMetadataColumnKeys.includes(key),
@@ -123,7 +124,8 @@ describe("photo list columns", () => {
       ([, key]) => key,
     );
 
-    test("落とすのは管理専用の6列だけ", () => {
+    // zoomSize は、置き場所と合わせた `zoom` として photoWithThumbs が出し終えている。
+    test("落とすのは管理専用の7列だけ", () => {
       expect(stripped.sort()).toEqual(
         [
           "deletedAt",
@@ -132,6 +134,7 @@ describe("photo list columns", () => {
           "mediumKey",
           "shotAtSource",
           "thumbKey",
+          "zoomSize",
         ].sort(),
       );
     });

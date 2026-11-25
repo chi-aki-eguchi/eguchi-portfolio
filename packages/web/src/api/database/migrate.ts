@@ -84,6 +84,7 @@ export type ColumnRunner = { run: (query: SQL) => Promise<unknown> };
  * 作られた列と `db:push` で作られた列が違う形になる。
  * 上9列 = `0003_material_apocalypse` + `0004_flowery_bloodstorm`
  * 下7列 = `0005_mysterious_madame_masque`
+ * 末尾1列 = `0011_photo_zoom_size`
  */
 export const TURSO_SAFETY_NET_COLUMNS: readonly SafetyNetColumn[] = [
   ["photos", "focal_length", "text"],
@@ -102,6 +103,7 @@ export const TURSO_SAFETY_NET_COLUMNS: readonly SafetyNetColumn[] = [
   ["photos", "source_format", "text"],
   ["photos", "camera_make", "text"],
   ["photos", "camera_model", "text"],
+  ["photos", "zoom_size", "text"],
 ];
 
 // hero_photos is deliberately separate from the long-lived `photos` safety

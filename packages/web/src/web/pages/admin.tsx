@@ -4990,6 +4990,8 @@ export function GalleryTab({
     syncUploadProgress();
     const failed: { file: File; reason?: string }[] = [];
     const duplicates: string[] = [];
+    // 登録済みの写真のうち、元のファイルから拡大用の高精細を足せた枚数。
+    let zoomAdded = 0;
     const addedPhotoIds: number[] = [];
     let storageMissing: string[] | null = null;
     let done = 0;
@@ -5004,7 +5006,10 @@ export function GalleryTab({
               ? `${copy.import.failedReason} (HTTP ${res.status})`
               : await responseErrorMessage(res),
         });
-        if (result.kind === "duplicate") duplicates.push(file.name);
+        if (result.kind === "duplicate") {
+          duplicates.push(file.name);
+          if (result.zoomAdded) zoomAdded += 1;
+        }
         else if (result.kind === "added") addedPhotoIds.push(result.id);
         else {
           if (result.storageMissing) storageMissing = result.storageMissing;
@@ -5091,6 +5096,12 @@ export function GalleryTab({
             duplicates.slice(0, 3).join(", "),
             duplicates.length > 3,
           ),
+        );
+      if (zoomAdded > 0)
+        parts.push(
+          language === "en"
+            ? `Added zoom detail to ${zoomAdded} already added ${zoomAdded === 1 ? "photo" : "photos"}`
+            : `登録済みの${zoomAdded}枚に、拡大用の高精細を足しました`,
         );
       if (skipped > 0) parts.push(copy.import.skippedNonImages(skipped));
       setUploadNotice(parts.length ? parts.join(" / ") : null);

@@ -34,6 +34,7 @@ export function duplicatedPhotoValues(orig: PhotoRow): {
     fileHash: orig.fileHash,
     thumbKey: orig.thumbKey,
     mediumKey: orig.mediumKey,
+    zoomSize: orig.zoomSize,
     width: orig.width,
     height: orig.height,
 

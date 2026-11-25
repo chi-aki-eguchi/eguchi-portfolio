@@ -31,7 +31,16 @@ import {
 } from "./focal-rotation";
 import { idListError, isJsonObject, parseIdList } from "./request-input";
 import { uniqueUploadStorageKey } from "./upload-key";
+import { readFile } from "node:fs/promises";
 import { clearSpoolDirectory, spoolUpload } from "./upload-spool";
+import { buildZoomTiles, runPooled } from "./photo-zoom-tiles";
+import {
+  ZOOM_KEY_PREFIX,
+  formatZoomSize,
+  parseZoomSize,
+  zoomBaseKey,
+  zoomStemFromTileKey,
+} from "../shared/photo-zoom";
 import { writeSettingsAtomic } from "./database/settings-write";
 import {
   isSettingsPayload,
@@ -230,6 +239,7 @@ const PHOTO_LIST_COLUMNS = {
   fileHash: schema.photos.fileHash,
   thumbKey: schema.photos.thumbKey,
   mediumKey: schema.photos.mediumKey,
+  zoomSize: schema.photos.zoomSize,
   sortOrder: schema.photos.sortOrder,
   deletedAt: schema.photos.deletedAt,
   createdAt: schema.photos.createdAt,
@@ -674,16 +684,20 @@ async function deleteStorageKeys(keys: readonly string[]) {
 async function deleteUnreferencedStorageKeys(keys: readonly string[]) {
   const unreferenced: string[] = [];
   for (const key of keys) {
+    // 高精細の四角は、保存する1枚を通して参照される（鍵を列に持たない）。
+    const zoomStem = zoomStemFromTileKey(key);
     const [reference] = await withRetry(() =>
       db
         .select({ id: schema.photos.id })
         .from(schema.photos)
         .where(
-          or(
-            eq(schema.photos.url, keyToProxyUrl(key)),
-            eq(schema.photos.thumbKey, key),
-            eq(schema.photos.mediumKey, key),
-          ),
+          zoomStem
+            ? eq(schema.photos.url, keyToProxyUrl(`photos/${zoomStem}.jpg`))
+            : or(
+                eq(schema.photos.url, keyToProxyUrl(key)),
+                eq(schema.photos.thumbKey, key),
+                eq(schema.photos.mediumKey, key),
+              ),
         )
         .limit(1),
     );
@@ -769,6 +783,7 @@ export function toPublicPhoto<
     fileHash?: unknown;
     thumbKey?: unknown;
     mediumKey?: unknown;
+    zoomSize?: unknown;
     isPublished?: unknown;
     deletedAt?: unknown;
     shotAtSource?: unknown;
@@ -778,6 +793,7 @@ export function toPublicPhoto<
     fileHash: _fileHash,
     thumbKey: _thumbKey,
     mediumKey: _mediumKey,
+    zoomSize: _zoomSize,
     isPublished: _isPublished,
     deletedAt: _deletedAt,
     shotAtSource: _shotAtSource,
@@ -791,12 +807,25 @@ export function photoWithThumbs<
     thumbKey?: string | null;
     mediumKey?: string | null;
     rotationDeg?: number | null;
+    url?: string | null;
+    zoomSize?: string | null;
   },
->(p: T): T & { thumbUrl: string | null; mediumUrl: string | null } {
+>(
+  p: T,
+): T & { thumbUrl: string | null; mediumUrl: string | null; zoom: string | null } {
   const rotationDeg = normalizeRotationDeg(p.rotationDeg);
   const rotated = rotationDeg !== 0;
+  // 拡大用の高精細: 「置き場所#大きさ」。四角は作り置きなので、回した写真には出さない
+  //（回した向きの四角は無い。今までどおり保存する1枚から拡大する）。
+  const zoomSize = parseZoomSize(p.zoomSize);
+  const zoomBase = zoomSize && !rotated && p.url
+    ? zoomBaseKey(p.url.replace("/api/images/", ""))
+    : null;
   return {
     ...p,
+    zoom: zoomSize && zoomBase
+      ? `${keyToPublicUrl(zoomBase)}#${formatZoomSize(zoomSize)}`
+      : null,
     thumbUrl: p.thumbKey
       ? rotated
         ? keyToProxyUrl(p.thumbKey, { rotationDeg })
@@ -871,6 +900,44 @@ async function generateAndUploadMedium(
   );
   await uploadToStorage(mKey, mediumBuf, "image/webp");
   return { mediumKey: mKey };
+}
+
+/**
+ * 元のファイルから拡大用の高精細を作り、保存先へ置く。作らなかったときは null。
+ * 元の長辺が保存する1枚（{@link UPLOAD_MAX_PX}）を1割以上超えないなら作らない
+ *（保存する1枚からの拡大と見分けがつかない）。
+ */
+async function generateAndUploadZoomTiles(
+  sourcePath: string,
+  originalKey: string,
+): Promise<string | null> {
+  const base = zoomBaseKey(originalKey);
+  // 四角から元の写真をたどるとき（非公開の判定・片付け）は「photos/<名前>.jpg」と決めて引く。
+  // それ以外の鍵を持つ古い写真には作らない。
+  if (!base || !/^photos\/[^/]+\.jpg$/.test(originalKey)) return null;
+  const built = await withImageTransformLimit(UPLOAD_NEVER_ABORTED, () =>
+    buildZoomTiles(sourcePath, { minSourcePx: Math.round(UPLOAD_MAX_PX * 1.1) }),
+  );
+  if (!built) return null;
+  const uploaded: string[] = [];
+  try {
+    await runPooled(built.tiles, 6, async (tile) => {
+      const key = `${base}/${tile.rel}`;
+      await uploadToStorage(
+        key,
+        await readFile(tile.path),
+        "image/webp",
+      );
+      uploaded.push(key);
+    });
+    return formatZoomSize(built.size);
+  } catch (error) {
+    // 途中まで置いた四角を残さない（欠けたまま公開すると、拡大した先に穴が開く）。
+    await deleteStorageKeys(uploaded);
+    throw error;
+  } finally {
+    await built.cleanup();
+  }
 }
 
 async function uploadToStorage(key: string, buf: Buffer, contentType: string) {
@@ -1054,7 +1121,8 @@ const app = new Hono()
         build: BUILD_ID,
         // 本番で実際に動いている版。セキュリティ更新が届いたかを外から確かめるため（2026-10-25）。
         runtime: {
-          bun: Bun.version,
+          // 開発サーバー（Vite）は Node で動くので、Bun が無いこともある。
+          bun: typeof Bun === "undefined" ? null : Bun.version,
           sharp: sharp.versions.sharp,
           vips: sharp.versions.vips,
         },
@@ -1118,6 +1186,15 @@ const app = new Hono()
           or(eq(schema.photos.url, keyToProxyUrl(decodedKey)), eq(schema.photos.thumbKey, decodedKey), eq(schema.photos.mediumKey, decodedKey)),
         )).limit(1));
         visible = rows.length > 0;
+      } else if (decodedKey.startsWith(ZOOM_KEY_PREFIX)) {
+        const stem = zoomStemFromTileKey(decodedKey);
+        if (stem) {
+          const rows = await withRetry(() => db.select({ id: schema.photos.id }).from(schema.photos).where(and(
+            eq(schema.photos.isPublished, true), isNull(schema.photos.deletedAt),
+            eq(schema.photos.url, keyToProxyUrl(`photos/${stem}.jpg`)),
+          )).limit(1));
+          visible = rows.length > 0;
+        }
       } else if (/^(hero|profile)\//.test(decodedKey)) {
         const rows = await withRetry(() => db.select({ key: schema.siteSettings.key }).from(schema.siteSettings).where(and(
           inArray(schema.siteSettings.key, ["heroPhotoUrl", "profilePhotoUrl"]), eq(schema.siteSettings.value, keyToProxyUrl(decodedKey)),
@@ -1996,7 +2073,11 @@ const app = new Hono()
       const fileHash = createHash("sha256").update(optimised).digest("hex");
       const [dup] = await withRetry(() =>
         db
-          .select({ id: schema.photos.id })
+          .select({
+            id: schema.photos.id,
+            url: schema.photos.url,
+            zoomSize: schema.photos.zoomSize,
+          })
           .from(schema.photos)
           .where(
             sql`${eq(schema.photos.fileHash, fileHash)} AND ${isNull(schema.photos.deletedAt)}`,
@@ -2004,10 +2085,36 @@ const app = new Hono()
           .limit(1),
       );
       if (dup) {
+        // 登録済みの写真に拡大用の高精細がまだ無ければ、いま届いた元のファイルから足す。
+        // 高精細の仕組みより前に入れた写真は、元のファイルをもう一度入れるだけで揃う
+        //（サーバーには縮めた1枚しか残っていないので、ほかに作る手段が無い）。
+        let zoomAdded = false;
+        if (!dup.zoomSize) {
+          try {
+            const zoomSize = await generateAndUploadZoomTiles(
+              file.path,
+              dup.url.replace("/api/images/", ""),
+            );
+            if (zoomSize) {
+              // 同じ実体を指す写真（複製）にもそろえて付ける。
+              await runPhotoIntegrityMutation(() =>
+                withRetry(() =>
+                  db
+                    .update(schema.photos)
+                    .set({ zoomSize })
+                    .where(eq(schema.photos.url, dup.url)),
+                ),
+              );
+              zoomAdded = true;
+            }
+          } catch (e) {
+            console.error("[upload] zoom tile backfill failed:", e);
+          }
+        }
         // Skip storage upload + DB insert entirely; client counts it as a duplicate.
         // photoId は、シリーズの画面から取り込んだとき、登録済みの写真をそのシリーズへ
         // 入れるために返す（2026-10-01。以前は何も起きず「すでに登録」とだけ出ていた）。
-        return c.json({ duplicate: true, fileHash, photoId: dup.id }, 200);
+        return c.json({ duplicate: true, fileHash, photoId: dup.id, zoomAdded }, 200);
       }
 
       // Capture intrinsic dimensions so the client can reserve aspect-ratio (CLS)
@@ -2044,7 +2151,7 @@ const app = new Hono()
             ? // TIFF は撮影情報がファイルのどこにあるか決まっていないので全体を読む。
             // 画像の変換と重ならない順番で読む。
             await withImageTransformLimit(UPLOAD_NEVER_ABORTED, async () =>
-              Buffer.from(await Bun.file(file.path).arrayBuffer()),
+              await readFile(file.path),
             )
             : null);
         if (exif) {
@@ -2114,6 +2221,14 @@ const app = new Hono()
         console.error("[upload] thumbnail generation failed:", e);
       }
 
+      // 拡大用の高精細。失敗しても取り込みは続ける（拡大が今までどおりになるだけ）。
+      let zoomSize: string | null = null;
+      try {
+        zoomSize = await generateAndUploadZoomTiles(file.path, key);
+      } catch (e) {
+        console.error("[upload] zoom tile generation failed:", e);
+      }
+
       const proxyUrl = keyToProxyUrl(key);
       return c.json(
         {
@@ -2125,6 +2240,7 @@ const app = new Hono()
           fileHash,
           thumbKey,
           mediumKey,
+          zoomSize,
           shotAt,
           exifDateDigitized,
           sourceWidth,
@@ -2294,6 +2410,10 @@ const app = new Hono()
             typeof body.mediumKey === "string" && body.mediumKey
               ? body.mediumKey
               : null,
+          // 形の合うものだけ受け取る（"7680x5760"）。合わなければ高精細なし。
+          zoomSize: parseZoomSize(body.zoomSize)
+            ? (body.zoomSize as string)
+            : null,
           shotAt:
             typeof body.shotAt === "string" && body.shotAt ? body.shotAt : null,
           shotAtSource: normalizeShotAtSourceForInsert(body.shotAtSource),

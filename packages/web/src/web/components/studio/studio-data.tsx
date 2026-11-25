@@ -251,6 +251,8 @@ export function StudioProvider({
       // 登録済みだった写真。シリーズの画面から取り込んだときは、そのシリーズへ入れる。
       const existing: number[] = [];
       let duplicates = 0;
+      // 登録済みの写真のうち、元のファイルから拡大用の高精細を足せた枚数。
+      let zoomAdded = 0;
       let failed = 0;
       let reason = "";
       let done = 0;
@@ -264,6 +266,7 @@ export function StudioProvider({
             if (r.kind === "added") added.push(r.id);
             else if (r.kind === "duplicate") {
               duplicates += 1;
+              if (r.zoomAdded) zoomAdded += 1;
               if (r.existingId != null) existing.push(r.existingId);
             }
             else {
@@ -302,6 +305,13 @@ export function StudioProvider({
           added.length || joined || failed || skipped
             ? tx(`${duplicates - joined}枚はすでに登録されています`, `${duplicates - joined} already added`)
             : tx(`選んだ${duplicates}枚は、すでに登録されています`, `${duplicates === 1 ? "That photo is" : `All ${duplicates} are`} already added`),
+        );
+      if (zoomAdded)
+        parts.push(
+          tx(
+            `登録済みの${zoomAdded}枚に、拡大用の高精細を足しました`,
+            `Added zoom detail to ${zoomAdded} already added ${zoomAdded === 1 ? "photo" : "photos"}`,
+          ),
         );
       if (failed)
         parts.push(

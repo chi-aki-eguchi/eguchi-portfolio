@@ -47,6 +47,9 @@ export const photos = sqliteTable(
     fileHash: text("file_hash"),
     thumbKey: text("thumb_key"),
     mediumKey: text("medium_key"),
+    // 拡大用の高精細（四角に切ったもの）の、いちばん細かい段の大きさ（"7680x5760"）。
+    // NULL は高精細なし。置き場所は url から決まる（shared/photo-zoom.ts）。
+    zoomSize: text("zoom_size"),
     sortOrder: integer("sort_order").notNull().default(0),
     deletedAt: integer("deleted_at", { mode: "timestamp" }),
     createdAt: integer("created_at", { mode: "timestamp" })

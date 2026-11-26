@@ -40,7 +40,7 @@ export const EXHIBITION_STILLLIFE_SLUG = "2026-stilllife-tokyo";
 const STILLLIFE_ENTRY = {
   slug: EXHIBITION_STILLLIFE_SLUG,
   title: "愛着障害",
-  dates: "Still,life 東京 2026年11月",
+  dates: "Still,life 東京 2026年11月21日〜22日",
   text: "",
   photoIds: "",
   captions: "",
